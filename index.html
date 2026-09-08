@@ -1,19 +1,65 @@
-<!-- KNIHOVNY: TAILWIND CSS & SUPABASE -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Píchačky">
+  <title>Pracovní Deník & Píchačky</title>
 
-<div class="bg-slate-100 text-slate-800 p-3 max-w-lg mx-auto pb-32 font-sans min-h-screen relative overflow-x-hidden">
+  <!-- PWA IKONA (SVG: Montážní helma + stopky) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+
+  <!-- DYNAMICKÝ PWA MANIFEST PRO CHROME / ANDROID INSTALACI -->
+  <script>
+    const manifestJson = {
+      name: "Pracovní Deník & Píchačky",
+      short_name: "Píchačky",
+      start_url: "./index.html",
+      display: "standalone",
+      background_color: "#0f172a",
+      theme_color: "#0f172a",
+      icons: [{
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "any maskable"
+      }]
+    };
+    const stringManifest = JSON.stringify(manifestJson);
+    const blob = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+  </script>
+
+  <!-- KNIHOVNY: TAILWIND CSS & SUPABASE JS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-slate-900 min-h-screen text-slate-800 font-sans antialiased selection:bg-sky-500 selection:text-white">
+
+<div class="bg-slate-100 min-h-screen max-w-xl md:max-w-2xl mx-auto p-3.5 sm:p-5 pb-36 shadow-2xl relative">
 
   <!-- 1. PŘIHLAŠOVACÍ OBRAZOVKA -->
-  <div id="authScreen" class="min-h-[85vh] flex flex-col justify-center">
-    <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-200 space-y-4">
-      <div class="text-center">
+  <div id="authScreen" class="min-h-[85vh] flex flex-col justify-center max-w-md mx-auto">
+    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-200 space-y-4">
+      <div class="text-center space-y-1">
+        <div class="inline-flex p-3 bg-slate-900 text-amber-400 rounded-2xl mb-1 shadow-inner">
+          <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A8 8 0 0 1 20 12v3a2 2 0 0 1-2 2h-1v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2H6a2 2 0 0 1-2-2v-3a8 8 0 0 1 7-7.93V3a1 1 0 0 1 1-1zm0 4a6 6 0 0 0-6 6v3h12v-3a6 6 0 0 0-6-6z"/></svg>
+        </div>
         <h1 class="text-2xl font-black text-slate-900 tracking-tight">Pracovní Deník</h1>
-        <p class="text-xs text-slate-500 mt-1">Vyber profil nebo zadej jméno a heslo</p>
+        <p class="text-xs text-slate-500">Vyber profil nebo zadej jméno a heslo</p>
       </div>
 
       <!-- Rychlý výběr profilů -->
-      <div class="space-y-1.5 pt-1">
+      <div class="space-y-1.5 pt-2">
         <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Rychlý výběr profilu:</span>
         <div id="quickUserBadges" class="flex flex-wrap gap-1.5"></div>
       </div>
@@ -21,128 +67,130 @@
       <div class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
-          <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Martin, Jiří (šéf)..." class="w-full border rounded-xl p-2.5 text-sm bg-slate-50 font-semibold">
+          <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Martin, Jiří (šéf)..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none font-semibold transition">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">HESLO NEBO PIN</label>
-          <input type="password" id="loginPassword" placeholder="••••" class="w-full border rounded-xl p-2.5 text-sm bg-slate-50">
+          <input type="password" id="loginPassword" placeholder="••••" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition">
         </div>
 
-        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 font-semibold">
-          <input type="checkbox" id="rememberMe" checked class="w-4 h-4 rounded text-slate-900">
+        <label class="flex items-center gap-2.5 cursor-pointer bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 font-semibold select-none">
+          <input type="checkbox" id="rememberMe" checked class="w-4 h-4 rounded text-slate-900 focus:ring-0">
           <span>Zůstat trvale přihlášen</span>
         </label>
 
-        <button type="button" id="btnLogin" onclick="handleLogin()" class="w-full bg-slate-900 active:bg-slate-800 text-white font-black py-3 rounded-xl shadow transition text-sm">
+        <button type="button" id="btnLogin" onclick="handleLogin()" class="w-full bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-black py-3.5 rounded-xl shadow-lg transition text-sm">
           Přihlásit se
         </button>
 
-        <p class="text-[11px] text-center text-slate-400">
-          Nový parťák v týmu?
-          <button type="button" onclick="handleRegister()" class="text-sky-600 font-bold underline ml-1">Zaregistrovat nový účet</button>
+        <p class="text-[11px] text-center text-slate-400 pt-1">
+          Nový kolega v týmu?
+          <button type="button" onclick="handleRegister()" class="text-sky-600 font-bold hover:underline ml-1">Zaregistrovat nový účet</button>
         </p>
       </div>
     </div>
   </div>
 
   <!-- 2. HLAVNÍ APLIKACE -->
-  <div id="appScreen" class="hidden">
+  <div id="appScreen" class="hidden space-y-3">
 
     <!-- HORNÍ LIŠTA -->
-    <div class="bg-slate-900 text-white p-3 rounded-2xl shadow mb-3 flex items-center justify-between">
-      <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-base flex items-center justify-center w-9 h-9 border border-slate-700 transition">
+    <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
+      <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
         ⚙️
       </button>
 
       <div class="text-center">
-        <span id="labelCurrentWorker" class="font-black text-sm text-emerald-400 block leading-tight">Jan (já)</span>
-        <span id="badgeCurrentWorkerStatus" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700">⚪ Volno</span>
+        <span id="labelCurrentWorker" class="font-black text-sm sm:text-base text-emerald-400 block leading-tight">Jan (já)</span>
+        <span id="badgeCurrentWorkerStatus" class="text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700">⚪ Volno</span>
       </div>
       
-      <button type="button" onclick="toggleStatsMenu(true)" title="Tým, Kasa a Záznamy" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-base flex items-center justify-center w-9 h-9 border border-slate-700 transition">
+      <button type="button" onclick="toggleStatsMenu(true)" title="Tým, Kasa a Záznamy" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
         ☰
       </button>
     </div>
 
     <!-- ŽIVÁ PÍCHAČKA -->
-    <div id="punchCard" class="bg-slate-800 text-white p-3 rounded-2xl shadow mb-3 flex items-center justify-between">
+    <div id="punchCard" class="bg-slate-800 text-white p-3.5 rounded-2xl shadow-md flex items-center justify-between border border-slate-700">
       <div>
         <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Rychlá píchačka</span>
-        <span id="shiftTimerStatus" class="text-xs font-semibold text-slate-300">Směna neběží</span>
+        <span id="shiftTimerStatus" class="text-xs sm:text-sm font-semibold text-slate-200">Směna neběží</span>
       </div>
-      <button type="button" id="punchBtn" onclick="toggleLiveShift()" class="bg-emerald-500 active:bg-emerald-600 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow transition">
+      <button type="button" id="punchBtn" onclick="toggleLiveShift()" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition">
         ▶ Začít směnu
       </button>
     </div>
 
-    <!-- TLAČÍTKO PRO OTEVŘENÍ PŘEHLEDU & ZÁZNAMŮ -->
-    <div class="mb-3">
-      <button type="button" onclick="toggleStatsMenu(true)" class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold py-2.5 px-3 rounded-xl shadow-sm text-xs flex items-center justify-center gap-2 transition">
+    <!-- TLAČÍTKO PRO OTEVŘENÍ KASY A ZÁZNAMŮ -->
+    <div>
+      <button type="button" onclick="toggleStatsMenu(true)" class="w-full bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-slate-800 font-bold py-2.5 px-3 rounded-xl shadow-sm text-xs sm:text-sm flex items-center justify-center gap-2 transition">
         <span>👥 Stav týmu</span>
-        <span class="text-slate-300">|</span>
+        <span class="text-slate-300">•</span>
         <span>💰 Kasa</span>
-        <span class="text-slate-300">|</span>
+        <span class="text-slate-300">•</span>
         <span>📋 Záznamy prací (☰)</span>
       </button>
     </div>
 
     <!-- FORMULÁŘ ZÁPISU SMĚNY -->
-    <div class="bg-white p-4 rounded-2xl shadow border border-slate-200 space-y-3.5">
+    <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3.5">
       <div>
         <label class="text-[11px] font-bold text-slate-500 block mb-1">ZAKÁZKA / STAVBA</label>
-        <select id="workProject" class="w-full border rounded-xl p-2 font-bold text-sm bg-slate-50 text-slate-800 border-slate-300"></select>
+        <select id="workProject" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
       </div>
 
-      <div>
-        <div class="flex justify-between items-center mb-1">
-          <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
-          <button type="button" onclick="getGPS()" class="text-[11px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-semibold">📍 Uložit GPS</button>
-        </div>
-        <input type="date" id="workDate" class="w-full border rounded-xl p-2 font-medium bg-slate-50 text-sm">
-        <input type="hidden" id="gpsLocation">
-        <p id="gpsStatus" class="text-[10px] text-slate-400 mt-1"></p>
-      </div>
-
-      <div>
-        <div class="flex justify-between items-center mb-1">
-          <label class="text-[11px] font-bold text-slate-500">ČAS PRÁCE</label>
-          <div class="space-x-1">
-            <button type="button" onclick="setNow('timeStart')" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium">Teď od</button>
-            <button type="button" onclick="setNow('timeEnd')" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium">Teď do</button>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
+            <button type="button" onclick="getGPS()" class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-bold hover:bg-sky-200 transition">📍 Uložit GPS</button>
           </div>
+          <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 font-medium bg-slate-50 text-sm outline-none">
+          <input type="hidden" id="gpsLocation">
+          <p id="gpsStatus" class="text-[10px] text-slate-400 mt-1"></p>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="time" id="timeStart" class="border rounded-xl p-2 bg-slate-50 text-sm">
-          <input type="time" id="timeEnd" class="border rounded-xl p-2 bg-slate-50 text-sm">
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-[11px] font-bold text-slate-500">ČAS PRÁCE</label>
+            <div class="space-x-1">
+              <button type="button" onclick="setNow('timeStart')" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded font-semibold text-slate-600">Teď od</button>
+              <button type="button" onclick="setNow('timeEnd')" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded font-semibold text-slate-600">Teď do</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <input type="time" id="timeStart" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
+            <input type="time" id="timeEnd" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
+          </div>
         </div>
       </div>
 
       <!-- KILOMETRY & ZASTÁVKY -->
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+      <div class="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2.5">
         <div class="flex justify-between items-center">
-          <label class="text-[11px] font-bold text-slate-600">DOPRAVA A KILOMETRY</label>
+          <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">DOPRAVA A KILOMETRY</label>
           <div class="flex gap-1">
-            <button type="button" id="btnModeQuick" onclick="setKmMode('quick')" class="text-[10px] px-2 py-0.5 rounded font-bold bg-slate-800 text-white">Jen km</button>
-            <button type="button" id="btnModeStops" onclick="setKmMode('stops')" class="text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-600">Zastávky</button>
-            <button type="button" id="btnModeOdo" onclick="setKmMode('odo')" class="text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-600">Budíky</button>
+            <button type="button" id="btnModeQuick" onclick="setKmMode('quick')" class="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition">Jen km</button>
+            <button type="button" id="btnModeStops" onclick="setKmMode('stops')" class="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition">Zastávky</button>
+            <button type="button" id="btnModeOdo" onclick="setKmMode('odo')" class="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition">Budíky</button>
           </div>
         </div>
 
-        <div id="quickKmBox" class="space-y-1.5">
-          <input type="number" id="kmDirect" placeholder="Ujeto celkem km (např. 45)" class="w-full border rounded-lg p-2 bg-white text-sm">
-          <div class="flex gap-1.5 text-[10px]">
-            <span class="text-slate-400 self-center">Rychle:</span>
-            <button type="button" onclick="addKmQuick(15)" class="bg-white border px-2 py-0.5 rounded font-medium">+15 km</button>
-            <button type="button" onclick="addKmQuick(35)" class="bg-white border px-2 py-0.5 rounded font-medium">+35 km</button>
-            <button type="button" onclick="addKmQuick(50)" class="bg-white border px-2 py-0.5 rounded font-medium">+50 km</button>
+        <div id="quickKmBox" class="space-y-2">
+          <input type="number" id="kmDirect" placeholder="Ujeto celkem km (např. 45)" class="w-full border border-slate-300 rounded-xl p-2 bg-white text-sm font-semibold outline-none focus:ring-2 focus:ring-sky-500">
+          <div class="flex gap-1.5 text-[10px] overflow-x-auto pb-0.5">
+            <span class="text-slate-400 self-center font-medium">Rychle:</span>
+            <button type="button" onclick="addKmQuick(15)" class="bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg font-semibold shadow-xs">+15 km</button>
+            <button type="button" onclick="addKmQuick(35)" class="bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg font-semibold shadow-xs">+35 km</button>
+            <button type="button" onclick="addKmQuick(50)" class="bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg font-semibold shadow-xs">+50 km</button>
           </div>
         </div>
 
         <div id="stopsKmBox" class="space-y-2 hidden">
-          <div class="text-[10px] text-slate-500 font-medium">Zadej jednotlivé úseky:</div>
+          <div class="text-[10px] text-slate-500 font-medium">Zadej jednotlivé přejezdy (šipka je pevně daná):</div>
           <div id="stopsContainer" class="space-y-1.5"></div>
           <div class="flex justify-between items-center pt-1 border-t border-slate-200">
-            <button type="button" onclick="addStopRow()" class="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-lg">
+            <button type="button" onclick="addStopRow()" class="text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg transition">
               + Další přejezd
             </button>
             <span class="text-xs font-bold text-slate-700">Celkem: <span id="stopsSumDisplay" class="text-sky-800 font-black">0</span> km</span>
@@ -150,19 +198,19 @@
         </div>
 
         <div id="odoKmBox" class="grid grid-cols-2 gap-2 hidden">
-          <input type="number" id="kmStart" placeholder="Budík před jízdou" class="border rounded-lg p-2 bg-white text-sm">
-          <input type="number" id="kmEnd" placeholder="Budík po práci" class="border rounded-lg p-2 bg-white text-sm">
+          <input type="number" id="kmStart" placeholder="Tachometr před" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
+          <input type="number" id="kmEnd" placeholder="Tachometr po" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
         </div>
       </div>
 
-      <!-- Paušály -->
-      <div id="extrasBox" class="flex gap-4 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
-        <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="checkbox" id="checkDiet" class="rounded">
+      <!-- Paušály (Diety, Nářadí) -->
+      <div id="extrasBox" class="flex gap-5 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="checkDiet" class="w-4 h-4 rounded text-slate-900">
           <span>Stravné / Diety</span>
         </label>
-        <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="checkbox" id="checkTools" class="rounded">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="checkTools" class="w-4 h-4 rounded text-slate-900">
           <span>Opotřebení nářadí</span>
         </label>
       </div>
@@ -170,32 +218,32 @@
       <!-- Popis a Fotky práce -->
       <div class="space-y-2">
         <label class="text-[11px] font-bold text-slate-500 block">POPIS PRÁCE & FOTKY Z MÍSTA</label>
-        <textarea id="workDesc" rows="2" placeholder="Co jsi dnes dělal..." class="w-full border rounded-xl p-2 text-sm bg-slate-50"></textarea>
+        <textarea id="workDesc" rows="2" placeholder="Co jsi dnes na zakázce dělal..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></textarea>
         <div>
-          <label class="text-[11px] text-slate-500 block mb-1 font-medium">📸 Fotky z montáže (lze vybrat více)</label>
-          <input type="file" id="workPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:bg-slate-200 file:font-semibold">
+          <label class="text-[11px] text-slate-500 block mb-1 font-medium">📸 Fotky z montáže (lze vybrat i vyfotit více fotek)</label>
+          <input type="file" id="workPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-slate-200 file:font-bold file:text-slate-800 hover:file:bg-slate-300">
           <input type="hidden" id="clonedWorkPhotos">
-          <div id="clonedPhotoPreview" class="hidden mt-1 text-[10px] text-sky-700 bg-sky-50 p-1.5 rounded">✓ Budou použity zkopírované fotky od kolegy</div>
+          <div id="clonedPhotoPreview" class="hidden mt-1 text-[10px] text-sky-700 bg-sky-50 p-1.5 rounded-lg">✓ Budou použity fotky zkopírované od kolegy</div>
         </div>
       </div>
 
       <!-- Nákupy materiálu -->
-      <div class="border-t pt-3 space-y-2.5">
+      <div class="border-t border-slate-200 pt-3 space-y-2.5">
         <div class="flex justify-between items-center">
-          <label class="text-[11px] font-bold text-slate-600 block">NÁKUPY MATERIÁLU A ÚČTENKY</label>
-          <button type="button" onclick="addMaterialRow()" class="text-xs text-sky-700 font-bold bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-lg">
+          <label class="text-[11px] font-bold text-slate-600 block uppercase tracking-wider">NÁKUPY MATERIÁLU A ÚČTENKY</label>
+          <button type="button" onclick="addMaterialRow()" class="text-xs text-sky-700 font-bold bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg transition">
             + Další nákup
           </button>
         </div>
 
         <div id="materialContainer" class="space-y-2.5"></div>
 
-        <div class="text-right text-xs font-bold text-amber-900 pr-1">
-          Materiál celkem: <span id="matTotalDisplay" class="font-black">0</span> Kč
+        <div class="text-right text-xs font-bold text-amber-950 pr-1">
+          Materiál celkem: <span id="matTotalDisplay" class="font-black text-sm">0</span> Kč
         </div>
       </div>
 
-      <button type="button" id="btnSaveShift" onclick="saveRecord()" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-black py-3.5 rounded-xl shadow transition text-base">
+      <button type="button" id="btnSaveShift" onclick="saveRecord()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-black py-3.5 rounded-xl shadow-lg transition text-sm sm:text-base">
         💾 Uložit záznam směny
       </button>
     </div>
@@ -203,12 +251,12 @@
   </div>
 
   <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) -->
-  <div id="settingsBackdrop" onclick="toggleSettingsMenu(false)" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity"></div>
-  <div id="settingsMenu" class="fixed top-0 left-0 h-full w-80 bg-white z-50 shadow-2xl p-4 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
+  <div id="settingsBackdrop" onclick="toggleSettingsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
+  <div id="settingsMenu" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 shadow-2xl p-4 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
     <div class="space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <span class="font-black text-slate-900 text-base">⚙️ Nastavení a Profil</span>
-        <button type="button" onclick="toggleSettingsMenu(false)" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
+        <button type="button" onclick="toggleSettingsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
       </div>
 
       <!-- Můj účet -->
@@ -218,27 +266,27 @@
         <div class="space-y-1">
           <label class="text-[10px] text-slate-500 font-medium">Změnit uživatelské jméno</label>
           <div class="flex gap-1.5">
-            <input type="text" id="editUsernameInput" placeholder="Nové jméno" class="flex-1 border rounded-lg p-1.5 text-xs bg-white font-semibold">
-            <button type="button" onclick="changeUsername()" class="bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs font-bold">Uložit</button>
+            <input type="text" id="editUsernameInput" placeholder="Nové jméno" class="flex-1 border rounded-lg p-1.5 text-xs bg-white font-semibold outline-none">
+            <button type="button" onclick="changeUsername()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded-lg text-xs font-bold transition">Uložit</button>
           </div>
         </div>
 
         <div class="space-y-1 pt-1 border-t border-slate-200">
           <label class="text-[10px] text-slate-500 font-medium">Změnit moje heslo</label>
-          <input type="password" id="oldPassInput" placeholder="Aktuální heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white mb-1">
+          <input type="password" id="oldPassInput" placeholder="Aktuální heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white mb-1 outline-none">
           <div class="flex gap-1.5">
-            <input type="password" id="newPassInput" placeholder="Nové heslo" class="flex-1 border rounded-lg p-1.5 text-xs bg-white">
-            <button type="button" onclick="changePassword()" class="bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs font-bold">Změnit</button>
+            <input type="password" id="newPassInput" placeholder="Nové heslo" class="flex-1 border rounded-lg p-1.5 text-xs bg-white outline-none">
+            <button type="button" onclick="changePassword()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded-lg text-xs font-bold transition">Změnit</button>
           </div>
         </div>
 
         <!-- Správcovský reset hesel kolegů -->
         <div class="space-y-1 pt-2 border-t border-slate-200">
           <span class="text-[10px] font-bold text-slate-600 block">🔑 Reset hesla kolegy (Správce)</span>
-          <select id="resetUserTarget" class="w-full border rounded-lg p-1.5 text-xs bg-white mb-1"></select>
+          <select id="resetUserTarget" class="w-full border rounded-lg p-1.5 text-xs bg-white mb-1 outline-none font-semibold"></select>
           <div class="flex gap-1.5">
-            <input type="password" id="resetUserNewPass" placeholder="Nové heslo kolegy" class="flex-1 border rounded-lg p-1.5 text-xs bg-white">
-            <button type="button" onclick="adminResetPassword()" class="bg-sky-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold">Resetovat</button>
+            <input type="password" id="resetUserNewPass" placeholder="Nové heslo kolegy" class="flex-1 border rounded-lg p-1.5 text-xs bg-white outline-none">
+            <button type="button" onclick="adminResetPassword()" class="bg-sky-700 hover:bg-sky-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition">Reset</button>
           </div>
         </div>
 
@@ -256,19 +304,19 @@
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div>
             <label class="text-[10px] text-slate-500 font-medium">Sazba / hod</label>
-            <input type="number" id="rateHour" onchange="saveUserRates()" value="300" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800">
+            <input type="number" id="rateHour" onchange="saveUserRates()" value="300" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800 outline-none">
           </div>
           <div>
             <label class="text-[10px] text-slate-500 font-medium">Sazba / km</label>
-            <input type="number" id="rateKm" onchange="saveUserRates()" value="7" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800">
+            <input type="number" id="rateKm" onchange="saveUserRates()" value="7" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800 outline-none">
           </div>
           <div>
             <label class="text-[10px] text-slate-500 font-medium">Diety / den</label>
-            <input type="number" id="rateDiet" onchange="saveUserRates()" value="150" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800">
+            <input type="number" id="rateDiet" onchange="saveUserRates()" value="150" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800 outline-none">
           </div>
           <div>
             <label class="text-[10px] text-slate-500 font-medium">Nářadí / den</label>
-            <input type="number" id="rateTools" onchange="saveUserRates()" value="100" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800">
+            <input type="number" id="rateTools" onchange="saveUserRates()" value="100" class="w-full border rounded-lg p-1.5 bg-slate-50 font-bold text-slate-800 outline-none">
           </div>
         </div>
       </div>
@@ -276,7 +324,7 @@
       <!-- Vzhled formuláře -->
       <div class="border-t pt-3 space-y-2">
         <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Vzhled formuláře</span>
-        <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200">
+        <label class="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200 select-none">
           <input type="checkbox" id="prefShowExtras" onchange="toggleExtrasVisibility()" checked class="w-4 h-4 rounded text-slate-900">
           <span>Zobrazovat stravné a nářadí</span>
         </label>
@@ -285,69 +333,67 @@
       <!-- Správa zakázek -->
       <div class="border-t pt-3 space-y-2">
         <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Zakázky / stavby</span>
-        <div class="flex gap-1">
-          <input type="text" id="newProjectName" placeholder="Nová stavba..." class="flex-1 border rounded-lg p-1.5 text-xs bg-slate-50">
-          <button type="button" onclick="addProject()" class="bg-sky-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold">+</button>
+        <div class="flex gap-1.5">
+          <input type="text" id="newProjectName" placeholder="Nová stavba..." class="flex-1 border rounded-lg p-1.5 text-xs bg-slate-50 outline-none">
+          <button type="button" onclick="addProject()" class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">+</button>
         </div>
-        <div id="projectBadgeList" class="flex flex-col gap-1 max-h-36 overflow-y-auto pt-1"></div>
+        <div id="projectBadgeList" class="flex flex-col gap-1.5 max-h-36 overflow-y-auto pt-1"></div>
       </div>
     </div>
 
     <div class="border-t pt-4">
-      <button type="button" onclick="handleLogout()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs border border-slate-300 transition">
+      <button type="button" onclick="handleLogout()" class="w-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs border border-slate-300 transition">
         Odhlásit se z účtu
       </button>
     </div>
   </div>
 
   <!-- BOČNÍ PANEL 2: TÝM, KASA & ZÁZNAMY PRACÍ (☰ VPRAVO) -->
-  <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity"></div>
-  <div id="statsMenu" class="fixed top-0 right-0 h-full w-[90%] max-w-md bg-white z-50 shadow-2xl p-4 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
+  <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
+  <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[480px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
     <div class="flex justify-between items-center border-b pb-3">
       <span class="font-black text-slate-900 text-base">👥 Tým, Kasa a Záznamy</span>
-      <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
+      <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
     </div>
 
     <!-- 1. STAV TÝMU V REÁLNÉM ČASE -->
-    <div class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+    <div class="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
       <div class="flex justify-between items-center">
         <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">🟢 Kdo zrovna pracuje</span>
-        <button type="button" onclick="refreshTeamStatus()" class="text-[10px] text-sky-700 font-semibold hover:underline">🔄 Obnovit</button>
+        <button type="button" onclick="refreshTeamStatus()" class="text-[11px] text-sky-700 font-bold hover:underline">🔄 Obnovit</button>
       </div>
-      <div id="teamLiveStatusList" class="space-y-1.5 pt-1">
-        <!-- Vypsáno dynamicky -->
-      </div>
+      <div id="teamLiveStatusList" class="space-y-1.5 pt-1"></div>
     </div>
 
     <!-- 2. MOJE KASA -->
-    <div class="space-y-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+    <div class="space-y-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
       <div class="flex justify-between items-center">
         <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">💰 Moje kasa (<span id="dashWorkerName">Jan</span>)</span>
-        <span class="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">K vyplacení</span>
+        <span class="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full font-bold">K vyplacení</span>
       </div>
 
-      <div class="grid grid-cols-4 gap-1 bg-slate-200/70 p-1 rounded-xl text-center text-xs font-bold">
+      <div class="grid grid-cols-4 gap-1 bg-slate-200/80 p-1 rounded-xl text-center text-xs font-bold">
         <button type="button" id="btnPeriod-day" onclick="setPeriod('day')" class="py-1 rounded-lg transition text-slate-600">Dnes</button>
         <button type="button" id="btnPeriod-week" onclick="setPeriod('week')" class="py-1 rounded-lg transition text-slate-600">Týden</button>
-        <button type="button" id="btnPeriod-month" onclick="setPeriod('month')" class="py-1 rounded-lg transition bg-slate-900 text-white shadow-sm">Měsíc</button>
+        <button type="button" id="btnPeriod-month" onclick="setPeriod('month')" class="py-1 rounded-lg transition bg-slate-900 text-white shadow-xs">Měsíc</button>
         <button type="button" id="btnPeriod-all" onclick="setPeriod('all')" class="py-1 rounded-lg transition text-slate-600">Vše</button>
       </div>
 
-      <div class="grid grid-cols-3 gap-1.5 pt-1 text-center">
-        <div class="bg-white p-2 rounded-xl border border-slate-200">
+      <div class="grid grid-cols-3 gap-2 pt-1 text-center">
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
           <span class="text-[10px] text-slate-500 font-bold block uppercase">Mzda</span>
-          <span id="dashWorkWage" class="text-sm font-black text-emerald-700 block">0 Kč</span>
+          <span id="dashWorkWage" class="text-base font-black text-emerald-700 block">0 Kč</span>
           <span id="dashWorkHours" class="text-[10px] text-slate-500 font-semibold">0.0 h</span>
         </div>
-        <div class="bg-white p-2 rounded-xl border border-slate-200">
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
           <span class="text-[10px] text-slate-500 font-bold block uppercase">Cestovné</span>
-          <span id="dashTravelWage" class="text-sm font-black text-sky-700 block">0 Kč</span>
+          <span id="dashTravelWage" class="text-base font-black text-sky-700 block">0 Kč</span>
           <span id="dashTravelKm" class="text-[10px] text-slate-500 font-semibold">0 km</span>
         </div>
-        <div class="bg-white p-2 rounded-xl border border-slate-200">
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
           <span class="text-[10px] text-slate-500 font-bold block uppercase">Materiál</span>
-          <span id="dashMatCost" class="text-sm font-black text-amber-700 block">0 Kč</span>
+          <span id="dashMatCost" class="text-base font-black text-amber-700 block">0 Kč</span>
           <span class="text-[10px] text-slate-400 font-medium">Nákupy</span>
         </div>
       </div>
@@ -357,8 +403,8 @@
     <div class="space-y-3 pt-1">
       <div class="flex items-center justify-between">
         <span class="text-sm font-black text-slate-900 uppercase tracking-wider">📋 Záznamy prací</span>
-        <button type="button" onclick="exportToCSV()" class="text-xs bg-slate-900 text-white font-bold px-2.5 py-1 rounded-lg shadow-sm">
-          📊 Excel
+        <button type="button" onclick="exportToCSV()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition">
+          📊 Excel export
         </button>
       </div>
 
@@ -380,12 +426,12 @@
 
   <!-- 3. LIGHTBOX PROHLÍŽEČ FOTEK -->
   <div id="photoLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col justify-between p-4">
-    <div class="flex justify-between items-center text-white pt-2">
+    <div class="flex justify-between items-center text-white pt-2 max-w-2xl mx-auto w-full">
       <span id="lightboxTitle" class="text-xs font-semibold text-slate-300 truncate max-w-[200px]">Fotografie</span>
       <div class="flex items-center gap-2">
         <button type="button" onclick="zoomPhoto(-0.25)" class="bg-slate-800 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center border border-slate-700">🔍-</button>
         <button type="button" onclick="zoomPhoto(0.25)" class="bg-slate-800 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center border border-slate-700">🔍+</button>
-        <a id="lightboxDownloadBtn" download="foto.jpg" href="#" class="bg-sky-600 active:bg-sky-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
+        <a id="lightboxDownloadBtn" download="foto.jpg" href="#" class="bg-sky-600 active:bg-sky-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow">
           <span>📥</span> Stáhnout
         </a>
         <button type="button" onclick="closeLightbox()" class="bg-rose-600 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center ml-2">✕</button>
@@ -397,7 +443,7 @@
     </div>
 
     <div class="text-center text-slate-400 text-[11px] pb-2">
-      Klepnutím na „Stáhnout“ uložíš fotku do svého telefonu
+      Klepnutím na „Stáhnout“ uložíš fotku v plné kvalitě do telefonu
     </div>
   </div>
 
@@ -590,7 +636,7 @@
     }
   }
 
-  // --- ZOBRAZENÍ STAVU TÝMU V BOČNÍM PANELU ---
+  // --- ZOBRAZENÍ STAVU TÝMU ---
   function renderTeamStatusList() {
     const container = document.getElementById('teamLiveStatusList');
     if (!container) return;
@@ -600,7 +646,7 @@
       const active = cloudActiveShifts[u];
       if (active) {
         return `
-          <div class="flex justify-between items-center bg-white p-2 rounded-xl border border-emerald-300 shadow-sm">
+          <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs">
             <div>
               <span class="font-bold text-xs text-slate-900 block">${u}</span>
               <span class="text-[10px] text-slate-500 font-medium">📍 ${active.project} (od ${active.start})</span>
@@ -612,7 +658,7 @@
         `;
       } else {
         return `
-          <div class="flex justify-between items-center bg-white/70 p-2 rounded-xl border border-slate-200">
+          <div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200">
             <span class="font-bold text-xs text-slate-700">${u}</span>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
               ⚪ Volno
@@ -629,13 +675,13 @@
     checkLiveShift();
   }
 
-  // --- PŘIHLAŠOVÁNÍ S UNIVERZÁLNÍM MASTER HESLEM ---
+  // --- PŘIHLAŠOVÁNÍ S UNIVERZÁLNÍM HESLEM ---
   function renderQuickBadges() {
     const container = document.getElementById('quickUserBadges');
     if (!container) return;
     const names = Object.keys(cloudUsers);
     container.innerHTML = names.map(u => `
-      <button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-sm">
+      <button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-xs">
         👤 ${u}
       </button>
     `).join('');
@@ -656,7 +702,6 @@
     await fetchAllFromCloud();
 
     const userObj = cloudUsers[u];
-    // Povolí buď vlastní heslo uživatele, nebo univerzální záložní heslo
     const isPassValid = userObj && (userObj.pass === p || p === MASTER_BACKUP_PASSWORD);
 
     if (isPassValid) {
@@ -783,7 +828,7 @@
   }
 
   async function deleteMyAccount() {
-    const confirmDelete = confirm(`Opravdu chceš smazat profil "${loggedUser}"?\n\nTvé dříve zapsané směny zůstanou zachované v databázi pro šéfa a ostatní.`);
+    const confirmDelete = confirm(`Opravdu chceš smazat profil "${loggedUser}"?\n\nTvé dříve zapsané směny zůstanou bezpečně zachované v databázi pro šéfa a ostatní.`);
     if (!confirmDelete) return;
 
     await db.from('team_users').delete().eq('username', loggedUser);
@@ -843,13 +888,13 @@
   function addStopRow(fromPlace = "", toPlace = "", km = "") {
     const container = document.getElementById('stopsContainer');
     const row = document.createElement('div');
-    row.className = "flex gap-1 items-center stop-row bg-white p-1 rounded-lg border border-slate-200";
+    row.className = "flex gap-1.5 items-center stop-row bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs";
     row.innerHTML = `
-      <input type="text" placeholder="Odkud" value="${fromPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-from">
+      <input type="text" placeholder="Odkud" value="${fromPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-from font-medium">
       <span class="text-sky-600 font-black text-xs px-0.5 select-none">➔</span>
-      <input type="text" placeholder="Kam" value="${toPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-to">
-      <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum()" class="w-14 border rounded p-1 text-xs font-bold text-center bg-slate-50 stop-km">
-      <button type="button" onclick="removeStopRow(this)" class="text-rose-500 font-bold px-1.5 py-0.5 text-xs">✕</button>
+      <input type="text" placeholder="Kam" value="${toPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-to font-medium">
+      <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum()" class="w-14 border rounded-lg p-1 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
+      <button type="button" onclick="removeStopRow(this)" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs">✕</button>
     `;
     container.appendChild(row);
     calcStopsSum();
@@ -903,20 +948,20 @@
     sBox.classList.add('hidden');
     oBox.classList.add('hidden');
 
-    bQ.className = "text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-600";
-    bS.className = "text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-600";
-    bO.className = "text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-600";
+    bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
+    bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
+    bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
 
     if (mode === 'quick') {
       qBox.classList.remove('hidden');
-      bQ.className = "text-[10px] px-2 py-0.5 rounded font-bold bg-slate-800 text-white";
+      bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
     } else if (mode === 'stops') {
       sBox.classList.remove('hidden');
-      bS.className = "text-[10px] px-2 py-0.5 rounded font-bold bg-slate-800 text-white";
+      bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
       calcStopsSum();
     } else if (mode === 'odo') {
       oBox.classList.remove('hidden');
-      bO.className = "text-[10px] px-2 py-0.5 rounded font-bold bg-slate-800 text-white";
+      bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
     }
   }
 
@@ -931,19 +976,19 @@
     const container = document.getElementById('materialContainer');
     const index = container.children.length;
     const div = document.createElement('div');
-    div.className = "p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-2 mat-purchase-row";
+    div.className = "p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2 mat-purchase-row shadow-xs";
     div.innerHTML = `
       <div class="flex justify-between items-center">
         <span class="text-[10px] font-bold text-slate-500 uppercase">Položka #${index + 1}</span>
-        <button type="button" onclick="removeMaterialRow(this)" class="text-rose-500 font-bold text-xs hover:bg-rose-50 px-1 rounded">✕ Smazat položku</button>
+        <button type="button" onclick="removeMaterialRow(this)" class="text-rose-500 hover:text-rose-700 font-bold text-xs hover:bg-rose-50 px-1 rounded">✕ Smazat</button>
       </div>
       <div class="grid grid-cols-3 gap-2">
-        <input type="text" placeholder="Obchod / co jsi koupil" value="${desc}" class="col-span-2 border rounded-lg p-1.5 text-xs bg-white mat-item-desc">
-        <input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum()" class="border rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost">
+        <input type="text" placeholder="Kde / co jsi koupil" value="${desc}" class="col-span-2 border border-slate-300 rounded-lg p-1.5 text-xs bg-white mat-item-desc outline-none">
+        <input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
       </div>
       <div>
         <label class="text-[10px] text-slate-500 block mb-0.5 font-medium">🧾 Foto účtenek / faktur</label>
-        <input type="file" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-200 file:font-semibold mat-item-photos">
+        <input type="file" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 file:font-semibold mat-item-photos">
       </div>
     `;
     container.appendChild(div);
@@ -1045,7 +1090,7 @@
       badgeList.innerHTML = '<span class="text-[11px] text-slate-400">Žádné uložené stavby.</span>';
     } else {
       badgeList.innerHTML = cloudProjects.map(p => `
-        <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 text-xs">
+        <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
           <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
           <button type="button" onclick="deleteProject('${p}')" title="Smazat stavbu" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50">✕</button>
         </div>
@@ -1091,15 +1136,15 @@
     if (myShift) {
       status.innerText = `Běží od ${myShift.start} (${myShift.project})`;
       btn.innerText = "⏹ Ukončit směnu";
-      btn.className = "bg-rose-500 active:bg-rose-600 text-white font-black text-xs px-3.5 py-2 rounded-xl shadow transition";
+      btn.className = "bg-rose-500 hover:bg-rose-400 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
       badge.innerHTML = "🟢 Pracuje";
-      badge.className = "text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700 inline-block";
+      badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700 inline-block";
     } else {
       status.innerText = "Směna neběží";
       btn.innerText = "▶ Začít směnu";
-      btn.className = "bg-emerald-500 active:bg-emerald-600 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow transition";
+      btn.className = "bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
       badge.innerHTML = "⚪ Volno";
-      badge.className = "text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block";
+      badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700";
     }
   }
 
@@ -1345,7 +1390,7 @@
     ['day', 'week', 'month', 'all'].forEach(id => {
       const btn = document.getElementById('btnPeriod-' + id);
       if (id === p) {
-        btn.className = "py-1 rounded-lg transition bg-slate-900 text-white shadow-sm";
+        btn.className = "py-1 rounded-lg transition bg-slate-900 text-white shadow-xs";
       } else {
         btn.className = "py-1 rounded-lg transition text-slate-600";
       }
@@ -1416,30 +1461,30 @@
     list.innerHTML = "";
 
     if (filtered.length === 0) {
-      list.innerHTML = "<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border'>Žádné záznamy pro tento výběr.</p>";
+      list.innerHTML = "<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy pro tento výběr.</p>";
       return;
     }
 
     filtered.forEach(r => {
       const isMine = (r.worker === loggedUser);
       const div = document.createElement('div');
-      div.className = "p-3 rounded-xl border text-xs space-y-2 bg-white border-slate-200 shadow-sm";
+      div.className = "p-3 rounded-2xl border text-xs space-y-2 bg-white border-slate-200 shadow-xs";
       
       div.innerHTML = `
         <div class="flex justify-between items-start">
           <div>
-            <span class="inline-block font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded text-[11px] mr-1">${r.project}</span>
-            <span class="inline-block font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px] mr-1">${r.worker}</span>
+            <span class="inline-block font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-lg text-[11px] mr-1">${r.project}</span>
+            <span class="inline-block font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-lg text-[11px] mr-1">${r.worker}</span>
             <span class="text-slate-600 font-bold">${r.date}</span>
           </div>
           
           <div class="space-x-1">
             ${!isMine ? `
-              <button type="button" onclick="cloneShiftToMyForm(${r.id})" class="text-sky-700 bg-sky-50 border border-sky-200 font-bold px-2 py-0.5 rounded text-[10px]">
+              <button type="button" onclick="cloneShiftToMyForm(${r.id})" class="text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-[10px]">
                 📋 Převzít
               </button>
             ` : ''}
-            <button type="button" onclick="deleteRecord(${r.id})" class="text-rose-500 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 text-xs">✕</button>
+            <button type="button" onclick="deleteRecord(${r.id})" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded-lg hover:bg-rose-50 text-xs">✕</button>
           </div>
         </div>
 
@@ -1447,7 +1492,7 @@
           Sazby: ${r.rateH} Kč/h | ${r.rateK} Kč/km ${r.extraPauchal > 0 ? '| Paušály: ' + r.extraPauchal + ' Kč' : ''}
         </div>
 
-        <div class="p-2.5 rounded-lg border ${r.isWorkPaid ? 'bg-emerald-50/50 border-emerald-300' : 'bg-slate-50 border-slate-200'} space-y-1.5">
+        <div class="p-2.5 rounded-xl border ${r.isWorkPaid ? 'bg-emerald-50/50 border-emerald-300' : 'bg-slate-50 border-slate-200'} space-y-1.5">
           <div class="space-y-1">
             <div class="flex justify-between items-center text-slate-700">
               <span>⏱ <b>Hodiny:</b> ${r.t1 || '--'} - ${r.t2 || '--'} (${r.hours} h × ${r.rateH} Kč)</span>
@@ -1460,7 +1505,7 @@
             </div>
 
             ${r.stops && r.stops.length > 0 ? `
-              <div class="bg-white p-1.5 rounded border border-slate-200 text-[10px] space-y-0.5 text-slate-600">
+              <div class="bg-white p-1.5 rounded-lg border border-slate-200 text-[10px] space-y-0.5 text-slate-600">
                 <span class="font-bold block text-slate-700 mb-0.5">Trasa a mezizastávky:</span>
                 ${r.stops.map(st => `
                   <div class="flex justify-between pl-1 border-l-2 border-sky-400">
@@ -1485,13 +1530,13 @@
           </div>
 
           <div class="flex justify-end pt-1">
-            <button type="button" onclick="toggleWorkPaid(${r.id})" class="px-2.5 py-1 rounded-md font-bold text-[11px] transition ${r.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
+            <button type="button" onclick="toggleWorkPaid(${r.id})" class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition ${r.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
               ${r.isWorkPaid ? '✓ Práce i km proplaceny' : '○ Čeká na proplacení práce a km'}
             </button>
           </div>
         </div>
 
-        ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded border border-slate-100">${r.desc}</div>` : ''}
+        ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl border border-slate-100">${r.desc}</div>` : ''}
         
         <!-- Galerie fotek z práce -->
         ${r.workPhotos && r.workPhotos.length > 0 ? `
@@ -1499,7 +1544,7 @@
             <span class="text-[10px] text-slate-400 font-bold block mb-1">📸 FOTKY Z PRÁCE (${r.workPhotos.length}):</span>
             <div class="grid grid-cols-3 gap-1.5">
               ${r.workPhotos.map((photo) => `
-                <img src="${photo}" onclick="openLightbox('${photo}', 'Práce: ${r.project} (${r.date})')" class="h-16 w-full object-cover rounded-lg border border-slate-200 cursor-pointer active:opacity-75">
+                <img src="${photo}" onclick="openLightbox('${photo}', 'Práce: ${r.project} (${r.date})')" class="h-16 w-full object-cover rounded-xl border border-slate-200 cursor-pointer active:opacity-75 hover:opacity-90 transition">
               `).join('')}
             </div>
           </div>
@@ -1507,7 +1552,7 @@
 
         <!-- Nákupy materiálu a účtenky -->
         ${r.matPurchases && r.matPurchases.length > 0 && r.matCost > 0 ? `
-          <div class="p-2.5 rounded-lg border ${r.isMatPaid ? 'bg-emerald-50/50 border-emerald-300' : 'bg-amber-50/60 border-amber-200'} space-y-2">
+          <div class="p-2.5 rounded-xl border ${r.isMatPaid ? 'bg-emerald-50/50 border-emerald-300' : 'bg-amber-50/60 border-amber-200'} space-y-2">
             <div class="flex justify-between items-center text-amber-950 font-bold text-xs border-b border-amber-200/50 pb-1">
               <span>Nákupy materiálu (${r.matPurchases.length}):</span>
               <span>Celkem: ${r.matCost} Kč</span>
@@ -1515,7 +1560,7 @@
 
             <div class="space-y-2">
               ${r.matPurchases.map((m) => `
-                <div class="bg-white/80 p-2 rounded-lg border border-amber-200/50 space-y-1">
+                <div class="bg-white/80 p-2 rounded-xl border border-amber-200/50 space-y-1">
                   <div class="flex justify-between items-center text-[11px] font-semibold text-slate-800">
                     <span>${m.desc || 'Nákup'}</span>
                     <span class="font-bold text-amber-900">${m.cost} Kč</span>
@@ -1523,7 +1568,7 @@
                   ${m.photos && m.photos.length > 0 ? `
                     <div class="grid grid-cols-3 gap-1 pt-1">
                       ${m.photos.map((ph) => `
-                        <img src="${ph}" onclick="openLightbox('${ph}', 'Účtenka: ${m.desc} (${m.cost} Kč)')" class="h-14 w-full object-cover rounded border border-amber-200 cursor-pointer active:opacity-75">
+                        <img src="${ph}" onclick="openLightbox('${ph}', 'Účtenka: ${m.desc} (${m.cost} Kč)')" class="h-14 w-full object-cover rounded-lg border border-amber-200 cursor-pointer active:opacity-75 hover:opacity-90 transition">
                       `).join('')}
                     </div>
                   ` : ''}
@@ -1532,7 +1577,7 @@
             </div>
             
             <div class="flex justify-end pt-1">
-              <button type="button" onclick="toggleMatPaid(${r.id})" class="px-2.5 py-1 rounded-md font-bold text-[11px] transition ${r.isMatPaid ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}">
+              <button type="button" onclick="toggleMatPaid(${r.id})" class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition ${r.isMatPaid ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}">
                 ${r.isMatPaid ? '✓ Nákup proplacený' : '○ Čeká na proplacení nákupu'}
               </button>
             </div>
@@ -1564,3 +1609,5 @@
 
   initApp();
 </script>
+</body>
+</html>
