@@ -74,7 +74,8 @@
         <div id="quickUserBadges" class="flex flex-wrap gap-1.5"></div>
       </div>
 
-      <div class="space-y-3 pt-1">
+      <!-- Běžný přihlašovací formulář -->
+      <div id="loginFormContainer" class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
           <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Martin, Jiří (šéf)..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none font-semibold transition">
@@ -93,11 +94,35 @@
           Přihlásit se
         </button>
 
-        <p class="text-[11px] text-center text-slate-400 pt-1">
-          Nový kolega v týmu?
-          <button type="button" onclick="handleRegister()" class="text-sky-600 font-bold hover:underline ml-1">Zaregistrovat nový účet</button>
-        </p>
+        <div class="flex justify-between items-center pt-1 text-[11px]">
+          <button type="button" onclick="toggleAuthResetMode(true)" class="text-amber-700 font-bold hover:underline">🔑 Zapomněl jsi heslo?</button>
+          <button type="button" onclick="handleRegister()" class="text-sky-600 font-bold hover:underline">Zaregistrovat nový účet</button>
+        </div>
       </div>
+
+      <!-- Skrytý správcovský formulář pro reset hesla z úvodní stránky -->
+      <div id="authResetContainer" class="space-y-3 pt-1 hidden bg-amber-50/70 p-3 rounded-2xl border border-amber-200">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-amber-900">Záchranný reset hesla</span>
+          <button type="button" onclick="toggleAuthResetMode(false)" class="text-slate-400 hover:text-slate-700 font-bold text-xs">✕ Zpět</button>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-600 block mb-0.5">UŽIVATELSKÉ JMÉNO</label>
+          <select id="authResetUserSelect" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-600 block mb-0.5">NOVÉ HESLO PRO UŽIVATELE</label>
+          <input type="password" id="authResetNewPass" placeholder="Nové heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-amber-800 block mb-0.5">SPRÁVCOVSKÉ HESLO</label>
+          <input type="password" id="authResetMasterPass" placeholder="Masatjebuh19" class="w-full border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none">
+        </div>
+        <button type="button" onclick="executeAuthReset()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs shadow-xs transition">
+          Potvrdit a nastavit nové heslo
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -377,7 +402,6 @@
         </label>
       </div>
 
-      <!-- SPRÁVA ZAKÁZEK S MOŽNOSTÍ ÚPRAVY NÁZVU (✏️) -->
       <div class="border-t pt-3 space-y-2">
         <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Zakázky / stavby</span>
         <div class="flex gap-1.5">
@@ -602,9 +626,6 @@
       document.getElementById('editUsernameInput').value = loggedUser || '';
       document.getElementById('oldPassInput').value = '';
       document.getElementById('newPassInput').value = '';
-      document.getElementById('resetUserNewPass').value = '';
-      document.getElementById('adminMasterPassInput').value = '';
-      populateAdminResetUsers();
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('-translate-x-full'), 10);
     } else {
@@ -756,6 +777,45 @@
       resetImageTransform();
     }
   }, { passive: true });
+
+  // --- ZÁCHRANNÝ RESET HESLA NA ÚVODNÍ STRÁNCE ---
+  function toggleAuthResetMode(show) {
+    const formContainer = document.getElementById('loginFormContainer');
+    const resetContainer = document.getElementById('authResetContainer');
+    if (show) {
+      formContainer.classList.add('hidden');
+      resetContainer.classList.remove('hidden');
+      populateAuthResetUsers();
+    } else {
+      resetContainer.classList.add('hidden');
+      formContainer.classList.remove('hidden');
+    }
+  }
+
+  function populateAuthResetUsers() {
+    const select = document.getElementById('authResetUserSelect');
+    if (!select) return;
+    const users = Object.keys(cloudUsers);
+    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
+  }
+
+  async function executeAuthReset() {
+    const targetUser = document.getElementById('authResetUserSelect').value;
+    const newPass = document.getElementById('authResetNewPass').value.trim();
+    const masterPass = document.getElementById('authResetMasterPass').value.trim();
+
+    if (!masterPass) return alert("Zadej správcovské heslo.");
+    if (masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
+    if (!newPass) return alert("Zadej nové heslo.");
+
+    await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
+    if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
+
+    document.getElementById('authResetNewPass').value = '';
+    document.getElementById('authResetMasterPass').value = '';
+    alert(`Heslo pro uživatele "${targetUser}" bylo úspěšně resetováno! Nyní se můžeš přihlásit.`);
+    toggleAuthResetMode(false);
+  }
 
   function toggleAutoGps() {
     const check = document.getElementById('prefAutoGps').checked;
@@ -1214,25 +1274,15 @@
     const newName = prompt(`Zadej nový název pro stavbu "${oldName}":`, oldName);
     if (!newName || newName.trim() === "" || newName.trim() === oldName) return;
     const trimmed = newName.trim();
+    if (cloudProjects.includes(trimmed)) { alert("Stavba s tímto názvem již existuje."); return; }
 
-    if (cloudProjects.includes(trimmed)) {
-      alert("Stavba s tímto názvem již existuje.");
-      return;
-    }
-
-    // 1. Vložit novou stavbu do tabulky staveb
     await db.from('team_projects').insert([{ name: trimmed }]);
-    // 2. Aktualizovat všechny dřívější směny v cloudu, které měly starý název
     await db.from('team_shifts').update({ project: trimmed }).eq('project', oldName);
-    // 3. Smazat starou stavbu
     await db.from('team_projects').delete().eq('name', oldName);
 
-    // Aktualizace lokálního pole
     cloudProjects = cloudProjects.map(p => p === oldName ? trimmed : p);
-    populateProjects();
-    await fetchAllFromCloud();
-    renderAll();
-    alert(`Stavba byla úspěšně přejmenována na "${trimmed}" (změna se projevila i v historii).`);
+    populateProjects(); await fetchAllFromCloud(); renderAll();
+    alert(`Stavba přejmenována na "${trimmed}".`);
   }
 
   async function deleteProject(projectName) {
