@@ -9,11 +9,11 @@
   <meta name="apple-mobile-web-app-title" content="Píchačky">
   <title>Pracovní Deník & Píchačky</title>
 
-  <!-- PWA IKONA (SVG: Montážní helma + stopky) -->
+  <!-- PWA IKONA (Montážní helma + stopky) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 
-  <!-- DYNAMICKÝ PWA MANIFEST PRO CHROME / ANDROID INSTALACI -->
+  <!-- DYNAMICKÝ PWA MANIFEST -->
   <script>
     const manifestJson = {
       name: "Pracovní Deník & Píchačky",
@@ -41,6 +41,14 @@
   <!-- KNIHOVNY -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* Zámek posunu pozadí když je otevřené menu nebo galerie */
+    body.modal-open {
+      overflow: hidden !important;
+      touch-action: none !important;
+    }
+  </style>
 </head>
 
 <body class="bg-slate-900 min-h-screen text-slate-800 font-sans antialiased selection:bg-sky-500 selection:text-white">
@@ -52,13 +60,12 @@
     <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-200 space-y-4">
       <div class="text-center space-y-1">
         <div class="inline-flex p-3 bg-slate-900 text-amber-400 rounded-2xl mb-1 shadow-inner">
-          <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A8 8 0 0 1 20 12v3a2 2 0 0 1-2 2h-1v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2H6a2 2 0 0 1-2-2v-3a8 8 0 0 1 7-7.93V3a1 1 0 0 1 1-1zm0 4a6 6 0 0 0-6 6v3h12v-3a6 6 0 0 0-6-6z"/></svg>
+          <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A8 8 0 0 1 20 12v3a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2H6a2 2 0 0 1-2-2v-3a8 8 0 0 1 7-7.93V3a1 1 0 0 1 1-1zm0 4a6 6 0 0 0-6 6v3h12v-3a6 6 0 0 0-6-6z"/></svg>
         </div>
         <h1 class="text-2xl font-black text-slate-900 tracking-tight">Pracovní Deník</h1>
         <p class="text-xs text-slate-500">Vyber profil nebo zadej jméno a heslo</p>
       </div>
 
-      <!-- Rychlý výběr profilů -->
       <div class="space-y-1.5 pt-2">
         <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Rychlý výběr profilu:</span>
         <div id="quickUserBadges" class="flex flex-wrap gap-1.5"></div>
@@ -110,13 +117,18 @@
       </button>
     </div>
 
-    <!-- ŽIVÁ PÍCHAČKA -->
-    <div id="punchCard" class="bg-slate-800 text-white p-3.5 rounded-2xl shadow-md flex items-center justify-between border border-slate-700">
+    <!-- ŽIVÁ PÍCHAČKA (S MOŽNOSTÍ ZMĚNY BĚŽÍCÍ STAVBY) -->
+    <div id="punchCard" class="bg-slate-800 text-white p-3.5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border border-slate-700">
       <div>
         <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Rychlá píchačka</span>
-        <span id="shiftTimerStatus" class="text-xs sm:text-sm font-semibold text-slate-200">Směna neběží</span>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <span id="shiftTimerStatus" class="text-xs sm:text-sm font-semibold text-slate-200">Směna neběží</span>
+          <button type="button" id="btnChangeActiveProject" onclick="changeActiveShiftProject()" class="hidden text-[10px] bg-slate-700 hover:bg-slate-600 text-sky-300 font-bold px-2 py-0.5 rounded-lg border border-slate-600 transition">
+            ✏️ Změnit stavbu
+          </button>
+        </div>
       </div>
-      <button type="button" id="punchBtn" onclick="toggleLiveShift()" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition">
+      <button type="button" id="punchBtn" onclick="toggleLiveShift()" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition self-end sm:self-auto">
         ▶ Začít směnu
       </button>
     </div>
@@ -136,7 +148,7 @@
     <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3.5">
       <div>
         <label class="text-[11px] font-bold text-slate-500 block mb-1">ZAKÁZKA / STAVBA</label>
-        <select id="workProject" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
+        <select id="workProject" onchange="updateLiveCalculations()" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -239,7 +251,7 @@
         <div id="materialContainer" class="space-y-2.5"></div>
       </div>
 
-      <!-- ŽIVÝ NÁHLED CENY A VÝDĚLKU PŘED ULOŽENÍM -->
+      <!-- ŽIVÝ NÁHLED CENY PŘED ULOŽENÍM -->
       <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700/80 space-y-2">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
           <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">⚡ Živý náhled směny:</span>
@@ -303,7 +315,7 @@
           </div>
         </div>
 
-        <!-- ZABEZPEČENÝ SPRÁVCOVSKÝ RESET HESEL KOLEGŮ -->
+        <!-- ZABEZPEČENÝ SPRÁVCOVSKÝ RESET HESLA -->
         <div class="space-y-1.5 pt-2 border-t border-slate-200">
           <div class="flex justify-between items-center">
             <span class="text-[10px] font-bold text-slate-700 block uppercase">🔑 Reset hesla kolegy</span>
@@ -451,26 +463,45 @@
 
   </div>
 
-  <!-- 3. LIGHTBOX PROHLÍŽEČ FOTEK -->
-  <div id="photoLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col justify-between p-4">
-    <div class="flex justify-between items-center text-white pt-2 max-w-2xl mx-auto w-full">
-      <span id="lightboxTitle" class="text-xs font-semibold text-slate-300 truncate max-w-[200px]">Fotografie</span>
-      <div class="flex items-center gap-2">
+  <!-- 3. VYLEPŠENÝ LIGHTBOX: LISTOVÁNÍ, ŠIPKY, SPODNÍ LIŠTA & SWIPE -->
+  <div id="photoLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col justify-between p-3 sm:p-4 select-none touch-none">
+    
+    <!-- Horní lišta lightboxu -->
+    <div class="flex justify-between items-center text-white max-w-3xl mx-auto w-full pt-1">
+      <div>
+        <span id="lightboxTitle" class="text-xs font-bold text-slate-200 block truncate max-w-[180px] sm:max-w-xs">Fotografie</span>
+        <span id="lightboxCounter" class="text-[10px] text-slate-400">1 z 1</span>
+      </div>
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <button type="button" onclick="zoomPhoto(-0.25)" class="bg-slate-800 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center border border-slate-700">🔍-</button>
         <button type="button" onclick="zoomPhoto(0.25)" class="bg-slate-800 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center border border-slate-700">🔍+</button>
         <a id="lightboxDownloadBtn" download="foto.jpg" href="#" class="bg-sky-600 active:bg-sky-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow">
           <span>📥</span> Stáhnout
         </a>
-        <button type="button" onclick="closeLightbox()" class="bg-rose-600 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center ml-2">✕</button>
+        <button type="button" onclick="closeLightbox()" class="bg-rose-600 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center ml-1">✕</button>
       </div>
     </div>
 
-    <div class="flex-1 flex items-center justify-center overflow-auto my-3">
-      <img id="lightboxImage" src="" class="max-h-[75vh] max-w-full object-contain rounded-xl transition-transform duration-200" style="transform: scale(1);">
+    <!-- Středová oblast s fotkou a postranními šipkami pro listování -->
+    <div class="relative flex-1 flex items-center justify-center overflow-hidden my-2" id="lightboxTouchArea">
+      
+      <!-- Levá šipka -->
+      <button type="button" id="lightboxPrevBtn" onclick="navigateGallery(-1)" class="absolute left-2 z-10 w-11 h-16 sm:w-12 sm:h-20 bg-black/40 hover:bg-black/70 text-white text-3xl font-bold flex items-center justify-center rounded-2xl backdrop-blur-xs transition">
+        ‹
+      </button>
+
+      <!-- Samotný obrázek -->
+      <img id="lightboxImage" src="" class="max-h-[65vh] sm:max-h-[70vh] max-w-full object-contain rounded-xl transition-transform duration-150" style="transform: scale(1);">
+
+      <!-- Pravá šipka -->
+      <button type="button" id="lightboxNextBtn" onclick="navigateGallery(1)" class="absolute right-2 z-10 w-11 h-16 sm:w-12 sm:h-20 bg-black/40 hover:bg-black/70 text-white text-3xl font-bold flex items-center justify-center rounded-2xl backdrop-blur-xs transition">
+        ›
+      </button>
     </div>
 
-    <div class="text-center text-slate-400 text-[11px] pb-2">
-      Klepnutím na „Stáhnout“ uložíš fotku v plné kvalitě do telefonu
+    <!-- Spodní lišta s miniaturami fotek -->
+    <div class="max-w-3xl mx-auto w-full flex flex-col items-center gap-1 pb-1">
+      <div id="lightboxThumbnails" class="flex gap-2 overflow-x-auto p-1.5 max-w-full no-scrollbar"></div>
     </div>
   </div>
 
@@ -493,15 +524,33 @@
   let cloudProjects = [];
   let cloudActiveShifts = {};
 
+  // Galerie v lightboxu
+  let currentGalleryImages = [];
+  let currentGalleryIndex = 0;
   let currentZoom = 1;
 
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
+
+  // --- ZÁMEK SCROLLU NA POZADÍ ---
+  function setScrollLock(lock) {
+    if (lock) {
+      document.body.classList.add('modal-open');
+    } else {
+      const isAnyOpen = !document.getElementById('settingsMenu').classList.contains('-translate-x-full') ||
+                        !document.getElementById('statsMenu').classList.contains('translate-x-full') ||
+                        !document.getElementById('photoLightbox').classList.contains('hidden');
+      if (!isAnyOpen) {
+        document.body.classList.remove('modal-open');
+      }
+    }
+  }
 
   // --- BOČNÍ PANELY ---
   function toggleSettingsMenu(open) {
     const menu = document.getElementById('settingsMenu');
     const backdrop = document.getElementById('settingsBackdrop');
     if (open) {
+      setScrollLock(true);
       document.getElementById('editUsernameInput').value = loggedUser || '';
       document.getElementById('oldPassInput').value = '';
       document.getElementById('newPassInput').value = '';
@@ -512,7 +561,10 @@
       setTimeout(() => menu.classList.remove('-translate-x-full'), 10);
     } else {
       menu.classList.add('-translate-x-full');
-      setTimeout(() => backdrop.classList.add('hidden'), 300);
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+        setScrollLock(false);
+      }, 300);
     }
   }
 
@@ -520,39 +572,103 @@
     const menu = document.getElementById('statsMenu');
     const backdrop = document.getElementById('statsBackdrop');
     if (open) {
+      setScrollLock(true);
       renderTeamStatusList();
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('translate-x-full'), 10);
     } else {
       menu.classList.add('translate-x-full');
-      setTimeout(() => backdrop.classList.add('hidden'), 300);
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+        setScrollLock(false);
+      }, 300);
     }
   }
 
-  // --- LIGHTBOX PROHLÍŽEČ FOTEK ---
-  function openLightbox(imgSrc, title = "Fotografie") {
-    const box = document.getElementById('photoLightbox');
+  // --- INTERAKTIVNÍ GALERIE V LIGHTBOXU (LISTOVÁNÍ, MINIATURY, SWIPE) ---
+  function openGalleryLightbox(imagesArray, startIndex = 0, title = "Fotografie") {
+    if (!imagesArray || imagesArray.length === 0) return;
+    currentGalleryImages = imagesArray;
+    currentGalleryIndex = startIndex;
+    currentZoom = 1;
+
+    setScrollLock(true);
+    document.getElementById('lightboxTitle').innerText = title;
+    document.getElementById('photoLightbox').classList.remove('hidden');
+    
+    renderGalleryView();
+  }
+
+  function renderGalleryView() {
+    const total = currentGalleryImages.length;
+    const currentSrc = currentGalleryImages[currentGalleryIndex];
+
     const img = document.getElementById('lightboxImage');
     const dlBtn = document.getElementById('lightboxDownloadBtn');
-    const titleEl = document.getElementById('lightboxTitle');
+    const counter = document.getElementById('lightboxCounter');
+    const prevBtn = document.getElementById('lightboxPrevBtn');
+    const nextBtn = document.getElementById('lightboxNextBtn');
+    const thumbsContainer = document.getElementById('lightboxThumbnails');
 
-    img.src = imgSrc;
+    img.src = currentSrc;
     currentZoom = 1;
     img.style.transform = `scale(${currentZoom})`;
-    dlBtn.href = imgSrc;
-    titleEl.innerText = title;
+    dlBtn.href = currentSrc;
+    counter.innerText = `Fotka ${currentGalleryIndex + 1} z ${total}`;
 
-    box.classList.remove('hidden');
+    // Zobrazení / skrytí šipek pokud je jen jedna fotka
+    if (total <= 1) {
+      prevBtn.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+      thumbsContainer.classList.add('hidden');
+    } else {
+      prevBtn.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+      thumbsContainer.classList.remove('hidden');
+    }
+
+    // Miniatury ve spodní liště
+    thumbsContainer.innerHTML = currentGalleryImages.map((src, idx) => `
+      <img src="${src}" onclick="jumpToGalleryPhoto(${idx})" class="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border-2 cursor-pointer transition flex-shrink-0 ${idx === currentGalleryIndex ? 'border-sky-400 scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'}">
+    `).join('');
+  }
+
+  function navigateGallery(direction) {
+    const total = currentGalleryImages.length;
+    if (total <= 1) return;
+    currentGalleryIndex = (currentGalleryIndex + direction + total) % total;
+    renderGalleryView();
+  }
+
+  function jumpToGalleryPhoto(index) {
+    currentGalleryIndex = index;
+    renderGalleryView();
   }
 
   function closeLightbox() {
     document.getElementById('photoLightbox').classList.add('hidden');
+    setScrollLock(false);
   }
 
   function zoomPhoto(step) {
-    currentZoom = Math.max(0.5, Math.min(3.5, currentZoom + step));
+    currentZoom = Math.max(0.6, Math.min(3.5, currentZoom + step));
     document.getElementById('lightboxImage').style.transform = `scale(${currentZoom})`;
   }
+
+  // Podpora přejetí prstem (Swipe) na mobilu
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const touchArea = document.getElementById('lightboxTouchArea');
+
+  touchArea.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  touchArea.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (touchStartX - touchEndX > 45) navigateGallery(1);   // Swipe doleva -> další
+    if (touchEndX - touchStartX > 45) navigateGallery(-1);  // Swipe doprava -> předchozí
+  }, { passive: true });
 
   // --- PŘEPÍNAČ DIET A NÁŘADÍ ---
   function toggleExtrasVisibility() {
@@ -674,7 +790,6 @@
     const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD;
     const rateT = Number(document.getElementById('rateTools').value) || uData.rateT;
 
-    // 1. Hodiny a mzda
     const t1 = document.getElementById('timeStart').value;
     const t2 = document.getElementById('timeEnd').value;
     let hours = 0;
@@ -685,7 +800,6 @@
     }
     const wageWork = Math.round(hours * rateH);
 
-    // 2. Kilometry a cestovné
     let kmTotal = 0;
     if (activeKmMode === 'quick') {
       kmTotal = Number(document.getElementById('kmDirect').value) || 0;
@@ -698,16 +812,13 @@
     }
     const wageTravel = Math.round(kmTotal * rateK);
 
-    // 3. Paušály
     const hasDiet = document.getElementById('checkDiet').checked;
     const hasTools = document.getElementById('checkTools').checked;
     const extras = (hasDiet ? rateD : 0) + (hasTools ? rateT : 0);
 
-    // 4. Materiál
     let matCost = 0;
     document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
 
-    // Zobrazení do panelu
     document.getElementById('liveHours').innerText = hours.toFixed(1) + 'h';
     document.getElementById('liveWorkWage').innerText = wageWork.toLocaleString() + ' Kč';
     document.getElementById('liveKm').innerText = kmTotal + 'km';
@@ -898,7 +1009,6 @@
     select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
   }
 
-  // --- ZABEZPEČENÝ SPRÁVCOVSKÝ RESET HESLA ---
   async function adminResetPasswordSecure() {
     const targetUser = document.getElementById('resetUserTarget').value;
     const newPass = document.getElementById('resetUserNewPass').value.trim();
@@ -1220,12 +1330,13 @@
       users.filter(u => u !== loggedUser).map(u => `<option value="${u}">Jen ${u}</option>`).join('');
   }
 
-  // --- ŽIVÁ PÍCHAČKA ---
+  // --- ŽIVÁ PÍCHAČKA & ZMĚNA BĚŽÍCÍ ZAKÁZKY ---
   function checkLiveShift() {
     const myShift = cloudActiveShifts[loggedUser];
     const btn = document.getElementById('punchBtn');
     const status = document.getElementById('shiftTimerStatus');
     const badge = document.getElementById('badgeCurrentWorkerStatus');
+    const changeBtn = document.getElementById('btnChangeActiveProject');
 
     if (myShift) {
       status.innerText = `Běží od ${myShift.start} (${myShift.project})`;
@@ -1233,12 +1344,14 @@
       btn.className = "bg-rose-500 hover:bg-rose-400 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
       badge.innerHTML = "🟢 Pracuje";
       badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700 inline-block";
+      changeBtn.classList.remove('hidden');
     } else {
       status.innerText = "Směna neběží";
       btn.innerText = "▶ Začít směnu";
       btn.className = "bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
       badge.innerHTML = "⚪ Volno";
       badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700";
+      changeBtn.classList.add('hidden');
     }
   }
 
@@ -1270,6 +1383,30 @@
     checkLiveShift();
     renderTeamStatusList();
     updateLiveCalculations();
+  }
+
+  async function changeActiveShiftProject() {
+    const myShift = cloudActiveShifts[loggedUser];
+    if (!myShift) return;
+
+    const currentProj = myShift.project;
+    const newProj = prompt(`Zadej nový název stavby pro běžící směnu:\n(Nyní nastaveno: "${currentProj}")`, currentProj);
+    
+    if (newProj && newProj.trim() !== "" && newProj.trim() !== currentProj) {
+      const trimmed = newProj.trim();
+      if (!cloudProjects.includes(trimmed)) {
+        await db.from('team_projects').insert([{ name: trimmed }]);
+        cloudProjects.push(trimmed);
+        populateProjects();
+      }
+
+      await db.from('active_shifts').update({ project: trimmed }).eq('worker', loggedUser);
+      cloudActiveShifts[loggedUser].project = trimmed;
+      document.getElementById('workProject').value = trimmed;
+      checkLiveShift();
+      renderTeamStatusList();
+      alert(`Zakázka běžící směny byla změněna na "${trimmed}".`);
+    }
   }
 
   function addKmQuick(val) {
@@ -1637,19 +1774,19 @@
 
         ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl border border-slate-100">${r.desc}</div>` : ''}
         
-        <!-- Galerie fotek z práce -->
+        <!-- Galerie fotek z práce (listovací lightbox se sérií) -->
         ${r.workPhotos && r.workPhotos.length > 0 ? `
           <div>
             <span class="text-[10px] text-slate-400 font-bold block mb-1">📸 FOTKY Z PRÁCE (${r.workPhotos.length}):</span>
             <div class="grid grid-cols-3 gap-1.5">
-              ${r.workPhotos.map((photo) => `
-                <img src="${photo}" onclick="openLightbox('${photo}', 'Práce: ${r.project} (${r.date})')" class="h-16 w-full object-cover rounded-xl border border-slate-200 cursor-pointer active:opacity-75 hover:opacity-90 transition">
+              ${r.workPhotos.map((photo, pIdx) => `
+                <img src="${photo}" onclick='openGalleryLightbox(${JSON.stringify(r.workPhotos)}, ${pIdx}, "Práce: ${r.project}")' class="h-16 w-full object-cover rounded-xl border border-slate-200 cursor-pointer active:opacity-75 hover:opacity-90 transition">
               `).join('')}
             </div>
           </div>
         ` : ''}
 
-        <!-- Nákupy materiálu a účtenky -->
+        <!-- Nákupy materiálu a účtenky (listovací galerie účtenek) -->
         ${r.matPurchases && r.matPurchases.length > 0 && r.matCost > 0 ? `
           <div class="p-2.5 rounded-xl border ${r.isMatPaid ? 'bg-emerald-50/50 border-emerald-300' : 'bg-amber-50/60 border-amber-200'} space-y-2">
             <div class="flex justify-between items-center text-amber-950 font-bold text-xs border-b border-amber-200/50 pb-1">
@@ -1666,8 +1803,8 @@
                   </div>
                   ${m.photos && m.photos.length > 0 ? `
                     <div class="grid grid-cols-3 gap-1 pt-1">
-                      ${m.photos.map((ph) => `
-                        <img src="${ph}" onclick="openLightbox('${ph}', 'Účtenka: ${m.desc} (${m.cost} Kč)')" class="h-14 w-full object-cover rounded-lg border border-amber-200 cursor-pointer active:opacity-75 hover:opacity-90 transition">
+                      ${m.photos.map((ph, phIdx) => `
+                        <img src="${ph}" onclick='openGalleryLightbox(${JSON.stringify(m.photos)}, ${phIdx}, "Účtenka: ${m.desc}")' class="h-14 w-full object-cover rounded-lg border border-amber-200 cursor-pointer active:opacity-75 hover:opacity-90 transition">
                       `).join('')}
                     </div>
                   ` : ''}
