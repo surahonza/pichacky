@@ -20,7 +20,7 @@
       <div class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
-          <input type="text" id="loginUsername" placeholder="Např. Jan, Petr, Tomáš..." class="w-full border rounded-xl p-2.5 text-sm bg-slate-50 font-semibold">
+          <input type="text" id="loginUsername" placeholder="Jan, Matěj, Martin, Jiří..." class="w-full border rounded-xl p-2.5 text-sm bg-slate-50 font-semibold">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">HESLO NEBO PIN</label>
@@ -44,16 +44,16 @@
     </div>
   </div>
 
-  <!-- 2. HLAVNÍ APLIKACE (ZOBRAZÍ SE PO PŘIHLÁŠENÍ) -->
+  <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden">
 
-    <!-- HORNÍ LIŠTA: JMÉNO + STATUS + HAMBURGER MENU (VPRAVO NAHOŘE) -->
+    <!-- HORNÍ LIŠTA -->
     <div class="bg-slate-900 text-white p-3.5 rounded-2xl shadow mb-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <div>
           <span class="text-[10px] text-slate-400 block font-semibold uppercase">Pracovník</span>
           <div class="flex items-center gap-1.5">
-            <span id="labelCurrentWorker" class="font-bold text-base text-emerald-400">Jan</span>
+            <span id="labelCurrentWorker" class="font-bold text-base text-emerald-400">Jan (já)</span>
             <span id="badgeCurrentWorkerStatus" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">⚪ Volno</span>
           </div>
         </div>
@@ -67,14 +67,46 @@
 
     <!-- BOČNÍ MENU (VYSOUVACÍ ZPRAVA) -->
     <div id="sideMenuBackdrop" onclick="toggleSideMenu(false)" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity"></div>
-    <div id="sideMenu" class="fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-2xl p-4 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
+    <div id="sideMenu" class="fixed top-0 right-0 h-full w-80 bg-white z-50 shadow-2xl p-4 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
       <div class="space-y-4">
         <div class="flex justify-between items-center border-b pb-3">
-          <span class="font-black text-slate-900 text-base">⚙️ Nastavení a menu</span>
+          <span class="font-black text-slate-900 text-base">⚙️ Nastavení a Profil</span>
           <button type="button" onclick="toggleSideMenu(false)" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
 
-        <!-- 1. Nastavení sazeb -->
+        <!-- 1. Můj účet: Změna jména, hesla a smazání -->
+        <div class="space-y-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <span class="text-[11px] font-bold text-slate-700 uppercase block tracking-wider">👤 Můj účet & Bezpečnost</span>
+          
+          <!-- Změna jména -->
+          <div class="space-y-1">
+            <label class="text-[10px] text-slate-500 font-medium">Změnit uživatelské jméno</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="editUsernameInput" placeholder="Nové jméno" class="flex-1 border rounded-lg p-1.5 text-xs bg-white font-semibold">
+              <button type="button" onclick="changeUsername()" class="bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs font-bold">Uložit</button>
+            </div>
+          </div>
+
+          <!-- Změna hesla -->
+          <div class="space-y-1 pt-1 border-t border-slate-200">
+            <label class="text-[10px] text-slate-500 font-medium">Změnit heslo / PIN</label>
+            <input type="password" id="oldPassInput" placeholder="Aktuální heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white mb-1">
+            <div class="flex gap-1.5">
+              <input type="password" id="newPassInput" placeholder="Nové heslo" class="flex-1 border rounded-lg p-1.5 text-xs bg-white">
+              <button type="button" onclick="changePassword()" class="bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs font-bold">Změnit</button>
+            </div>
+          </div>
+
+          <!-- Smazání účtu -->
+          <div class="pt-2 border-t border-slate-200">
+            <button type="button" onclick="deleteMyAccount()" class="w-full text-left text-xs text-rose-600 hover:text-rose-700 font-bold py-1 flex items-center justify-between">
+              <span>🗑️ Smazat můj uživatelský účet</span>
+              <span class="text-[10px] text-slate-400">nevratné</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Nastavení sazeb -->
         <div class="space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Moje sazby (Kč)</span>
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -97,7 +129,7 @@
           </div>
         </div>
 
-        <!-- 2. Volba zobrazení (Schování diet a nářadí) -->
+        <!-- 3. Volba zobrazení (Schování diet a nářadí) -->
         <div class="border-t pt-3 space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Vzhled formuláře</span>
           <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -106,7 +138,7 @@
           </label>
         </div>
 
-        <!-- 3. Správa staveb -->
+        <!-- 4. Správa staveb -->
         <div class="border-t pt-3 space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Zakázky / stavby</span>
           <div class="flex gap-1">
@@ -117,9 +149,9 @@
         </div>
       </div>
 
-      <!-- Spodní část menu: Odhlášení -->
+      <!-- Odhlášení -->
       <div class="border-t pt-4">
-        <button type="button" onclick="handleLogout()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-2.5 rounded-xl text-xs border border-rose-200 transition">
+        <button type="button" onclick="handleLogout()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs border border-slate-300 transition">
           Odhlásit se z účtu
         </button>
       </div>
@@ -215,7 +247,6 @@
           </div>
         </div>
 
-        <!-- 1. Jen km -->
         <div id="quickKmBox" class="space-y-1.5">
           <input type="number" id="kmDirect" placeholder="Ujeto celkem km (např. 45)" class="w-full border rounded-lg p-2 bg-white text-sm">
           <div class="flex gap-1.5 text-[10px]">
@@ -226,7 +257,6 @@
           </div>
         </div>
 
-        <!-- 2. Zastávky -->
         <div id="stopsKmBox" class="space-y-2 hidden">
           <div id="stopsContainer" class="space-y-1.5"></div>
           <div class="flex justify-between items-center pt-1 border-t border-slate-200">
@@ -237,14 +267,13 @@
           </div>
         </div>
 
-        <!-- 3. Budíky -->
         <div id="odoKmBox" class="grid grid-cols-2 gap-2 hidden">
           <input type="number" id="kmStart" placeholder="Budík před jízdou" class="border rounded-lg p-2 bg-white text-sm">
           <input type="number" id="kmEnd" placeholder="Budík po práci" class="border rounded-lg p-2 bg-white text-sm">
         </div>
       </div>
 
-      <!-- Paušály (Lze skrýt v menu) -->
+      <!-- Paušály -->
       <div id="extrasBox" class="flex gap-4 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
         <label class="flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" id="checkDiet" class="rounded">
@@ -256,7 +285,7 @@
         </label>
       </div>
 
-      <!-- Popis a foto práce -->
+      <!-- Popis a foto -->
       <div class="space-y-2">
         <label class="text-[11px] font-bold text-slate-500 block">POPIS PRÁCE & FOTO Z MÍSTA</label>
         <textarea id="workDesc" rows="2" placeholder="Co jsi dnes dělal..." class="w-full border rounded-xl p-2 text-sm bg-slate-50"></textarea>
@@ -320,11 +349,14 @@
 
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
 
-  // --- BOČNÍ HAMBURGER MENU ---
+  // --- BOČNÍ MENU ---
   function toggleSideMenu(open) {
     const menu = document.getElementById('sideMenu');
     const backdrop = document.getElementById('sideMenuBackdrop');
     if (open) {
+      document.getElementById('editUsernameInput').value = loggedUser || '';
+      document.getElementById('oldPassInput').value = '';
+      document.getElementById('newPassInput').value = '';
       backdrop.classList.remove('hidden');
       setTimeout(() => {
         menu.classList.remove('translate-x-full');
@@ -337,7 +369,88 @@
     }
   }
 
-  // Přepínač zobrazení diet a nářadí
+  // --- ZMĚNA JMÉNA, HESLA A SMAZÁNÍ ÚČTU ---
+  function changeUsername() {
+    const newName = document.getElementById('editUsernameInput').value.trim();
+    if (!newName) return alert("Zadej nové jméno.");
+    if (newName === loggedUser) return alert("Zadal jsi stejné jméno.");
+
+    const users = getUsers();
+    if (users[newName]) return alert("Uživatel s tímto jménem už existuje.");
+
+    users[newName] = users[loggedUser];
+    delete users[loggedUser];
+    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
+
+    if (localStorage.getItem('persistent_user')) {
+      localStorage.setItem('persistent_user', newName);
+    }
+    if (sessionStorage.getItem('session_user')) {
+      sessionStorage.setItem('session_user', newName);
+    }
+
+    const active = getActiveShifts();
+    if (active[loggedUser]) {
+      active[newName] = active[loggedUser];
+      delete active[loggedUser];
+      localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(active));
+    }
+
+    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
+    shifts.forEach(s => {
+      if (s.worker === loggedUser) s.worker = newName;
+    });
+    localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
+
+    const oldName = loggedUser;
+    loggedUser = newName;
+
+    alert(`Jméno změněno z ${oldName} na ${newName}!`);
+    initApp();
+  }
+
+  function changePassword() {
+    const oldP = document.getElementById('oldPassInput').value.trim();
+    const newP = document.getElementById('newPassInput').value.trim();
+    if (!oldP || !newP) return alert("Vyplň staré i nové heslo.");
+
+    const users = getUsers();
+    if (!users[loggedUser] || users[loggedUser].pass !== oldP) {
+      return alert("Původní heslo není správné.");
+    }
+
+    users[loggedUser].pass = newP;
+    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
+
+    document.getElementById('oldPassInput').value = '';
+    document.getElementById('newPassInput').value = '';
+    alert("Heslo bylo úspěšně změněno!");
+  }
+
+  function deleteMyAccount() {
+    const confirmDelete = confirm(`Opravdu chceš smazat svůj uživatelský profil "${loggedUser}"?\n\nTvé dříve zapsané směny, kilometry i účtenky zůstanou zachované pro šéfa a ostatní kolegy.`);
+    if (!confirmDelete) return;
+
+    const users = getUsers();
+    delete users[loggedUser];
+    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
+
+    const active = getActiveShifts();
+    delete active[loggedUser];
+    localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(active));
+
+    localStorage.removeItem('persistent_user');
+    sessionStorage.removeItem('session_user');
+    loggedUser = null;
+
+    toggleSideMenu(false);
+    alert("Tvůj profil byl smazán. Historie tvé práce zůstala zachována.");
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+    renderQuickBadges();
+  }
+
+  // --- ZOBRAZENÍ EXTRA POLÍ ---
   function toggleExtrasVisibility() {
     const check = document.getElementById('prefShowExtras').checked;
     localStorage.setItem('pref_show_extras', check ? '1' : '0');
@@ -357,13 +470,13 @@
     }
   }
 
-  // --- SPRÁVA ÚČTŮ ---
+  // --- SPRÁVA ÚČTŮ (PŘEDNASTAVENÝ TÝM) ---
   function getUsers() {
-    return JSON.parse(localStorage.getItem('team_users_clean_v2') || JSON.stringify({
-      "Jan": { pass: "1234", rateH: 300, rateK: 7, rateD: 150, rateT: 100 },
-      "Petr": { pass: "1234", rateH: 280, rateK: 7, rateD: 150, rateT: 100 },
-      "Tomáš": { pass: "1234", rateH: 320, rateK: 7, rateD: 150, rateT: 100 },
-      "Šéf": { pass: "1234", rateH: 400, rateK: 8, rateD: 200, rateT: 150 }
+    return JSON.parse(localStorage.getItem('team_users_clean_v3') || JSON.stringify({
+      "Jan (já)": { pass: "1234", rateH: 300, rateK: 7, rateD: 150, rateT: 100 },
+      "Matěj": { pass: "1234", rateH: 300, rateK: 7, rateD: 150, rateT: 100 },
+      "Martin": { pass: "1234", rateH: 280, rateK: 7, rateD: 150, rateT: 100 },
+      "Jiří (šéf)": { pass: "1234", rateH: 400, rateK: 8, rateD: 200, rateT: 150 }
     }));
   }
 
@@ -415,7 +528,7 @@
     if (users[u]) return alert("Toto jméno už existuje. Zvol jiné jméno.");
 
     users[u] = { pass: p, rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    localStorage.setItem('team_users_clean_v2', JSON.stringify(users));
+    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
 
     loggedUser = u;
     if (remember) {
@@ -440,6 +553,7 @@
   function saveUserRates() {
     if (!loggedUser) return;
     const users = getUsers();
+    if (!users[loggedUser]) return;
     users[loggedUser] = {
       ...users[loggedUser],
       rateH: Number(document.getElementById('rateHour').value) || 0,
@@ -447,7 +561,7 @@
       rateD: Number(document.getElementById('rateDiet').value) || 0,
       rateT: Number(document.getElementById('rateTools').value) || 0
     };
-    localStorage.setItem('team_users_clean_v2', JSON.stringify(users));
+    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
   }
 
   function loadUserRates() {
@@ -578,7 +692,7 @@
 
   // --- KLONOVÁNÍ SMĚNY PRO KOLEGU ---
   function cloneShiftToMyForm(id) {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
     const item = shifts.find(s => s.id === id);
     if (!item) return;
 
@@ -612,7 +726,7 @@
 
   // --- PÍCHAČKA (LIVE SHIFT) ---
   function getActiveShifts() {
-    return JSON.parse(localStorage.getItem('team_active_shifts_clean_v2') || '{}');
+    return JSON.parse(localStorage.getItem('team_active_shifts_clean_v3') || '{}');
   }
 
   function checkLiveShift() {
@@ -650,14 +764,14 @@
         project: document.getElementById('workProject').value,
         date: document.getElementById('workDate').value
       };
-      localStorage.setItem('team_active_shifts_clean_v2', JSON.stringify(activeShifts));
+      localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(activeShifts));
       document.getElementById('timeStart').value = timeStr;
     } else {
       document.getElementById('timeStart').value = myShift.start;
       document.getElementById('timeEnd').value = timeStr;
       document.getElementById('workProject').value = myShift.project;
       delete activeShifts[loggedUser];
-      localStorage.setItem('team_active_shifts_clean_v2', JSON.stringify(activeShifts));
+      localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(activeShifts));
       alert(`Směna ukončena v ${timeStr}. Zkontroluj a ulož.`);
     }
     checkLiveShift();
@@ -700,11 +814,11 @@
 
   // --- PROJEKTY ---
   function getProjects() {
-    return JSON.parse(localStorage.getItem('team_projects_clean_v2') || '["Bytovka Plzeň", "RD Stříbro - elektro", "Dílna - servis"]');
+    return JSON.parse(localStorage.getItem('team_projects_clean_v3') || '["Bytovka Plzeň", "RD Stříbro - elektro", "Dílna - servis"]');
   }
 
   function saveProjects(projs) {
-    localStorage.setItem('team_projects_clean_v2', JSON.stringify(projs));
+    localStorage.setItem('team_projects_clean_v3', JSON.stringify(projs));
     populateProjects();
   }
 
@@ -863,17 +977,17 @@
       isMatPaid: false
     };
 
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
     shifts.push(record);
 
     try {
-      localStorage.setItem('team_shifts_clean_v2', JSON.stringify(shifts));
+      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
     } catch (err) {
       alert("Úložiště je plné! Smaž starší záznamy.");
       return;
     }
 
-    // Reset
+    // Reset formuláře
     document.getElementById('workDesc').value = '';
     document.getElementById('kmDirect').value = '';
     document.getElementById('kmStart').value = '';
@@ -893,50 +1007,48 @@
   }
 
   function toggleWorkPaid(id) {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
     const item = shifts.find(s => s.id === id);
     if (item) {
       item.isWorkPaid = !item.isWorkPaid;
-      localStorage.setItem('team_shifts_clean_v2', JSON.stringify(shifts));
+      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
       renderAll();
     }
   }
 
   function toggleMatPaid(id) {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
     const item = shifts.find(s => s.id === id);
     if (item) {
       item.isMatPaid = !item.isMatPaid;
-      localStorage.setItem('team_shifts_clean_v2', JSON.stringify(shifts));
+      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
       renderAll();
     }
   }
 
   function deleteRecord(id) {
     if (confirm("Opravdu smazat tento konkrétní záznam?")) {
-      let shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+      let shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
       shifts = shifts.filter(s => s.id !== id);
-      localStorage.setItem('team_shifts_clean_v2', JSON.stringify(shifts));
+      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
       renderAll();
     }
   }
 
-  // --- VÝPOČET KASY & VÝPIS HISTORIE ---
+  // --- VÝPOČET KASY & HISTORIE ---
   function renderAll() {
     if (!loggedUser) return;
     const list = document.getElementById('logList');
     const filterUser = document.getElementById('filterUser').value || loggedUser;
     const filterProject = document.getElementById('filterProject').value;
-    let shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+    let shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
 
-    // Řazení: nejnovější nahoře
     shifts.sort((a, b) => {
       const dateDiff = new Date(b.date) - new Date(a.date);
       if (dateDiff !== 0) return dateDiff;
       return (b.t1 || '').localeCompare(a.t1 || '');
     });
 
-    // Výpočet kasy pro přihlášeného
     let unpaidWorkWage = 0;
     let unpaidWorkHours = 0;
     let unpaidTravelWage = 0;
@@ -963,7 +1075,6 @@
     document.getElementById('dashTravelKm').innerText = unpaidTravelKm + ' km';
     document.getElementById('dashMatCost').innerText = unpaidMatCost.toLocaleString() + ' Kč';
 
-    // Filtrované karty
     const filtered = shifts.filter(s => {
       const matchUser = (filterUser === 'ALL' || s.worker === filterUser);
       const matchProject = (filterProject === 'ALL' || s.project === filterProject);
@@ -1079,7 +1190,7 @@
   }
 
   function exportToCSV() {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v2') || '[]');
+    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
     if (shifts.length === 0) return alert('Žádná data k exportu.');
 
     let csv = "Datum;Kdo;Zakazka;Cas Od;Cas Do;Hodin;Mzda Hodiny (Kc);Km;Cestovne (Kc);Mezizastavky;Pausaly (Kc);Material Popis;Material (Kc);Stav Prace;Stav Material;GPS\n";
