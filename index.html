@@ -57,6 +57,12 @@
     .safe-bottom {
       padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
     }
+    /* iOS input styling normalize */
+    input[type="date"], input[type="time"] {
+      min-height: 42px;
+      -webkit-appearance: none;
+      display: block;
+    }
   </style>
 </head>
 
@@ -160,28 +166,31 @@
         <select id="workProject" onchange="updateLiveCalculations()" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <div>
-          <div class="flex justify-between items-center mb-1">
+      <!-- OPRAVENÉ ČISTÉ ROZLOŽENÍ PRO IPAD A MOBIL (DATUM A ČAS ODDĚLENĚ) -->
+      <div class="flex flex-col sm:flex-row gap-3.5">
+        <!-- Blok Datum & GPS -->
+        <div class="w-full sm:w-1/2 space-y-1">
+          <div class="flex justify-between items-center">
             <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
-            <button type="button" onclick="getGPS()" class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-bold hover:bg-sky-200 transition">📍 Uložit GPS</button>
+            <button type="button" onclick="getGPS(false)" class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-bold hover:bg-sky-200 transition">📍 Uložit GPS</button>
           </div>
-          <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 font-medium bg-slate-50 text-sm outline-none">
+          <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           <input type="hidden" id="gpsLocation">
-          <p id="gpsStatus" class="text-[10px] text-slate-400 mt-1"></p>
+          <p id="gpsStatus" class="text-[10px] text-slate-400 truncate"></p>
         </div>
 
-        <div>
-          <div class="flex justify-between items-center mb-1">
+        <!-- Blok Čas práce -->
+        <div class="w-full sm:w-1/2 space-y-1">
+          <div class="flex justify-between items-center">
             <label class="text-[11px] font-bold text-slate-500">ČAS PRÁCE</label>
             <div class="space-x-1">
               <button type="button" onclick="setNow('timeStart')" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded font-semibold text-slate-600">Teď od</button>
               <button type="button" onclick="setNow('timeEnd')" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded font-semibold text-slate-600">Teď do</button>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-1.5">
-            <input type="time" id="timeStart" oninput="updateLiveCalculations()" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
-            <input type="time" id="timeEnd" oninput="updateLiveCalculations()" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
+          <div class="grid grid-cols-2 gap-2">
+            <input type="time" id="timeStart" oninput="updateLiveCalculations()" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
+            <input type="time" id="timeEnd" oninput="updateLiveCalculations()" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           </div>
         </div>
       </div>
@@ -260,14 +269,14 @@
         <div id="materialContainer" class="space-y-2.5"></div>
       </div>
 
-      <!-- ŽIVÝ NÁHLED CENY -->
+      <!-- ŽIVÝ NÁHLED CENY (DYNAMICKY SKRÝVÁ PAUŠÁLY) -->
       <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700/80 space-y-2">
         <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
           <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">⚡ Živý náhled směny:</span>
           <span id="liveTotalWage" class="text-base sm:text-lg font-black text-emerald-400">0 Kč</span>
         </div>
         
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div id="livePreviewGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
             <span class="text-[10px] text-slate-400 block font-semibold">⏱ Práce (<span id="liveHours">0.0h</span>)</span>
             <span id="liveWorkWage" class="font-bold text-slate-100">0 Kč</span>
@@ -276,7 +285,7 @@
             <span class="text-[10px] text-slate-400 block font-semibold">🚗 Cesta (<span id="liveKm">0km</span>)</span>
             <span id="liveTravelWage" class="font-bold text-slate-100">0 Kč</span>
           </div>
-          <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+          <div id="liveExtrasCard" class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
             <span class="text-[10px] text-slate-400 block font-semibold">🛠 Paušály</span>
             <span id="liveExtras" class="font-bold text-slate-100">0 Kč</span>
           </div>
@@ -294,12 +303,15 @@
 
   </div>
 
-  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) -->
+  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO - SE SWIPE GESTEM ZAVŘENÍ) -->
   <div id="settingsBackdrop" onclick="toggleSettingsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="settingsMenu" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 shadow-2xl p-4 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
     <div class="space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
-        <span class="font-black text-slate-900 text-base">⚙️ Nastavení a Profil</span>
+        <div>
+          <span class="font-black text-slate-900 text-base block">⚙️ Nastavení a Profil</span>
+          <span class="text-[10px] text-slate-400">Přejeď prstem vlevo pro zavření</span>
+        </div>
         <button type="button" onclick="toggleSettingsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
       </div>
 
@@ -324,7 +336,7 @@
           </div>
         </div>
 
-        <!-- ZABEZPEČENÝ SPRÁVCOVSKÝ RESET HESLA -->
+        <!-- Správcovský reset hesla kolegy -->
         <div class="space-y-1.5 pt-2 border-t border-slate-200">
           <div class="flex justify-between items-center">
             <span class="text-[10px] font-bold text-slate-700 block uppercase">🔑 Reset hesla kolegy</span>
@@ -369,12 +381,18 @@
         </div>
       </div>
 
-      <!-- Vzhled formuláře -->
+      <!-- Vzhled formuláře & Automatická GPS -->
       <div class="border-t pt-3 space-y-2">
-        <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Vzhled formuláře</span>
+        <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Vzhled a Funkce</span>
+        
         <label class="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200 select-none">
           <input type="checkbox" id="prefShowExtras" onchange="toggleExtrasVisibility()" checked class="w-4 h-4 rounded text-slate-900">
           <span>Zobrazovat stravné a nářadí</span>
+        </label>
+
+        <label class="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200 select-none">
+          <input type="checkbox" id="prefAutoGps" onchange="toggleAutoGps()" class="w-4 h-4 rounded text-slate-900">
+          <span>Automaticky zjišťovat GPS polohu</span>
         </label>
       </div>
 
@@ -396,12 +414,15 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 2: TÝM, KASA & ZÁZNAMY PRACÍ (☰ VPRAVO) -->
+  <!-- BOČNÍ PANEL 2: TÝM, KASA & ZÁZNAMY PRACÍ (☰ VPRAVO - SE SWIPE GESTEM ZAVŘENÍ) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
     <div class="flex justify-between items-center border-b pb-3">
-      <span class="font-black text-slate-900 text-base">👥 Tým, Kasa a Záznamy</span>
+      <div>
+        <span class="font-black text-slate-900 text-base block">👥 Tým, Kasa a Záznamy</span>
+        <span class="text-[10px] text-slate-400">Přejeď prstem vpravo pro zavření</span>
+      </div>
       <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
     </div>
 
@@ -472,55 +493,46 @@
 
   </div>
 
-  <!-- 3. VYLEPŠENÝ PROHLÍŽEČ FOTEK (DOUBLE-TAP ZOOM, POSUN PO FOTCE, PEVNÁ LIŠTA) -->
+  <!-- 3. VYLEPŠENÝ PROHLÍŽEČ FOTEK -->
   <div id="photoLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col justify-between select-none safe-top safe-x safe-bottom">
     
-    <!-- Horní lišta lightboxu (opravené zalamování pro iPad a mobil) -->
+    <!-- Horní lišta lightboxu -->
     <div class="flex items-center justify-between text-white max-w-3xl mx-auto w-full px-2 py-2 flex-nowrap gap-2">
       <div class="min-w-0 flex-1 pr-1">
         <span id="lightboxTitle" class="text-xs font-bold text-slate-200 block truncate">Fotografie</span>
         <span id="lightboxCounter" class="text-[10px] text-slate-400">1 z 1</span>
       </div>
       
-      <!-- Tlačítka lup, stažení a křížku – stabilní jednořádkový layout -->
       <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-        <!-- Lupa - -->
         <button type="button" onclick="zoomPhotoStep(-0.4)" title="Oddálit" class="bg-slate-800/90 active:bg-slate-700 text-white w-8 h-8 rounded-xl font-bold flex items-center justify-center border border-slate-700 shadow-sm transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"/><line x1="8" y1="11" x2="14" y2="11" stroke-width="2"/></svg>
         </button>
-        <!-- Lupa + -->
         <button type="button" onclick="zoomPhotoStep(0.4)" title="Přiblížit" class="bg-slate-800/90 active:bg-slate-700 text-white w-8 h-8 rounded-xl font-bold flex items-center justify-center border border-slate-700 shadow-sm transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"/><line x1="11" y1="8" x2="11" y2="14" stroke-width="2"/><line x1="8" y1="11" x2="14" y2="11" stroke-width="2"/></svg>
         </button>
-        <!-- Stáhnout -->
         <a id="lightboxDownloadBtn" download="foto.jpg" href="#" class="bg-sky-600 active:bg-sky-500 text-white text-xs font-bold px-2.5 sm:px-3 h-8 rounded-xl flex items-center gap-1 shadow transition">
           <span>📥</span><span class="hidden sm:inline">Stáhnout</span>
         </a>
-        <!-- Křížek zavření -->
         <button type="button" onclick="closeLightbox()" title="Zavřít" class="bg-rose-600 active:bg-rose-500 text-white w-8 h-8 rounded-xl font-bold flex items-center justify-center shadow-md transition ml-0.5">
           ✕
         </button>
       </div>
     </div>
 
-    <!-- Středová dotyková oblast pro fotku, posouvání a double-tap -->
+    <!-- Středová dotyková oblast -->
     <div class="relative flex-1 flex items-center justify-center overflow-hidden my-auto w-full h-full touch-none" id="lightboxTouchArea">
-      
-      <!-- Levá šipka -->
       <button type="button" id="lightboxPrevBtn" onclick="navigateGallery(-1)" class="absolute left-2 z-20 w-11 h-16 sm:w-12 sm:h-20 bg-black/40 hover:bg-black/70 text-white text-3xl font-bold flex items-center justify-center rounded-2xl backdrop-blur-xs transition">
         ‹
       </button>
 
-      <!-- Samotný obrázek s plynulým posunem a zoomem -->
       <img id="lightboxImage" src="" class="max-h-[62vh] sm:max-h-[68vh] md:max-h-[72vh] max-w-full object-contain rounded-xl select-none pointer-events-auto cursor-grab" style="transform: translate(0px, 0px) scale(1);">
 
-      <!-- Pravá šipka -->
       <button type="button" id="lightboxNextBtn" onclick="navigateGallery(1)" class="absolute right-2 z-20 w-11 h-16 sm:w-12 sm:h-20 bg-black/40 hover:bg-black/70 text-white text-3xl font-bold flex items-center justify-center rounded-2xl backdrop-blur-xs transition">
         ›
       </button>
     </div>
 
-    <!-- Spodní lišta s miniaturami fotek -->
+    <!-- Spodní lišta miniatur -->
     <div class="max-w-3xl mx-auto w-full flex flex-col items-center gap-1 pb-2">
       <div id="lightboxThumbnails" class="flex gap-2 overflow-x-auto p-1 max-w-full no-scrollbar"></div>
     </div>
@@ -611,6 +623,40 @@
       }, 300);
     }
   }
+
+  // --- SWIPE GESTA PRO ZAVÍRÁNÍ OBOU BOČNÍCH MENU ---
+  let menuSwipeStartX = 0;
+  let menuSwipeStartY = 0;
+
+  // Nastavení (vlevo) -> swipe vlevo zavře
+  const settingsPanel = document.getElementById('settingsMenu');
+  settingsPanel.addEventListener('touchstart', e => {
+    menuSwipeStartX = e.changedTouches[0].screenX;
+    menuSwipeStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  settingsPanel.addEventListener('touchend', e => {
+    const diffX = e.changedTouches[0].screenX - menuSwipeStartX;
+    const diffY = Math.abs(e.changedTouches[0].screenY - menuSwipeStartY);
+    if (diffX < -60 && diffY < 100) {
+      toggleSettingsMenu(false);
+    }
+  }, { passive: true });
+
+  // Tým a Kasa (vpravo) -> swipe vpravo zavře
+  const statsPanel = document.getElementById('statsMenu');
+  statsPanel.addEventListener('touchstart', e => {
+    menuSwipeStartX = e.changedTouches[0].screenX;
+    menuSwipeStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  statsPanel.addEventListener('touchend', e => {
+    const diffX = e.changedTouches[0].screenX - menuSwipeStartX;
+    const diffY = Math.abs(e.changedTouches[0].screenY - menuSwipeStartY);
+    if (diffX > 60 && diffY < 100) {
+      toggleStatsMenu(false);
+    }
+  }, { passive: true });
 
   // --- INTERAKTIVNÍ GALERIE S DOUBLE-TAP A POSUNEM ---
   function openGalleryLightbox(imagesArray, startIndex = 0, title = "Fotografie") {
@@ -703,11 +749,10 @@
     applyTransform(true);
   }
 
-  // --- DOUBLE CLICK / DOUBLE TAP & GESTA DRAG / SWIPE ---
+  // Double click & Swipe v lightboxu
   const touchArea = document.getElementById('lightboxTouchArea');
   const lightboxImg = document.getElementById('lightboxImage');
 
-  // Double click myší
   lightboxImg.addEventListener('dblclick', (e) => {
     e.preventDefault();
     if (currentZoom > 1.2) {
@@ -721,13 +766,11 @@
     }
   });
 
-  // Touch události pro mobil a tablet (Double tap, Drag i Swipe)
   touchArea.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
       const now = Date.now();
       const touch = e.touches[0];
       
-      // Detekce Double-tap (do 300 ms)
       if (now - lastTapTime < 300) {
         e.preventDefault();
         if (currentZoom > 1.2) {
@@ -755,7 +798,6 @@
     const touch = e.touches[0];
 
     if (currentZoom > 1) {
-      // Když je fotka zvětšená, posouváme ji po obrazovce
       e.preventDefault();
       panX = touch.clientX - startX;
       panY = touch.clientY - startY;
@@ -768,40 +810,27 @@
     isDragging = false;
 
     if (currentZoom <= 1.05) {
-      // Když není zvětšeno, vyhodnotíme swipe pro listování
       const touch = e.changedTouches[0];
       const diffX = touch.clientX - startX;
-      if (diffX < -45) navigateGallery(1);  // swipe doleva -> další
-      if (diffX > 45) navigateGallery(-1); // swipe doprava -> předchozí
+      if (diffX < -45) navigateGallery(1);
+      if (diffX > 45) navigateGallery(-1);
       resetImageTransform();
     }
   }, { passive: true });
 
-  // Panning myší na PC
-  touchArea.addEventListener('mousedown', e => {
-    if (currentZoom > 1) {
-      isDragging = true;
-      startX = e.clientX - panX;
-      startY = e.clientY - panY;
-      lightboxImg.classList.add('cursor-grabbing');
-    }
-  });
+  // --- AUTOMATICKÁ GPS POLOHA & PŘEPÍNAČE ---
+  function toggleAutoGps() {
+    const check = document.getElementById('prefAutoGps').checked;
+    localStorage.setItem('pref_auto_gps', check ? '1' : '0');
+    if (check) getGPS(true);
+  }
 
-  window.addEventListener('mousemove', e => {
-    if (!isDragging || currentZoom <= 1) return;
-    panX = e.clientX - startX;
-    panY = e.clientY - startY;
-    applyTransform(false);
-  });
+  function applyAutoGps() {
+    const isAuto = localStorage.getItem('pref_auto_gps') === '1';
+    document.getElementById('prefAutoGps').checked = isAuto;
+    if (isAuto) getGPS(true);
+  }
 
-  window.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      lightboxImg.classList.remove('cursor-grabbing');
-    }
-  });
-
-  // --- PŘEPÍNAČ DIET A NÁŘADÍ ---
   function toggleExtrasVisibility() {
     const check = document.getElementById('prefShowExtras').checked;
     localStorage.setItem('pref_show_extras', check ? '1' : '0');
@@ -811,11 +840,19 @@
   function applyExtrasVisibility() {
     const isVisible = localStorage.getItem('pref_show_extras') !== '0';
     document.getElementById('prefShowExtras').checked = isVisible;
+    
     const box = document.getElementById('extrasBox');
+    const liveCard = document.getElementById('liveExtrasCard');
+    const liveGrid = document.getElementById('livePreviewGrid');
+
     if (isVisible) {
       box.classList.remove('hidden');
+      liveCard.classList.remove('hidden');
+      liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs";
     } else {
       box.classList.add('hidden');
+      liveCard.classList.add('hidden');
+      liveGrid.className = "grid grid-cols-3 gap-2 text-xs";
       document.getElementById('checkDiet').checked = false;
       document.getElementById('checkTools').checked = false;
     }
@@ -1401,6 +1438,7 @@
 
     loadUserRates();
     applyExtrasVisibility();
+    applyAutoGps();
     populateProjects();
     populateUserFilter();
     initStopsDefault();
@@ -1492,7 +1530,7 @@
     const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
     if (!myShift) {
-      getGPS();
+      if (localStorage.getItem('pref_auto_gps') === '1') getGPS(true);
       const proj = document.getElementById('workProject').value;
       const d = document.getElementById('workDate').value;
       await db.from('active_shifts').upsert([{
@@ -1552,13 +1590,13 @@
     updateLiveCalculations();
   }
 
-  function getGPS() {
+  function getGPS(silent = false) {
     const status = document.getElementById('gpsStatus');
     if (!navigator.geolocation) {
-      status.innerText = "GPS nepodporováno";
+      if (!silent) status.innerText = "GPS nepodporováno";
       return;
     }
-    status.innerText = "Zjišťuji GPS...";
+    if (!silent) status.innerText = "Zjišťuji GPS...";
     navigator.geolocation.getCurrentPosition(
       (p) => {
         const lat = p.coords.latitude.toFixed(5);
@@ -1566,7 +1604,10 @@
         document.getElementById('gpsLocation').value = `${lat}, ${lon}`;
         status.innerText = `📍 ${lat}, ${lon}`;
       },
-      () => { status.innerText = "GPS nedostupná"; }
+      () => {
+        if (!silent) status.innerText = "GPS nedostupná";
+      },
+      { timeout: 8000 }
     );
   }
 
@@ -1905,7 +1946,7 @@
 
         ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl border border-slate-100">${r.desc}</div>` : ''}
         
-        <!-- Galerie fotek z práce (listovací lightbox s double-tap a posunem) -->
+        <!-- Galerie fotek z práce -->
         ${r.workPhotos && r.workPhotos.length > 0 ? `
           <div>
             <span class="text-[10px] text-slate-400 font-bold block mb-1">📸 FOTKY Z PRÁCE (${r.workPhotos.length}):</span>
