@@ -38,7 +38,7 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY & PĚKNÁ LEAFLET MAPA -->
+  <!-- KNIHOVNY & PŮVODNÍ MAPA -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -310,7 +310,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ BAREVNÁ MAPA MODÁLNÍ OKNO -->
+  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO S PŮVODNÍ PĚKNOU MAPOU -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -683,7 +683,7 @@
     }
   }
 
-  // --- ZLEPŠENÉ SWIPE GESTO Z OKRAJE (ZABRAŇUJE VÝJEZDU Z APLIKACE) ---
+  // --- OPRAVENÉ SWIPE GESTO Z OKRAJE ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
@@ -703,25 +703,25 @@
 
     if (isMapOpen || isLightboxOpen) return;
 
-    if (isSettingsOpen && diffX < -50 && diffY < 120) {
+    if (isSettingsOpen && diffX < -40 && diffY < 150) {
       toggleSettingsMenu(false);
       return;
     }
-    if (isStatsOpen && diffX > 50 && diffY < 120) {
+    if (isStatsOpen && diffX > 40 && diffY < 150) {
       toggleStatsMenu(false);
       return;
     }
 
-    if (!isSettingsOpen && !isStatsOpen && diffY < 120) {
-      if (globalSwipeStartX < 60 && diffX > 60) {
+    if (!isSettingsOpen && !isStatsOpen && diffY < 150) {
+      if (globalSwipeStartX < 30 && diffX > 50) {
         toggleSettingsMenu(true);
-      } else if (globalSwipeStartX > window.innerWidth - 60 && diffX < -60) {
+      } else if (globalSwipeStartX > window.innerWidth - 30 && diffX < -50) {
         toggleStatsMenu(true);
       }
     }
   }, { passive: true });
 
-  // INTERAKTIVNÍ BAREVNÁ MAPA S OPRAVENÝM ZAVÍRÁNÍM
+  // INTERAKTIVNÍ MAPA S PŮVODNÍM PĚKNÝM PODKLADEM
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
@@ -729,10 +729,9 @@
     setTimeout(() => {
       if (!mapObj) {
         mapObj = L.map('mapContainer').setView([selectedMapLat, selectedMapLon], 13);
-        // Pěkná, pestrá a detailní mapa (CartoDB Positron / OpenStreetMap styl)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
+          attribution: '&copy; OpenStreetMap'
         }).addTo(mapObj);
 
         mapMarker = L.marker([selectedMapLat, selectedMapLon], {draggable: true}).addTo(mapObj);
@@ -808,7 +807,7 @@
     }, () => { alert("Nepodařilo se zjistit polohu."); });
   }
 
-  // OKAMŽITÉ POTVRZENÍ A ZAVŘENÍ OKNA MAPY
+  // OKAMŽITÉ POTVRZENÍ A BEZPROBLÉMOVÉ ZAVŘENÍ OKNA
   function confirmMapLocation() {
     document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
     document.getElementById('gpsAddressManual').value = selectedMapText;
