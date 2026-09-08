@@ -38,14 +38,14 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY: TAILWIND CSS & SUPABASE JS -->
+  <!-- KNIHOVNY -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body class="bg-slate-900 min-h-screen text-slate-800 font-sans antialiased selection:bg-sky-500 selection:text-white">
 
-<div class="bg-slate-100 min-h-screen max-w-xl md:max-w-2xl mx-auto p-3.5 sm:p-5 pb-36 shadow-2xl relative">
+<div class="bg-slate-100 min-h-screen max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-3.5 sm:p-5 md:p-6 pb-36 shadow-2xl relative">
 
   <!-- 1. PŘIHLAŠOVACÍ OBRAZOVKA -->
   <div id="authScreen" class="min-h-[85vh] flex flex-col justify-center max-w-md mx-auto">
@@ -139,7 +139,7 @@
         <select id="workProject" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
@@ -159,8 +159,8 @@
             </div>
           </div>
           <div class="grid grid-cols-2 gap-1.5">
-            <input type="time" id="timeStart" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
-            <input type="time" id="timeEnd" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
+            <input type="time" id="timeStart" oninput="updateLiveCalculations()" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
+            <input type="time" id="timeEnd" oninput="updateLiveCalculations()" class="border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm outline-none">
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@
         </div>
 
         <div id="quickKmBox" class="space-y-2">
-          <input type="number" id="kmDirect" placeholder="Ujeto celkem km (např. 45)" class="w-full border border-slate-300 rounded-xl p-2 bg-white text-sm font-semibold outline-none focus:ring-2 focus:ring-sky-500">
+          <input type="number" id="kmDirect" oninput="updateLiveCalculations()" placeholder="Ujeto celkem km (např. 45)" class="w-full border border-slate-300 rounded-xl p-2 bg-white text-sm font-semibold outline-none focus:ring-2 focus:ring-sky-500">
           <div class="flex gap-1.5 text-[10px] overflow-x-auto pb-0.5">
             <span class="text-slate-400 self-center font-medium">Rychle:</span>
             <button type="button" onclick="addKmQuick(15)" class="bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg font-semibold shadow-xs">+15 km</button>
@@ -198,19 +198,19 @@
         </div>
 
         <div id="odoKmBox" class="grid grid-cols-2 gap-2 hidden">
-          <input type="number" id="kmStart" placeholder="Tachometr před" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
-          <input type="number" id="kmEnd" placeholder="Tachometr po" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
+          <input type="number" id="kmStart" oninput="updateLiveCalculations()" placeholder="Tachometr před" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
+          <input type="number" id="kmEnd" oninput="updateLiveCalculations()" placeholder="Tachometr po" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
         </div>
       </div>
 
       <!-- Paušály (Diety, Nářadí) -->
       <div id="extrasBox" class="flex gap-5 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
         <label class="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" id="checkDiet" class="w-4 h-4 rounded text-slate-900">
+          <input type="checkbox" id="checkDiet" onchange="updateLiveCalculations()" class="w-4 h-4 rounded text-slate-900">
           <span>Stravné / Diety</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" id="checkTools" class="w-4 h-4 rounded text-slate-900">
+          <input type="checkbox" id="checkTools" onchange="updateLiveCalculations()" class="w-4 h-4 rounded text-slate-900">
           <span>Opotřebení nářadí</span>
         </label>
       </div>
@@ -237,9 +237,32 @@
         </div>
 
         <div id="materialContainer" class="space-y-2.5"></div>
+      </div>
 
-        <div class="text-right text-xs font-bold text-amber-950 pr-1">
-          Materiál celkem: <span id="matTotalDisplay" class="font-black text-sm">0</span> Kč
+      <!-- ŽIVÝ NÁHLED CENY A VÝDĚLKU PŘED ULOŽENÍM -->
+      <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700/80 space-y-2">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">⚡ Živý náhled směny:</span>
+          <span id="liveTotalWage" class="text-base sm:text-lg font-black text-emerald-400">0 Kč</span>
+        </div>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+            <span class="text-[10px] text-slate-400 block font-semibold">⏱ Práce (<span id="liveHours">0.0h</span>)</span>
+            <span id="liveWorkWage" class="font-bold text-slate-100">0 Kč</span>
+          </div>
+          <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+            <span class="text-[10px] text-slate-400 block font-semibold">🚗 Cesta (<span id="liveKm">0km</span>)</span>
+            <span id="liveTravelWage" class="font-bold text-slate-100">0 Kč</span>
+          </div>
+          <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+            <span class="text-[10px] text-slate-400 block font-semibold">🛠 Paušály</span>
+            <span id="liveExtras" class="font-bold text-slate-100">0 Kč</span>
+          </div>
+          <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+            <span class="text-[10px] text-slate-400 block font-semibold">🛒 Materiál</span>
+            <span id="liveMatCost" class="font-bold text-amber-300">0 Kč</span>
+          </div>
         </div>
       </div>
 
@@ -280,14 +303,18 @@
           </div>
         </div>
 
-        <!-- Správcovský reset hesel kolegů -->
-        <div class="space-y-1 pt-2 border-t border-slate-200">
-          <span class="text-[10px] font-bold text-slate-600 block">🔑 Reset hesla kolegy (Správce)</span>
-          <select id="resetUserTarget" class="w-full border rounded-lg p-1.5 text-xs bg-white mb-1 outline-none font-semibold"></select>
-          <div class="flex gap-1.5">
-            <input type="password" id="resetUserNewPass" placeholder="Nové heslo kolegy" class="flex-1 border rounded-lg p-1.5 text-xs bg-white outline-none">
-            <button type="button" onclick="adminResetPassword()" class="bg-sky-700 hover:bg-sky-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition">Reset</button>
+        <!-- ZABEZPEČENÝ SPRÁVCOVSKÝ RESET HESEL KOLEGŮ -->
+        <div class="space-y-1.5 pt-2 border-t border-slate-200">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-bold text-slate-700 block uppercase">🔑 Reset hesla kolegy</span>
+            <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Správce</span>
           </div>
+          <select id="resetUserTarget" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
+          <input type="password" id="resetUserNewPass" placeholder="Nové heslo kolegy" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none">
+          <input type="password" id="adminMasterPassInput" placeholder="Zadej správcovské heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none border-amber-300">
+          <button type="button" onclick="adminResetPasswordSecure()" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold shadow-xs transition">
+            Ověřit klíč a resetovat heslo
+          </button>
         </div>
 
         <div class="pt-2 border-t border-slate-200">
@@ -350,7 +377,7 @@
 
   <!-- BOČNÍ PANEL 2: TÝM, KASA & ZÁZNAMY PRACÍ (☰ VPRAVO) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
-  <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[480px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
+  <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
     <div class="flex justify-between items-center border-b pb-3">
       <span class="font-black text-slate-900 text-base">👥 Tým, Kasa a Záznamy</span>
@@ -478,6 +505,8 @@
       document.getElementById('editUsernameInput').value = loggedUser || '';
       document.getElementById('oldPassInput').value = '';
       document.getElementById('newPassInput').value = '';
+      document.getElementById('resetUserNewPass').value = '';
+      document.getElementById('adminMasterPassInput').value = '';
       populateAdminResetUsers();
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('-translate-x-full'), 10);
@@ -543,6 +572,7 @@
       document.getElementById('checkDiet').checked = false;
       document.getElementById('checkTools').checked = false;
     }
+    updateLiveCalculations();
   }
 
   // --- NAČTENÍ DAT ZE SUPABASE ---
@@ -634,6 +664,59 @@
     } catch (err) {
       console.error("Chyba při stahování ze Supabase:", err);
     }
+  }
+
+  // --- ŽIVÉ KALKULACE CENY SMĚNY PŘED ULOŽENÍM ---
+  function updateLiveCalculations() {
+    const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
+    const rateH = Number(document.getElementById('rateHour').value) || uData.rateH;
+    const rateK = Number(document.getElementById('rateKm').value) || uData.rateK;
+    const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD;
+    const rateT = Number(document.getElementById('rateTools').value) || uData.rateT;
+
+    // 1. Hodiny a mzda
+    const t1 = document.getElementById('timeStart').value;
+    const t2 = document.getElementById('timeEnd').value;
+    let hours = 0;
+    if (t1 && t2) {
+      const [h1, m1] = t1.split(':').map(Number);
+      const [h2, m2] = t2.split(':').map(Number);
+      hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
+    }
+    const wageWork = Math.round(hours * rateH);
+
+    // 2. Kilometry a cestovné
+    let kmTotal = 0;
+    if (activeKmMode === 'quick') {
+      kmTotal = Number(document.getElementById('kmDirect').value) || 0;
+    } else if (activeKmMode === 'stops') {
+      kmTotal = calcStopsSum();
+    } else if (activeKmMode === 'odo') {
+      const km1 = Number(document.getElementById('kmStart').value) || 0;
+      const km2 = Number(document.getElementById('kmEnd').value) || 0;
+      kmTotal = (km2 > km1) ? (km2 - km1) : 0;
+    }
+    const wageTravel = Math.round(kmTotal * rateK);
+
+    // 3. Paušály
+    const hasDiet = document.getElementById('checkDiet').checked;
+    const hasTools = document.getElementById('checkTools').checked;
+    const extras = (hasDiet ? rateD : 0) + (hasTools ? rateT : 0);
+
+    // 4. Materiál
+    let matCost = 0;
+    document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
+
+    // Zobrazení do panelu
+    document.getElementById('liveHours').innerText = hours.toFixed(1) + 'h';
+    document.getElementById('liveWorkWage').innerText = wageWork.toLocaleString() + ' Kč';
+    document.getElementById('liveKm').innerText = kmTotal + 'km';
+    document.getElementById('liveTravelWage').innerText = wageTravel.toLocaleString() + ' Kč';
+    document.getElementById('liveExtras').innerText = extras.toLocaleString() + ' Kč';
+    document.getElementById('liveMatCost').innerText = matCost.toLocaleString() + ' Kč';
+
+    const grandTotal = wageWork + wageTravel + extras + matCost;
+    document.getElementById('liveTotalWage').innerText = grandTotal.toLocaleString() + ' Kč';
   }
 
   // --- ZOBRAZENÍ STAVU TÝMU ---
@@ -815,15 +898,21 @@
     select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
   }
 
-  async function adminResetPassword() {
+  // --- ZABEZPEČENÝ SPRÁVCOVSKÝ RESET HESLA ---
+  async function adminResetPasswordSecure() {
     const targetUser = document.getElementById('resetUserTarget').value;
     const newPass = document.getElementById('resetUserNewPass').value.trim();
-    if (!targetUser || !newPass) return alert("Zadej nové heslo pro vybraného uživatele.");
+    const masterPass = document.getElementById('adminMasterPassInput').value.trim();
+
+    if (!masterPass) return alert("Pro změnu hesla kolegy musíš zadat správcovské heslo.");
+    if (masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo! Změna byla zamítnuta.");
+    if (!newPass) return alert("Zadej nové heslo pro vybraného uživatele.");
 
     await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
     if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
 
     document.getElementById('resetUserNewPass').value = '';
+    document.getElementById('adminMasterPassInput').value = '';
     alert(`Heslo pro uživatele "${targetUser}" bylo úspěšně resetováno na nové!`);
   }
 
@@ -866,6 +955,7 @@
       cloudUsers[loggedUser].rateD = rD;
       cloudUsers[loggedUser].rateT = rT;
     }
+    updateLiveCalculations();
   }
 
   function loadUserRates() {
@@ -874,6 +964,7 @@
     document.getElementById('rateKm').value = uData.rateK;
     document.getElementById('rateDiet').value = uData.rateD;
     document.getElementById('rateTools').value = uData.rateT;
+    updateLiveCalculations();
   }
 
   // --- ZASTÁVKY A PŘEJEZDY S PEVNOU ŠIPKOU ---
@@ -893,7 +984,7 @@
       <input type="text" placeholder="Odkud" value="${fromPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-from font-medium">
       <span class="text-sky-600 font-black text-xs px-0.5 select-none">➔</span>
       <input type="text" placeholder="Kam" value="${toPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-to font-medium">
-      <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum()" class="w-14 border rounded-lg p-1 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
+      <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum(); updateLiveCalculations();" class="w-14 border rounded-lg p-1 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
       <button type="button" onclick="removeStopRow(this)" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs">✕</button>
     `;
     container.appendChild(row);
@@ -912,6 +1003,7 @@
       row.querySelector('.stop-km').value = '';
       calcStopsSum();
     }
+    updateLiveCalculations();
   }
 
   function calcStopsSum() {
@@ -963,6 +1055,7 @@
       oBox.classList.remove('hidden');
       bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
     }
+    updateLiveCalculations();
   }
 
   // --- VÍCE NÁKUPŮ MATERIÁLU ---
@@ -984,7 +1077,7 @@
       </div>
       <div class="grid grid-cols-3 gap-2">
         <input type="text" placeholder="Kde / co jsi koupil" value="${desc}" class="col-span-2 border border-slate-300 rounded-lg p-1.5 text-xs bg-white mat-item-desc outline-none">
-        <input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
+        <input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum(); updateLiveCalculations();" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
       </div>
       <div>
         <label class="text-[10px] text-slate-500 block mb-0.5 font-medium">🧾 Foto účtenek / faktur</label>
@@ -1007,12 +1100,12 @@
       row.querySelector('.mat-item-photos').value = '';
       calcMaterialSum();
     }
+    updateLiveCalculations();
   }
 
   function calcMaterialSum() {
     let sum = 0;
     document.querySelectorAll('.mat-item-cost').forEach(inp => { sum += Number(inp.value) || 0; });
-    document.getElementById('matTotalDisplay').innerText = sum.toLocaleString();
     return sum;
   }
 
@@ -1073,6 +1166,7 @@
     initMaterialDefault();
     checkLiveShift();
     renderAll();
+    updateLiveCalculations();
   }
 
   // --- SPRÁVA STAVEB ---
@@ -1175,16 +1269,19 @@
     }
     checkLiveShift();
     renderTeamStatusList();
+    updateLiveCalculations();
   }
 
   function addKmQuick(val) {
     const input = document.getElementById('kmDirect');
     input.value = (Number(input.value) || 0) + val;
+    updateLiveCalculations();
   }
 
   function setNow(id) {
     const now = new Date();
     document.getElementById(id).value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    updateLiveCalculations();
   }
 
   function getGPS() {
@@ -1323,6 +1420,7 @@
 
     await fetchAllFromCloud();
     renderAll();
+    updateLiveCalculations();
     alert('Směna úspěšně uložena a synchronizována se všemi!');
   }
 
@@ -1355,6 +1453,7 @@
 
     toggleStatsMenu(false);
     window.scrollTo({ top: 120, behavior: 'smooth' });
+    updateLiveCalculations();
     alert(`Směna od ${item.worker} načtena!\nKm a nákupy = 0. Tvoje hodinovka načtena.`);
   }
 
@@ -1560,7 +1659,7 @@
 
             <div class="space-y-2">
               ${r.matPurchases.map((m) => `
-                <div class="bg-white/80 p-2 rounded-xl border border-amber-200/50 space-y-1">
+                <div class="bg-white/80 p-2 rounded-lg border border-amber-200/50 space-y-1">
                   <div class="flex justify-between items-center text-[11px] font-semibold text-slate-800">
                     <span>${m.desc || 'Nákup'}</span>
                     <span class="font-bold text-amber-900">${m.cost} Kč</span>
