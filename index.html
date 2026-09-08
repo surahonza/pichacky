@@ -310,7 +310,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO S PŮVODNÍ PĚKNOU MAPOU -->
+  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -683,7 +683,7 @@
     }
   }
 
-  // --- OPRAVENÉ SWIPE GESTO Z OKRAJE ---
+  // --- SWIPE GESTO Z OKRAJE (BEZPEČNÉ PRO PROHLÍŽEČ) ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
@@ -703,25 +703,26 @@
 
     if (isMapOpen || isLightboxOpen) return;
 
-    if (isSettingsOpen && diffX < -40 && diffY < 150) {
+    if (isSettingsOpen && diffX < -40 && diffY < 120) {
       toggleSettingsMenu(false);
       return;
     }
-    if (isStatsOpen && diffX > 40 && diffY < 150) {
+    if (isStatsOpen && diffX > 40 && diffY < 120) {
       toggleStatsMenu(false);
       return;
     }
 
-    if (!isSettingsOpen && !isStatsOpen && diffY < 150) {
-      if (globalSwipeStartX < 30 && diffX > 50) {
+    if (!isSettingsOpen && !isStatsOpen && diffY < 120) {
+      // Reaguje pouze na dotyk začínající do 35px od levého či pravého okraje obrazovky
+      if (globalSwipeStartX < 35 && diffX > 50) {
         toggleSettingsMenu(true);
-      } else if (globalSwipeStartX > window.innerWidth - 30 && diffX < -50) {
+      } else if (globalSwipeStartX > window.innerWidth - 35 && diffX < -50) {
         toggleStatsMenu(true);
       }
     }
   }, { passive: true });
 
-  // INTERAKTIVNÍ MAPA S PŮVODNÍM PĚKNÝM PODKLADEM
+  // INTERAKTIVNÍ MAPA
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
@@ -807,7 +808,6 @@
     }, () => { alert("Nepodařilo se zjistit polohu."); });
   }
 
-  // OKAMŽITÉ POTVRZENÍ A BEZPROBLÉMOVÉ ZAVŘENÍ OKNA
   function confirmMapLocation() {
     document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
     document.getElementById('gpsAddressManual').value = selectedMapText;
