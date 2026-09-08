@@ -38,7 +38,7 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY & LEAFLET MAPA -->
+  <!-- KNIHOVNY & PĚKNÁ LEAFLET MAPA -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -310,7 +310,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO S FIXNÍ SPODNÍ LIŠTOU -->
+  <!-- INTERAKTIVNÍ BAREVNÁ MAPA MODÁLNÍ OKNO -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -328,7 +328,6 @@
 
       <div id="mapContainer" class="w-full flex-1"></div>
 
-      <!-- FIXNÍ SPODNÍ LIŠTA OKNA MAPY (NIKDY NEUTEČE MIMO DISPLEJ) -->
       <div class="p-3 sm:p-4 bg-white border-t flex flex-col sm:flex-row justify-between items-center gap-2.5 flex-shrink-0">
         <div class="text-xs text-slate-600 truncate w-full sm:max-w-xs text-center sm:text-left">
           <b>Vybráno:</b> <span id="mapSelectedText" class="text-sky-700 font-semibold truncate block sm:inline">Zatím nevybráno</span>
@@ -684,7 +683,7 @@
     }
   }
 
-  // --- GLOBÁLNÍ SWIPE GESTA Z OKRAJŮ OBRAZOVKY ---
+  // --- ZLEPŠENÉ SWIPE GESTO Z OKRAJE (ZABRAŇUJE VÝJEZDU Z APLIKACE) ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
@@ -704,25 +703,25 @@
 
     if (isMapOpen || isLightboxOpen) return;
 
-    if (isSettingsOpen && diffX < -50 && diffY < 100) {
+    if (isSettingsOpen && diffX < -50 && diffY < 120) {
       toggleSettingsMenu(false);
       return;
     }
-    if (isStatsOpen && diffX > 50 && diffY < 100) {
+    if (isStatsOpen && diffX > 50 && diffY < 120) {
       toggleStatsMenu(false);
       return;
     }
 
-    if (!isSettingsOpen && !isStatsOpen && diffY < 100) {
-      if (globalSwipeStartX < 40 && diffX > 60) {
+    if (!isSettingsOpen && !isStatsOpen && diffY < 120) {
+      if (globalSwipeStartX < 60 && diffX > 60) {
         toggleSettingsMenu(true);
-      } else if (globalSwipeStartX > window.innerWidth - 40 && diffX < -60) {
+      } else if (globalSwipeStartX > window.innerWidth - 60 && diffX < -60) {
         toggleStatsMenu(true);
       }
     }
   }, { passive: true });
 
-  // INTERAKTIVNÍ MAPA S AUTOMATICKÝM ZAVŘENÍM
+  // INTERAKTIVNÍ BAREVNÁ MAPA S OPRAVENÝM ZAVÍRÁNÍM
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
@@ -730,9 +729,10 @@
     setTimeout(() => {
       if (!mapObj) {
         mapObj = L.map('mapContainer').setView([selectedMapLat, selectedMapLon], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Pěkná, pestrá a detailní mapa (CartoDB Positron / OpenStreetMap styl)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
           maxZoom: 19,
-          attribution: '&copy; OpenStreetMap'
+          attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
         }).addTo(mapObj);
 
         mapMarker = L.marker([selectedMapLat, selectedMapLon], {draggable: true}).addTo(mapObj);
@@ -808,6 +808,7 @@
     }, () => { alert("Nepodařilo se zjistit polohu."); });
   }
 
+  // OKAMŽITÉ POTVRZENÍ A ZAVŘENÍ OKNA MAPY
   function confirmMapLocation() {
     document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
     document.getElementById('gpsAddressManual').value = selectedMapText;
