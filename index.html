@@ -310,31 +310,32 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO -->
-  <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
-    <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
-      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO S FIXNÍ SPODNÍ LIŠTOU -->
+  <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
+    <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
+      <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
         <div>
-          <h3 class="font-black text-base">🗺️ Výběr polohy na mapě</h3>
+          <h3 class="font-black text-sm sm:text-base">🗺️ Výběr polohy na mapě</h3>
           <p class="text-[11px] text-slate-400">Klepni na mapu nebo vyhledej adresu</p>
         </div>
         <button type="button" onclick="closeMapModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
 
-      <div class="p-3 bg-slate-100 border-b flex gap-2">
+      <div class="p-3 bg-slate-100 border-b flex gap-2 flex-shrink-0">
         <input type="text" id="mapSearchInput" placeholder="Zadej adresu nebo obec (např. Stříbro)..." class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white outline-none font-medium">
         <button type="button" onclick="searchLocationOnMap()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Hledat</button>
       </div>
 
-      <div id="mapContainer" class="w-full flex-1 min-h-[320px] sm:min-h-[400px]"></div>
+      <div id="mapContainer" class="w-full flex-1"></div>
 
-      <div class="p-4 bg-white border-t flex flex-col sm:flex-row justify-between items-center gap-3">
-        <div class="text-xs text-slate-600 truncate max-w-md">
-          <b>Zvolená adresa/místo:</b> <span id="mapSelectedText" class="text-sky-700 font-semibold">Zatím nevybráno</span>
+      <!-- FIXNÍ SPODNÍ LIŠTA OKNA MAPY (NIKDY NEUTEČE MIMO DISPLEJ) -->
+      <div class="p-3 sm:p-4 bg-white border-t flex flex-col sm:flex-row justify-between items-center gap-2.5 flex-shrink-0">
+        <div class="text-xs text-slate-600 truncate w-full sm:max-w-xs text-center sm:text-left">
+          <b>Vybráno:</b> <span id="mapSelectedText" class="text-sky-700 font-semibold truncate block sm:inline">Zatím nevybráno</span>
         </div>
         <div class="flex gap-2 w-full sm:w-auto">
-          <button type="button" onclick="useCurrentGpsPosition()" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-2.5 rounded-xl text-xs transition">Moje aktuální GPS</button>
-          <button type="button" onclick="confirmMapLocation()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition">Potvrdit polohu</button>
+          <button type="button" onclick="useCurrentGpsPosition()" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-2.5 rounded-xl text-xs transition">Moje GPS</button>
+          <button type="button" onclick="confirmMapLocation()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition">Potvrdit</button>
         </div>
       </div>
     </div>
@@ -683,40 +684,39 @@
     }
   }
 
-  // --- GLOBÁLNÍ SWIPE GESTA Z HLAVNÍ OBRAZOVKY PRO OTEVŘENÍ/ZAVŘENÍ MENU ---
+  // --- GLOBÁLNÍ SWIPE GESTA Z OKRAJŮ OBRAZOVKY ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
-  const mainContainer = document.getElementById('mainBody');
-  mainContainer.addEventListener('touchstart', e => {
-    globalSwipeStartX = e.changedTouches[0].screenX;
-    globalSwipeStartY = e.changedTouches[0].screenY;
+  document.addEventListener('touchstart', e => {
+    globalSwipeStartX = e.touches[0].clientX;
+    globalSwipeStartY = e.touches[0].clientY;
   }, { passive: true });
 
-  mainContainer.addEventListener('touchend', e => {
-    const diffX = e.changedTouches[0].screenX - globalSwipeStartX;
-    const diffY = Math.abs(e.changedTouches[0].screenY - globalSwipeStartY);
-    
-    // Pokud je otevřené některé menu, řešíme jeho zavření švihem
+  document.addEventListener('touchend', e => {
+    const diffX = e.changedTouches[0].clientX - globalSwipeStartX;
+    const diffY = Math.abs(e.changedTouches[0].clientY - globalSwipeStartY);
+
     const isSettingsOpen = !document.getElementById('settingsMenu').classList.contains('-translate-x-full');
     const isStatsOpen = !document.getElementById('statsMenu').classList.contains('translate-x-full');
+    const isMapOpen = !document.getElementById('mapModal').classList.contains('hidden');
+    const isLightboxOpen = !document.getElementById('photoLightbox').classList.contains('hidden');
 
-    if (isSettingsOpen && diffX < -60 && diffY < 100) {
+    if (isMapOpen || isLightboxOpen) return;
+
+    if (isSettingsOpen && diffX < -50 && diffY < 100) {
       toggleSettingsMenu(false);
       return;
     }
-    if (isStatsOpen && diffX > 60 && diffY < 100) {
+    if (isStatsOpen && diffX > 50 && diffY < 100) {
       toggleStatsMenu(false);
       return;
     }
 
-    // Pokud není otevřené nic, švihem z okraje otevřeme menu
     if (!isSettingsOpen && !isStatsOpen && diffY < 100) {
-      if (globalSwipeStartX < 40 && diffX > 70) {
-        // Švih zleva doprava -> otevřít Nastavení
+      if (globalSwipeStartX < 40 && diffX > 60) {
         toggleSettingsMenu(true);
-      } else if (globalSwipeStartX > window.innerWidth - 40 && diffX < -70) {
-        // Švih zprava doleva -> otevřít Tým / Kasa
+      } else if (globalSwipeStartX > window.innerWidth - 40 && diffX < -60) {
         toggleStatsMenu(true);
       }
     }
@@ -808,11 +808,10 @@
     }, () => { alert("Nepodařilo se zjistit polohu."); });
   }
 
-  // AUTOMATICKÉ ZAVŘENÍ OKNA PO POTVRZENÍ
   function confirmMapLocation() {
     document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
     document.getElementById('gpsAddressManual').value = selectedMapText;
-    document.getElementById('gpsStatus').innerText = `📍 ${selectedMapText.substring(0, 35)}...`;
+    document.getElementById('gpsStatus').innerText = `📍 ${selectedMapText.substring(0, 30)}...`;
     closeMapModal();
   }
 
