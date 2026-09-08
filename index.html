@@ -53,9 +53,9 @@
   </style>
 </head>
 
-<body class="bg-slate-900 min-h-screen text-slate-800 font-sans antialiased selection:bg-sky-500 selection:text-white">
+<body class="bg-slate-900 min-h-screen text-slate-800 font-sans antialiased selection:bg-sky-500 selection:text-white" id="mainBody">
 
-<div class="bg-slate-100 min-h-screen max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-3.5 sm:p-5 md:p-6 pb-36 shadow-2xl relative">
+<div class="bg-slate-100 min-h-screen max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-3.5 sm:p-5 md:p-6 pb-36 shadow-2xl relative" id="appRootContainer">
 
   <!-- 1. PŘIHLAŠOVACÍ OBRAZOVKA -->
   <div id="authScreen" class="min-h-[85vh] flex flex-col justify-center max-w-md mx-auto">
@@ -180,7 +180,7 @@
         <div class="w-full sm:w-1/2 space-y-1">
           <div class="flex justify-between items-center">
             <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
-            <button type="button" onclick="openMapModal()" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">🗺️ Vybrat GPS na mapě / adrese</button>
+            <button type="button" onclick="openMapModal()" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">📍 Vybrat GPS na mapě / adrese</button>
           </div>
           <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           <input type="hidden" id="gpsLocation">
@@ -683,7 +683,46 @@
     }
   }
 
-  // INTERAKTIVNÍ MAPA
+  // --- GLOBÁLNÍ SWIPE GESTA Z HLAVNÍ OBRAZOVKY PRO OTEVŘENÍ/ZAVŘENÍ MENU ---
+  let globalSwipeStartX = 0;
+  let globalSwipeStartY = 0;
+
+  const mainContainer = document.getElementById('mainBody');
+  mainContainer.addEventListener('touchstart', e => {
+    globalSwipeStartX = e.changedTouches[0].screenX;
+    globalSwipeStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  mainContainer.addEventListener('touchend', e => {
+    const diffX = e.changedTouches[0].screenX - globalSwipeStartX;
+    const diffY = Math.abs(e.changedTouches[0].screenY - globalSwipeStartY);
+    
+    // Pokud je otevřené některé menu, řešíme jeho zavření švihem
+    const isSettingsOpen = !document.getElementById('settingsMenu').classList.contains('-translate-x-full');
+    const isStatsOpen = !document.getElementById('statsMenu').classList.contains('translate-x-full');
+
+    if (isSettingsOpen && diffX < -60 && diffY < 100) {
+      toggleSettingsMenu(false);
+      return;
+    }
+    if (isStatsOpen && diffX > 60 && diffY < 100) {
+      toggleStatsMenu(false);
+      return;
+    }
+
+    // Pokud není otevřené nic, švihem z okraje otevřeme menu
+    if (!isSettingsOpen && !isStatsOpen && diffY < 100) {
+      if (globalSwipeStartX < 40 && diffX > 70) {
+        // Švih zleva doprava -> otevřít Nastavení
+        toggleSettingsMenu(true);
+      } else if (globalSwipeStartX > window.innerWidth - 40 && diffX < -70) {
+        // Švih zprava doleva -> otevřít Tým / Kasa
+        toggleStatsMenu(true);
+      }
+    }
+  }, { passive: true });
+
+  // INTERAKTIVNÍ MAPA S AUTOMATICKÝM ZAVŘENÍM
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
@@ -739,7 +778,7 @@
         alert("Místo nebylo nalezeno.");
       }
     } catch(err) {
-      alert("Chyba při vyhledávání adresy.");
+      alert("Chyba při vyhledávání.");
     }
   }
 
@@ -769,37 +808,13 @@
     }, () => { alert("Nepodařilo se zjistit polohu."); });
   }
 
+  // AUTOMATICKÉ ZAVŘENÍ OKNA PO POTVRZENÍ
   function confirmMapLocation() {
     document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
     document.getElementById('gpsAddressManual').value = selectedMapText;
     document.getElementById('gpsStatus').innerText = `📍 ${selectedMapText.substring(0, 35)}...`;
     closeMapModal();
   }
-
-  let menuSwipeStartX = 0;
-  let menuSwipeStartY = 0;
-
-  const settingsPanel = document.getElementById('settingsMenu');
-  settingsPanel.addEventListener('touchstart', e => {
-    menuSwipeStartX = e.changedTouches[0].screenX;
-    menuSwipeStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-  settingsPanel.addEventListener('touchend', e => {
-    const diffX = e.changedTouches[0].screenX - menuSwipeStartX;
-    const diffY = Math.abs(e.changedTouches[0].screenY - menuSwipeStartY);
-    if (diffX < -60 && diffY < 100) toggleSettingsMenu(false);
-  }, { passive: true });
-
-  const statsPanel = document.getElementById('statsMenu');
-  statsPanel.addEventListener('touchstart', e => {
-    menuSwipeStartX = e.changedTouches[0].screenX;
-    menuSwipeStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-  statsPanel.addEventListener('touchend', e => {
-    const diffX = e.changedTouches[0].screenX - menuSwipeStartX;
-    const diffY = Math.abs(e.changedTouches[0].screenY - menuSwipeStartY);
-    if (diffX > 60 && diffY < 100) toggleStatsMenu(false);
-  }, { passive: true });
 
   function openGalleryLightbox(imagesArray, startIndex = 0, title = "Fotografie") {
     if (!imagesArray || imagesArray.length === 0) return;
@@ -906,7 +921,6 @@
     }
   }, { passive: true });
 
-  // --- ZÁCHRANNÝ RESET HESLA NA ÚVODNÍ STRÁNCE ---
   function toggleAuthResetMode(show) {
     const formContainer = document.getElementById('loginFormContainer');
     const resetContainer = document.getElementById('authResetContainer');
