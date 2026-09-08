@@ -38,15 +38,14 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY -->
+  <!-- KNIHOVNY & LEAFLET MAPA -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    body.modal-open {
-      overflow: hidden !important;
-      touch-action: none !important;
-    }
+    body.modal-open { overflow: hidden !important; touch-action: none !important; }
     .safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
     .safe-x { padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right)); }
     .safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
@@ -74,7 +73,6 @@
         <div id="quickUserBadges" class="flex flex-wrap gap-1.5"></div>
       </div>
 
-      <!-- Běžný přihlašovací formulář -->
       <div id="loginFormContainer" class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
@@ -100,7 +98,6 @@
         </div>
       </div>
 
-      <!-- Skrytý správcovský formulář pro reset hesla z úvodní stránky -->
       <div id="authResetContainer" class="space-y-3 pt-1 hidden bg-amber-50/70 p-3 rounded-2xl border border-amber-200">
         <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-amber-900">Záchranný reset hesla</span>
@@ -111,12 +108,12 @@
           <select id="authResetUserSelect" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
         </div>
         <div>
-          <label class="text-[10px] font-bold text-slate-600 block mb-0.5">NOVÉ HESLO PRO UŽIVATELE</label>
+          <label class="text-[10px] font-bold text-slate-600 block mb-0.5">NOVÉ HESLO</label>
           <input type="password" id="authResetNewPass" placeholder="Nové heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none">
         </div>
         <div>
           <label class="text-[10px] font-bold text-amber-800 block mb-0.5">SPRÁVCOVSKÉ HESLO</label>
-          <input type="password" id="authResetMasterPass" placeholder="Masatjebuh19" class="w-full border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none">
+          <input type="password" id="authResetMasterPass" placeholder="Masatjebuh19" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none border-amber-300">
         </div>
         <button type="button" onclick="executeAuthReset()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs shadow-xs transition">
           Potvrdit a nastavit nové heslo
@@ -183,11 +180,11 @@
         <div class="w-full sm:w-1/2 space-y-1">
           <div class="flex justify-between items-center">
             <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
-            <button type="button" onclick="getGPS(false)" class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-bold hover:bg-sky-200 transition">📍 Uložit GPS</button>
+            <button type="button" onclick="openMapModal()" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">🗺️ Vybrat GPS na mapě / adrese</button>
           </div>
           <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           <input type="hidden" id="gpsLocation">
-          <p id="gpsStatus" class="text-[10px] text-slate-400 truncate"></p>
+          <input type="text" id="gpsAddressManual" placeholder="Místo / Adresa (nepovinné)" class="w-full border border-slate-300 rounded-xl p-1.5 text-xs bg-slate-50 outline-none mt-1">
         </div>
 
         <div class="w-full sm:w-1/2 space-y-1">
@@ -311,6 +308,36 @@
       </button>
     </div>
 
+  </div>
+
+  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO -->
+  <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
+    <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <div>
+          <h3 class="font-black text-base">🗺️ Výběr polohy na mapě</h3>
+          <p class="text-[11px] text-slate-400">Klepni na mapu nebo vyhledej adresu</p>
+        </div>
+        <button type="button" onclick="closeMapModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+      </div>
+
+      <div class="p-3 bg-slate-100 border-b flex gap-2">
+        <input type="text" id="mapSearchInput" placeholder="Zadej adresu nebo obec (např. Stříbro)..." class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white outline-none font-medium">
+        <button type="button" onclick="searchLocationOnMap()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Hledat</button>
+      </div>
+
+      <div id="mapContainer" class="w-full flex-1 min-h-[320px] sm:min-h-[400px]"></div>
+
+      <div class="p-4 bg-white border-t flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="text-xs text-slate-600 truncate max-w-md">
+          <b>Zvolená adresa/místo:</b> <span id="mapSelectedText" class="text-sky-700 font-semibold">Zatím nevybráno</span>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto">
+          <button type="button" onclick="useCurrentGpsPosition()" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-2.5 rounded-xl text-xs transition">Moje aktuální GPS</button>
+          <button type="button" onclick="confirmMapLocation()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition">Potvrdit polohu</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) -->
@@ -605,6 +632,13 @@
   let startY = 0;
   let lastTapTime = 0;
 
+  // Proměnné pro interaktivní mapu
+  let mapObj = null;
+  let mapMarker = null;
+  let selectedMapLat = 49.7477;
+  let selectedMapLon = 13.2804;
+  let selectedMapText = "Zatím nevybráno";
+
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
 
   function setScrollLock(lock) {
@@ -613,7 +647,8 @@
     } else {
       const isAnyOpen = !document.getElementById('settingsMenu').classList.contains('-translate-x-full') ||
                         !document.getElementById('statsMenu').classList.contains('translate-x-full') ||
-                        !document.getElementById('photoLightbox').classList.contains('hidden');
+                        !document.getElementById('photoLightbox').classList.contains('hidden') ||
+                        !document.getElementById('mapModal').classList.contains('hidden');
       if (!isAnyOpen) document.body.classList.remove('modal-open');
     }
   }
@@ -646,6 +681,99 @@
       menu.classList.add('translate-x-full');
       setTimeout(() => { backdrop.classList.add('hidden'); setScrollLock(false); }, 300);
     }
+  }
+
+  // INTERAKTIVNÍ MAPA
+  function openMapModal() {
+    setScrollLock(true);
+    document.getElementById('mapModal').classList.remove('hidden');
+    
+    setTimeout(() => {
+      if (!mapObj) {
+        mapObj = L.map('mapContainer').setView([selectedMapLat, selectedMapLon], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(mapObj);
+
+        mapMarker = L.marker([selectedMapLat, selectedMapLon], {draggable: true}).addTo(mapObj);
+        
+        mapMarker.on('dragend', function(e) {
+          const pos = mapMarker.getLatLng();
+          selectedMapLat = pos.lat;
+          selectedMapLon = pos.lng;
+          fetchAddressFromCoords(selectedMapLat, selectedMapLon);
+        });
+
+        mapObj.on('click', function(e) {
+          selectedMapLat = e.latlng.lat;
+          selectedMapLon = e.latlng.lng;
+          mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
+          fetchAddressFromCoords(selectedMapLat, selectedMapLon);
+        });
+      } else {
+        mapObj.invalidateSize();
+      }
+    }, 200);
+  }
+
+  function closeMapModal() {
+    document.getElementById('mapModal').classList.add('hidden');
+    setScrollLock(false);
+  }
+
+  async function searchLocationOnMap() {
+    const query = document.getElementById('mapSearchInput').value.trim();
+    if (!query) return;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        selectedMapLat = parseFloat(data[0].lat);
+        selectedMapLon = parseFloat(data[0].lon);
+        selectedMapText = data[0].display_name;
+        mapObj.setView([selectedMapLat, selectedMapLon], 15);
+        mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
+        document.getElementById('mapSelectedText').innerText = selectedMapText;
+      } else {
+        alert("Místo nebylo nalezeno.");
+      }
+    } catch(err) {
+      alert("Chyba při vyhledávání adresy.");
+    }
+  }
+
+  async function fetchAddressFromCoords(lat, lon) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      if (data && data.display_name) {
+        selectedMapText = data.display_name;
+      } else {
+        selectedMapText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      }
+    } catch(err) {
+      selectedMapText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }
+    document.getElementById('mapSelectedText').innerText = selectedMapText;
+  }
+
+  function useCurrentGpsPosition() {
+    if (!navigator.geolocation) return alert("GPS není podporována.");
+    navigator.geolocation.getCurrentPosition((p) => {
+      selectedMapLat = p.coords.latitude;
+      selectedMapLon = p.coords.longitude;
+      mapObj.setView([selectedMapLat, selectedMapLon], 16);
+      mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
+      fetchAddressFromCoords(selectedMapLat, selectedMapLon);
+    }, () => { alert("Nepodařilo se zjistit polohu."); });
+  }
+
+  function confirmMapLocation() {
+    document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
+    document.getElementById('gpsAddressManual').value = selectedMapText;
+    document.getElementById('gpsStatus').innerText = `📍 ${selectedMapText.substring(0, 35)}...`;
+    closeMapModal();
   }
 
   let menuSwipeStartX = 0;
@@ -1349,7 +1477,15 @@
     if (!navigator.geolocation) return;
     if (!silent) status.innerText = "Zjišťuji GPS...";
     navigator.geolocation.getCurrentPosition(
-      (p) => { const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5); document.getElementById('gpsLocation').value = `${lat}, ${lon}`; status.innerText = `📍 ${lat}, ${lon}`; },
+      (p) => {
+        const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5);
+        const coordStr = `${lat}, ${lon}`;
+        document.getElementById('gpsLocation').value = coordStr;
+        if (!document.getElementById('gpsAddressManual').value) {
+          document.getElementById('gpsAddressManual').value = coordStr;
+        }
+        status.innerText = `📍 ${coordStr}`;
+      },
       () => { if (!silent) status.innerText = "GPS nedostupná"; }, { timeout: 8000 }
     );
   }
@@ -1386,6 +1522,10 @@
       }
     }
 
+    const manualAddr = document.getElementById('gpsAddressManual').value.trim();
+    const gpsCoord = document.getElementById('gpsLocation').value;
+    const finalGpsText = manualAddr ? (gpsCoord ? `${manualAddr} (${gpsCoord})` : manualAddr) : gpsCoord;
+
     const recordId = Date.now();
     const { error } = await db.from('team_shifts').insert([{
       id: recordId, worker: loggedUser, project, date: document.getElementById('workDate').value,
@@ -1394,7 +1534,7 @@
       stops: stopsList, extra_pauchal: extraPauchal, work_and_travel_total: workAndTravelTotal,
       desc_text: document.getElementById('workDesc').value, work_photo: JSON.stringify(workPhotos),
       mat_desc: JSON.stringify(matPurchases), mat_cost: matCostTotal, mat_photo: JSON.stringify(matPurchases.flatMap(m => m.photos)),
-      is_work_paid: false, is_km_paid: false, is_mat_paid: false, gps: document.getElementById('gpsLocation').value
+      is_work_paid: false, is_km_paid: false, is_mat_paid: false, gps: finalGpsText
     }]);
 
     btn.disabled = false; btn.innerText = "💾 Uložit záznam směny";
@@ -1402,6 +1542,7 @@
 
     document.getElementById('workDesc').value = ''; document.getElementById('kmDirect').value = '';
     document.getElementById('kmStart').value = ''; document.getElementById('kmEnd').value = '';
+    document.getElementById('gpsAddressManual').value = '';
     initStopsDefault(); initMaterialDefault(); document.getElementById('workPhotosInput').value = '';
     document.getElementById('clonedWorkPhotos').value = ''; document.getElementById('clonedPhotoPreview').classList.add('hidden');
     document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false;
@@ -1414,6 +1555,7 @@
     document.getElementById('workDate').value = item.date; document.getElementById('workProject').value = item.project;
     document.getElementById('timeStart').value = item.t1 || ''; document.getElementById('timeEnd').value = item.t2 || '';
     document.getElementById('workDesc').value = item.desc || ''; document.getElementById('gpsLocation').value = item.gps || '';
+    document.getElementById('gpsAddressManual').value = item.gps || '';
     setKmMode('quick'); document.getElementById('kmDirect').value = '0';
     initStopsDefault(); initMaterialDefault();
     if (item.workPhotos && item.workPhotos.length > 0) {
@@ -1612,10 +1754,10 @@
 
   function exportToCSV() {
     if (cloudShifts.length === 0) return alert('Žádná data.');
-    let csv = "Datum;Kdo;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Materiál (Kc);Stav Prace;Stav Km;Stav Material\n";
+    let csv = "Datum;Kdo;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Materiál (Kc);Stav Prace;Stav Km;Stav Material;GPS\n";
     cloudShifts.forEach(s => {
       const matSum = (s.matPurchases || []).reduce((a,b)=>a+b.cost, 0);
-      csv += `"${s.date}";"${s.worker}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.isMatPaid ? 'Ano' : 'Ne'}"\n`;
+      csv += `"${s.date}";"${s.worker}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.isMatPaid ? 'Ano' : 'Ne'}";"${s.gps || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "vyuctovani.csv"; link.click();
