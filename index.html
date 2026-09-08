@@ -1,5 +1,6 @@
-<!-- KNIHOVNA PRO STYLY -->
+<!-- KNIHOVNY: TAILWIND CSS & SUPABASE -->
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <div class="bg-slate-100 text-slate-800 p-3 max-w-lg mx-auto pb-32 font-sans min-h-screen relative overflow-x-hidden">
 
@@ -20,7 +21,7 @@
       <div class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
-          <input type="text" id="loginUsername" placeholder="Jan, Matěj, Martin, Jiří..." class="w-full border rounded-xl p-2.5 text-sm bg-slate-50 font-semibold">
+          <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Martin, Jiří (šéf)..." class="w-full border rounded-xl p-2.5 text-sm bg-slate-50 font-semibold">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">HESLO NEBO PIN</label>
@@ -32,7 +33,7 @@
           <span>Zůstat trvale přihlášen</span>
         </label>
 
-        <button type="button" onclick="handleLogin()" class="w-full bg-slate-900 active:bg-slate-800 text-white font-black py-3 rounded-xl shadow transition text-sm">
+        <button type="button" id="btnLogin" onclick="handleLogin()" class="w-full bg-slate-900 active:bg-slate-800 text-white font-black py-3 rounded-xl shadow transition text-sm">
           Přihlásit se
         </button>
 
@@ -53,7 +54,7 @@
         <div>
           <span class="text-[10px] text-slate-400 block font-semibold uppercase">Pracovník</span>
           <div class="flex items-center gap-1.5">
-            <span id="labelCurrentWorker" class="font-bold text-base text-emerald-400">Jan </span>
+            <span id="labelCurrentWorker" class="font-bold text-base text-emerald-400">Jan (já)</span>
             <span id="badgeCurrentWorkerStatus" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">⚪ Volno</span>
           </div>
         </div>
@@ -74,9 +75,9 @@
           <button type="button" onclick="toggleSideMenu(false)" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
 
-        <!-- 1. Můj účet: Změna jména, hesla a smazání -->
+        <!-- Můj účet: Změna jména, hesla a smazání -->
         <div class="space-y-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-          <span class="text-[11px] font-bold text-slate-700 uppercase block tracking-wider">👤 Můj účet & Bezpečnost</span>
+          <span class="text-[11px] font-bold text-slate-700 uppercase block tracking-wider">👤 Můj účet & Cloud</span>
           
           <!-- Změna jména -->
           <div class="space-y-1">
@@ -100,13 +101,13 @@
           <!-- Smazání účtu -->
           <div class="pt-2 border-t border-slate-200">
             <button type="button" onclick="deleteMyAccount()" class="w-full text-left text-xs text-rose-600 hover:text-rose-700 font-bold py-1 flex items-center justify-between">
-              <span>🗑️ Smazat můj uživatelský účet</span>
+              <span>🗑️ Smazat můj účet z cloudu</span>
               <span class="text-[10px] text-slate-400">nevratné</span>
             </button>
           </div>
         </div>
 
-        <!-- 2. Nastavení sazeb -->
+        <!-- Nastavení sazeb -->
         <div class="space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Moje sazby (Kč)</span>
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -129,7 +130,7 @@
           </div>
         </div>
 
-        <!-- 3. Volba zobrazení (Schování diet a nářadí) -->
+        <!-- Volba vzhledu formuláře -->
         <div class="border-t pt-3 space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Vzhled formuláře</span>
           <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -138,7 +139,7 @@
           </label>
         </div>
 
-        <!-- 4. Správa staveb -->
+        <!-- Správa zakázek -->
         <div class="border-t pt-3 space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase block tracking-wider">Zakázky / stavby</span>
           <div class="flex gap-1">
@@ -160,7 +161,7 @@
     <!-- FINANČNÍ DASHBOARD (KASA) -->
     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm mb-3 space-y-2.5">
       <div class="flex justify-between items-center">
-        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Moje kasa: <span id="dashWorkerName" class="text-slate-900 font-extrabold">Jan</span></span>
+        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Moje kasa: <span id="dashWorkerName" class="text-slate-900 font-extrabold">Jan (já)</span></span>
         <span class="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">Čeká na vyplacení</span>
       </div>
 
@@ -310,7 +311,7 @@
         </div>
       </div>
 
-      <button type="button" onclick="saveRecord()" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-black py-3.5 rounded-xl shadow transition text-base">
+      <button type="button" id="btnSaveShift" onclick="saveRecord()" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-black py-3.5 rounded-xl shadow transition text-base">
         💾 Uložit záznam směny
       </button>
     </div>
@@ -343,11 +344,91 @@
 </div>
 
 <script>
+  // --- INICIALIZACE SUPABASE CLOUDU ---
+  const SUPABASE_URL = "https://iscjzjvsunfghreqklhe.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzY2p6anZzdW5mZ2hyZXFrbGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODc2NjYsImV4cCI6MjEwNDQ2MzY2Nn0.H-4OfG4DKj0VCZdXlZwxYCkRJu4oUMeft7KdN8XeN10";
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   let activeKmMode = 'quick';
   let selectedPeriod = 'month';
   let loggedUser = localStorage.getItem('persistent_user') || sessionStorage.getItem('session_user') || null;
 
+  // Paměť pro cloudová data
+  let cloudUsers = {};
+  let cloudShifts = [];
+  let cloudProjects = [];
+  let cloudActiveShifts = {};
+
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
+
+  // --- NAČTENÍ DAT ZE SUPABASE ---
+  async function fetchAllFromCloud() {
+    try {
+      // 1. Uživatelé
+      const { data: uData } = await db.from('team_users').select('*');
+      if (uData) {
+        cloudUsers = {};
+        uData.forEach(u => {
+          cloudUsers[u.username] = {
+            pass: u.password,
+            rateH: u.rate_h,
+            rateK: u.rate_k,
+            rateD: u.rate_d,
+            rateT: u.rate_t
+          };
+        });
+      }
+
+      // 2. Projekty
+      const { data: pData } = await db.from('team_projects').select('*');
+      if (pData) cloudProjects = pData.map(p => p.name);
+
+      // 3. Aktivní směny (píchačka)
+      const { data: aData } = await db.from('active_shifts').select('*');
+      if (aData) {
+        cloudActiveShifts = {};
+        aData.forEach(a => {
+          cloudActiveShifts[a.worker] = {
+            start: a.start_time,
+            project: a.project,
+            date: a.date
+          };
+        });
+      }
+
+      // 4. Směny
+      const { data: sData } = await db.from('team_shifts').select('*').order('date', { ascending: false });
+      if (sData) {
+        cloudShifts = sData.map(s => ({
+          id: s.id,
+          worker: s.worker,
+          project: s.project,
+          date: s.date,
+          t1: s.t1,
+          t2: s.t2,
+          hours: Number(s.hours),
+          rateH: s.rate_h,
+          rateK: s.rate_k,
+          wageWorkOnly: s.wage_work_only,
+          kmTotal: s.km_total,
+          wageTravelOnly: s.wage_travel_only,
+          stops: s.stops || [],
+          extraPauchal: s.extra_pauchal || 0,
+          workAndTravelTotal: s.work_and_travel_total,
+          desc: s.desc_text,
+          workPhoto: s.work_photo,
+          matDesc: s.mat_desc,
+          matCost: s.mat_cost,
+          matPhoto: s.mat_photo,
+          isWorkPaid: s.is_work_paid,
+          isMatPaid: s.is_mat_paid,
+          gps: s.gps
+        }));
+      }
+    } catch (err) {
+      console.error("Chyba synchronizace se Supabase:", err);
+    }
+  }
 
   // --- BOČNÍ MENU ---
   function toggleSideMenu(open) {
@@ -369,82 +450,74 @@
     }
   }
 
-  // --- ZMĚNA JMÉNA, HESLA A SMAZÁNÍ ÚČTU ---
-  function changeUsername() {
+  // --- ZMĚNA JMÉNA, HESLA A SMAZÁNÍ ÚČTU V CLOUDU ---
+  async function changeUsername() {
     const newName = document.getElementById('editUsernameInput').value.trim();
     if (!newName) return alert("Zadej nové jméno.");
     if (newName === loggedUser) return alert("Zadal jsi stejné jméno.");
 
-    const users = getUsers();
-    if (users[newName]) return alert("Uživatel s tímto jménem už existuje.");
-
-    users[newName] = users[loggedUser];
-    delete users[loggedUser];
-    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
-
-    if (localStorage.getItem('persistent_user')) {
-      localStorage.setItem('persistent_user', newName);
-    }
-    if (sessionStorage.getItem('session_user')) {
-      sessionStorage.setItem('session_user', newName);
-    }
-
-    const active = getActiveShifts();
-    if (active[loggedUser]) {
-      active[newName] = active[loggedUser];
-      delete active[loggedUser];
-      localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(active));
-    }
-
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-    shifts.forEach(s => {
-      if (s.worker === loggedUser) s.worker = newName;
-    });
-    localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
+    if (cloudUsers[newName]) return alert("Uživatel s tímto jménem už existuje.");
 
     const oldName = loggedUser;
-    loggedUser = newName;
+    const myData = cloudUsers[oldName];
 
+    // Vložení pod novým jménem
+    await db.from('team_users').insert([{
+      username: newName,
+      password: myData.pass,
+      rate_h: myData.rateH,
+      rate_k: myData.rateK,
+      rate_d: myData.rateD,
+      rate_t: myData.rateT
+    }]);
+
+    // Smazání starého účtu
+    await db.from('team_users').delete().eq('username', oldName);
+
+    // Přejmenování v dřívějších směnách v databázi
+    await db.from('team_shifts').update({ worker: newName }).eq('worker', oldName);
+    await db.from('active_shifts').update({ worker: newName }).eq('worker', oldName);
+
+    if (localStorage.getItem('persistent_user')) localStorage.setItem('persistent_user', newName);
+    if (sessionStorage.getItem('session_user')) sessionStorage.setItem('session_user', newName);
+
+    loggedUser = newName;
     alert(`Jméno změněno z ${oldName} na ${newName}!`);
+    await fetchAllFromCloud();
     initApp();
   }
 
-  function changePassword() {
+  async function changePassword() {
     const oldP = document.getElementById('oldPassInput').value.trim();
     const newP = document.getElementById('newPassInput').value.trim();
     if (!oldP || !newP) return alert("Vyplň staré i nové heslo.");
 
-    const users = getUsers();
-    if (!users[loggedUser] || users[loggedUser].pass !== oldP) {
+    if (!cloudUsers[loggedUser] || cloudUsers[loggedUser].pass !== oldP) {
       return alert("Původní heslo není správné.");
     }
 
-    users[loggedUser].pass = newP;
-    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
+    await db.from('team_users').update({ password: newP }).eq('username', loggedUser);
+    cloudUsers[loggedUser].pass = newP;
 
     document.getElementById('oldPassInput').value = '';
     document.getElementById('newPassInput').value = '';
     alert("Heslo bylo úspěšně změněno!");
   }
 
-  function deleteMyAccount() {
-    const confirmDelete = confirm(`Opravdu chceš smazat svůj uživatelský profil "${loggedUser}"?\n\nTvé dříve zapsané směny, kilometry i účtenky zůstanou zachované pro šéfa a ostatní kolegy.`);
+  async function deleteMyAccount() {
+    const confirmDelete = confirm(`Opravdu chceš smazat svůj profil "${loggedUser}"?\n\nTvé dříve zapsané směny zůstanou bezpečně zachované v databázi pro šéfa a ostatní.`);
     if (!confirmDelete) return;
 
-    const users = getUsers();
-    delete users[loggedUser];
-    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
-
-    const active = getActiveShifts();
-    delete active[loggedUser];
-    localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(active));
+    await db.from('team_users').delete().eq('username', loggedUser);
+    await db.from('active_shifts').delete().eq('worker', loggedUser);
 
     localStorage.removeItem('persistent_user');
     sessionStorage.removeItem('session_user');
     loggedUser = null;
 
     toggleSideMenu(false);
-    alert("Tvůj profil byl smazán. Historie tvé práce zůstala zachována.");
+    alert("Tvůj profil byl smazán.");
+    await fetchAllFromCloud();
     document.getElementById('authScreen').classList.remove('hidden');
     document.getElementById('appScreen').classList.add('hidden');
     renderQuickBadges();
@@ -470,21 +543,12 @@
     }
   }
 
-  // --- SPRÁVA ÚČTŮ (PŘEDNASTAVENÝ TÝM) ---
-  function getUsers() {
-    return JSON.parse(localStorage.getItem('team_users_clean_v3') || JSON.stringify({
-      "Jan": { pass: "1234", rateH: 300, rateK: 7, rateD: 150, rateT: 100 },
-      "Matěj": { pass: "1234", rateH: 300, rateK: 7, rateD: 150, rateT: 100 },
-      "Martin": { pass: "1234", rateH: 280, rateK: 7, rateD: 150, rateT: 100 },
-      "Jiří (šéf)": { pass: "1234", rateH: 400, rateK: 8, rateD: 200, rateT: 150 }
-    }));
-  }
-
+  // --- SPRÁVA ÚČTŮ ---
   function renderQuickBadges() {
-    const users = getUsers();
     const container = document.getElementById('quickUserBadges');
     if (!container) return;
-    container.innerHTML = Object.keys(users).map(u => `
+    const names = Object.keys(cloudUsers);
+    container.innerHTML = names.map(u => `
       <button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-sm">
         👤 ${u}
       </button>
@@ -496,14 +560,16 @@
     document.getElementById('loginPassword').focus();
   }
 
-  function handleLogin() {
+  async function handleLogin() {
     const u = document.getElementById('loginUsername').value.trim();
     const p = document.getElementById('loginPassword').value.trim();
     const remember = document.getElementById('rememberMe').checked;
-    const users = getUsers();
 
     if (!u || !p) return alert("Vyplň jméno i heslo.");
-    if (users[u] && users[u].pass === p) {
+
+    await fetchAllFromCloud();
+
+    if (cloudUsers[u] && cloudUsers[u].pass === p) {
       loggedUser = u;
       if (remember) {
         localStorage.setItem('persistent_user', u);
@@ -518,17 +584,24 @@
     }
   }
 
-  function handleRegister() {
+  async function handleRegister() {
     const u = document.getElementById('loginUsername').value.trim();
     const p = document.getElementById('loginPassword').value.trim();
     const remember = document.getElementById('rememberMe').checked;
     if (!u || !p) return alert("Zadej jméno a heslo pro nový účet.");
-    
-    const users = getUsers();
-    if (users[u]) return alert("Toto jméno už existuje. Zvol jiné jméno.");
 
-    users[u] = { pass: p, rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
+    await fetchAllFromCloud();
+
+    if (cloudUsers[u]) return alert("Toto jméno už existuje. Zvol jiné jméno.");
+
+    await db.from('team_users').insert([{
+      username: u,
+      password: p,
+      rate_h: 300,
+      rate_k: 7,
+      rate_d: 150,
+      rate_t: 100
+    }]);
 
     loggedUser = u;
     if (remember) {
@@ -536,7 +609,8 @@
     } else {
       sessionStorage.setItem('session_user', u);
     }
-    alert(`Účet pro ${u} byl vytvořen! Vítej.`);
+    alert(`Účet pro ${u} byl vytvořen a uložen v cloudu!`);
+    await fetchAllFromCloud();
     initApp();
   }
 
@@ -550,23 +624,30 @@
     renderQuickBadges();
   }
 
-  function saveUserRates() {
+  async function saveUserRates() {
     if (!loggedUser) return;
-    const users = getUsers();
-    if (!users[loggedUser]) return;
-    users[loggedUser] = {
-      ...users[loggedUser],
-      rateH: Number(document.getElementById('rateHour').value) || 0,
-      rateK: Number(document.getElementById('rateKm').value) || 0,
-      rateD: Number(document.getElementById('rateDiet').value) || 0,
-      rateT: Number(document.getElementById('rateTools').value) || 0
-    };
-    localStorage.setItem('team_users_clean_v3', JSON.stringify(users));
+    const rH = Number(document.getElementById('rateHour').value) || 0;
+    const rK = Number(document.getElementById('rateKm').value) || 0;
+    const rD = Number(document.getElementById('rateDiet').value) || 0;
+    const rT = Number(document.getElementById('rateTools').value) || 0;
+
+    await db.from('team_users').update({
+      rate_h: rH,
+      rate_k: rK,
+      rate_d: rD,
+      rate_t: rT
+    }).eq('username', loggedUser);
+
+    if (cloudUsers[loggedUser]) {
+      cloudUsers[loggedUser].rateH = rH;
+      cloudUsers[loggedUser].rateK = rK;
+      cloudUsers[loggedUser].rateD = rD;
+      cloudUsers[loggedUser].rateT = rT;
+    }
   }
 
   function loadUserRates() {
-    const users = getUsers();
-    const uData = users[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
+    const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
     document.getElementById('rateHour').value = uData.rateH;
     document.getElementById('rateKm').value = uData.rateK;
     document.getElementById('rateDiet').value = uData.rateD;
@@ -574,7 +655,9 @@
   }
 
   // --- INICIALIZACE APLIKACE ---
-  function initApp() {
+  async function initApp() {
+    await fetchAllFromCloud();
+
     if (!loggedUser) {
       document.getElementById('authScreen').classList.remove('hidden');
       document.getElementById('appScreen').classList.add('hidden');
@@ -597,7 +680,7 @@
   }
 
   function populateUserFilter() {
-    const users = Object.keys(getUsers());
+    const users = Object.keys(cloudUsers);
     const filterSelect = document.getElementById('filterUser');
     filterSelect.innerHTML = `<option value="${loggedUser}">Jen moje záznamy (${loggedUser})</option><option value="ALL">Všichni kolegové</option>` +
       users.filter(u => u !== loggedUser).map(u => `<option value="${u}">Jen ${u}</option>`).join('');
@@ -692,8 +775,7 @@
 
   // --- KLONOVÁNÍ SMĚNY PRO KOLEGU ---
   function cloneShiftToMyForm(id) {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-    const item = shifts.find(s => s.id === id);
+    const item = cloudShifts.find(s => s.id === id);
     if (!item) return;
 
     document.getElementById('workDate').value = item.date;
@@ -724,14 +806,9 @@
     alert(`Směna od ${item.worker} načtena! Km a nákupy = 0. Tvoje hodinovka načtena.`);
   }
 
-  // --- PÍCHAČKA (LIVE SHIFT) ---
-  function getActiveShifts() {
-    return JSON.parse(localStorage.getItem('team_active_shifts_clean_v3') || '{}');
-  }
-
+  // --- PÍCHAČKA (ŽIVÝ STAV V CLOUDU) ---
   function checkLiveShift() {
-    const activeShifts = getActiveShifts();
-    const myShift = activeShifts[loggedUser];
+    const myShift = cloudActiveShifts[loggedUser];
     const btn = document.getElementById('punchBtn');
     const status = document.getElementById('shiftTimerStatus');
     const badge = document.getElementById('badgeCurrentWorkerStatus');
@@ -751,27 +828,29 @@
     }
   }
 
-  function toggleLiveShift() {
-    const activeShifts = getActiveShifts();
-    const myShift = activeShifts[loggedUser];
+  async function toggleLiveShift() {
+    const myShift = cloudActiveShifts[loggedUser];
     const now = new Date();
     const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
     if (!myShift) {
       getGPS();
-      activeShifts[loggedUser] = {
-        start: timeStr,
-        project: document.getElementById('workProject').value,
-        date: document.getElementById('workDate').value
-      };
-      localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(activeShifts));
+      const proj = document.getElementById('workProject').value;
+      const d = document.getElementById('workDate').value;
+      await db.from('active_shifts').upsert([{
+        worker: loggedUser,
+        start_time: timeStr,
+        project: proj,
+        date: d
+      }]);
+      cloudActiveShifts[loggedUser] = { start: timeStr, project: proj, date: d };
       document.getElementById('timeStart').value = timeStr;
     } else {
       document.getElementById('timeStart').value = myShift.start;
       document.getElementById('timeEnd').value = timeStr;
       document.getElementById('workProject').value = myShift.project;
-      delete activeShifts[loggedUser];
-      localStorage.setItem('team_active_shifts_clean_v3', JSON.stringify(activeShifts));
+      await db.from('active_shifts').delete().eq('worker', loggedUser);
+      delete cloudActiveShifts[loggedUser];
       alert(`Směna ukončena v ${timeStr}. Zkontroluj a ulož.`);
     }
     checkLiveShift();
@@ -813,39 +892,29 @@
   }
 
   // --- PROJEKTY ---
-  function getProjects() {
-    return JSON.parse(localStorage.getItem('team_projects_clean_v3') || '["Bytovka Plzeň", "RD Stříbro - elektro", "Dílna - servis"]');
-  }
-
-  function saveProjects(projs) {
-    localStorage.setItem('team_projects_clean_v3', JSON.stringify(projs));
-    populateProjects();
-  }
-
-  function addProject() {
+  async function addProject() {
     const input = document.getElementById('newProjectName');
     const val = input.value.trim();
     if (!val) return;
-    const projs = getProjects();
-    if (!projs.includes(val)) {
-      projs.push(val);
-      saveProjects(projs);
+    if (!cloudProjects.includes(val)) {
+      await db.from('team_projects').insert([{ name: val }]);
+      cloudProjects.push(val);
+      populateProjects();
     }
     input.value = '';
   }
 
   function populateProjects() {
-    const projs = getProjects();
     const workSelect = document.getElementById('workProject');
     const filterSelect = document.getElementById('filterProject');
     const badgeList = document.getElementById('projectBadgeList');
 
-    workSelect.innerHTML = projs.map(p => `<option value="${p}">${p}</option>`).join('');
+    workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     const currentFilter = filterSelect.value || 'ALL';
-    filterSelect.innerHTML = `<option value="ALL">Všechny zakázky</option>` + projs.map(p => `<option value="${p}">${p}</option>`).join('');
+    filterSelect.innerHTML = `<option value="ALL">Všechny zakázky</option>` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     filterSelect.value = currentFilter;
 
-    badgeList.innerHTML = projs.map(p => `
+    badgeList.innerHTML = cloudProjects.map(p => `
       <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium border border-slate-200">${p}</span>
     `).join('');
   }
@@ -879,7 +948,7 @@
     );
   }
 
-  function compressImage(file, maxWidth = 1000, quality = 0.7) {
+  function compressImage(file, maxWidth = 900, quality = 0.6) {
     return new Promise((resolve) => {
       if (!file) return resolve("");
       const reader = new FileReader();
@@ -905,8 +974,12 @@
     });
   }
 
-  // --- ULOŽENÍ SMĚNY ---
+  // --- ULOŽENÍ SMĚNY DO SUPABASE ---
   async function saveRecord() {
+    const btn = document.getElementById('btnSaveShift');
+    btn.disabled = true;
+    btn.innerText = "⏳ Ukládám do cloudu...";
+
     const project = document.getElementById('workProject').value;
     const t1 = document.getElementById('timeStart').value;
     const t2 = document.getElementById('timeEnd').value;
@@ -954,36 +1027,38 @@
     }
     const matPhoto = await compressImage(matPhotoFile);
 
-    const record = {
-      id: Date.now(),
+    const recordId = Date.now();
+
+    const { error } = await db.from('team_shifts').insert([{
+      id: recordId,
       worker: loggedUser,
       project,
       date: document.getElementById('workDate').value,
-      gps: document.getElementById('gpsLocation').value,
-      t1, t2, hours: Number(hours.toFixed(2)),
-      rateH, rateK,
-      wageWorkOnly,
-      kmTotal,
+      t1, t2,
+      hours: Number(hours.toFixed(2)),
+      rate_h: rateH,
+      rate_k: rateK,
+      wage_work_only: wageWorkOnly,
+      km_total: kmTotal,
+      wage_travel_only: wageTravelOnly,
       stops: stopsList,
-      wageTravelOnly,
-      extraPauchal,
-      workAndTravelTotal,
-      desc: document.getElementById('workDesc').value,
-      workPhoto,
-      matDesc: document.getElementById('matDesc').value,
-      matCost,
-      matPhoto,
-      isWorkPaid: false,
-      isMatPaid: false
-    };
+      extra_pauchal: extraPauchal,
+      work_and_travel_total: workAndTravelTotal,
+      desc_text: document.getElementById('workDesc').value,
+      work_photo: workPhoto,
+      mat_desc: document.getElementById('matDesc').value,
+      mat_cost: matCost,
+      mat_photo: matPhoto,
+      is_work_paid: false,
+      is_mat_paid: false,
+      gps: document.getElementById('gpsLocation').value
+    }]);
 
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-    shifts.push(record);
+    btn.disabled = false;
+    btn.innerText = "💾 Uložit záznam směny";
 
-    try {
-      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
-    } catch (err) {
-      alert("Úložiště je plné! Smaž starší záznamy.");
+    if (error) {
+      alert("Chyba při ukládání: " + error.message);
       return;
     }
 
@@ -1002,35 +1077,33 @@
     document.getElementById('checkDiet').checked = false;
     document.getElementById('checkTools').checked = false;
 
+    await fetchAllFromCloud();
     renderAll();
-    alert('Směna úspěšně uložena!');
+    alert('Směna úspěšně uložena a synchronizována se všemi!');
   }
 
-  function toggleWorkPaid(id) {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-    const item = shifts.find(s => s.id === id);
-    if (item) {
-      item.isWorkPaid = !item.isWorkPaid;
-      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
-      renderAll();
-    }
+  async function toggleWorkPaid(id) {
+    const item = cloudShifts.find(s => s.id === id);
+    if (!item) return;
+    const nextState = !item.isWorkPaid;
+    await db.from('team_shifts').update({ is_work_paid: nextState }).eq('id', id);
+    item.isWorkPaid = nextState;
+    renderAll();
   }
 
-  function toggleMatPaid(id) {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-    const item = shifts.find(s => s.id === id);
-    if (item) {
-      item.isMatPaid = !item.isMatPaid;
-      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
-      renderAll();
-    }
+  async function toggleMatPaid(id) {
+    const item = cloudShifts.find(s => s.id === id);
+    if (!item) return;
+    const nextState = !item.isMatPaid;
+    await db.from('team_shifts').update({ is_mat_paid: nextState }).eq('id', id);
+    item.isMatPaid = nextState;
+    renderAll();
   }
 
-  function deleteRecord(id) {
-    if (confirm("Opravdu smazat tento konkrétní záznam?")) {
-      let shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-      shifts = shifts.filter(s => s.id !== id);
-      localStorage.setItem('team_shifts_clean_v3', JSON.stringify(shifts));
+  async function deleteRecord(id) {
+    if (confirm("Opravdu smazat tento konkrétní záznam z databáze?")) {
+      await db.from('team_shifts').delete().eq('id', id);
+      cloudShifts = cloudShifts.filter(s => s.id !== id);
       renderAll();
     }
   }
@@ -1041,13 +1114,6 @@
     const list = document.getElementById('logList');
     const filterUser = document.getElementById('filterUser').value || loggedUser;
     const filterProject = document.getElementById('filterProject').value;
-    let shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-
-    shifts.sort((a, b) => {
-      const dateDiff = new Date(b.date) - new Date(a.date);
-      if (dateDiff !== 0) return dateDiff;
-      return (b.t1 || '').localeCompare(a.t1 || '');
-    });
 
     let unpaidWorkWage = 0;
     let unpaidWorkHours = 0;
@@ -1055,7 +1121,7 @@
     let unpaidTravelKm = 0;
     let unpaidMatCost = 0;
 
-    shifts.forEach(s => {
+    cloudShifts.forEach(s => {
       if (s.worker === loggedUser && isDateInPeriod(s.date, selectedPeriod)) {
         if (!s.isWorkPaid) {
           unpaidWorkWage += s.wageWorkOnly + (s.extraPauchal || 0);
@@ -1075,7 +1141,7 @@
     document.getElementById('dashTravelKm').innerText = unpaidTravelKm + ' km';
     document.getElementById('dashMatCost').innerText = unpaidMatCost.toLocaleString() + ' Kč';
 
-    const filtered = shifts.filter(s => {
+    const filtered = cloudShifts.filter(s => {
       const matchUser = (filterUser === 'ALL' || s.worker === filterUser);
       const matchProject = (filterProject === 'ALL' || s.project === filterProject);
       return matchUser && matchProject;
@@ -1190,11 +1256,10 @@
   }
 
   function exportToCSV() {
-    const shifts = JSON.parse(localStorage.getItem('team_shifts_clean_v3') || '[]');
-    if (shifts.length === 0) return alert('Žádná data k exportu.');
+    if (cloudShifts.length === 0) return alert('Žádná data k exportu.');
 
     let csv = "Datum;Kdo;Zakazka;Cas Od;Cas Do;Hodin;Mzda Hodiny (Kc);Km;Cestovne (Kc);Mezizastavky;Pausaly (Kc);Material Popis;Material (Kc);Stav Prace;Stav Material;GPS\n";
-    shifts.forEach(s => {
+    cloudShifts.forEach(s => {
       const stopsStr = (s.stops || []).map(st => `${st.place} (${st.km} km)`).join(' | ');
       csv += `"${s.date}";"${s.worker}";"${s.project}";"${s.t1}";"${s.t2}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${stopsStr}";"${s.extraPauchal || 0}";"${s.matDesc || ''}";"${s.matCost}";"${s.isWorkPaid ? 'Proplaceno' : 'Ceka'}";"${s.isMatPaid ? 'Proplaceno' : 'Ceka'}";"${s.gps || ''}"\n`;
     });
@@ -1206,5 +1271,6 @@
     link.click();
   }
 
+  // Spuštění po načtení
   initApp();
 </script>
