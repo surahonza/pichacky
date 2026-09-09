@@ -101,7 +101,7 @@
   <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden space-y-3">
 
-    <!-- HORNÍ LIŠTA -->
+    <!-- HORNÍ LIŠTA S REFRESHEM -->
     <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
@@ -823,7 +823,6 @@
     return str.length > 4 ? str.slice(-4) : str;
   }
 
-  // Role šéfa je 100% řízena z databáze
   function isUserBoss(username) {
     if (!username) return false;
     const u = cloudUsers[username];
@@ -916,7 +915,7 @@
     }, 250);
   }
 
-  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE (DOSTUPNÉ PRO KAŽDÉHO) ---
+  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE (PRO KAŽDÉHO) ---
   function renderBossMarkupSettings() {
     const section = document.getElementById('bossMarkupSettingsSection');
     const container = document.getElementById('bossMarkupInputsList');
@@ -2709,7 +2708,6 @@
           let shiftWork = s.wageWorkOnly + (s.extraPauchal || 0);
           let clientWorkForShift = s.wageWorkOnly + (s.extraPauchal || 0);
 
-          // Žádná provize na sebe samého:
           if (!isMySelfSite && !isUserBoss(s.worker)) {
             const driverMarkup = getWorkerMarkup(shiftBoss, s.worker);
             clientWorkForShift += Math.round(s.hours * driverMarkup);
@@ -2747,18 +2745,16 @@
           if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
           if (!s.isMatPaid) unpaidMatCost += s.matCost;
         } else {
-          // Běžný pracovník (např. Jan)
+          // Běžný pracovník (např. Jan nebo Matěj)
           if (isCreator) {
             const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
             
-            // Pokud Jan dělá "Sám na sebe" a přibral parťáka:
             if (isMySelfSite && (s.partners || []).length > 0) {
               hasTeamOrSelfLeaderShifts = true;
               (s.partners || []).forEach(p => {
                 if (!p.isWorkPaid) bossTotalDebtWorkers += (p.wageWorkOnly || 0);
               });
 
-              // Na sebe samého ŽÁDNÁ provize:
               let selfClientWork = shiftWorkTotal;
               (s.partners || []).forEach(p => {
                 const markup = getWorkerMarkup(s.worker, p.name);
@@ -2775,6 +2771,7 @@
             if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
             if (!s.isMatPaid) unpaidMatCost += s.matCost;
           } else if (partnerEntry) {
+            // Parťák (např. Matěj): jeho hodiny a odměna se mu načtou do kasy!
             totalWorkForChart += (partnerEntry.wageWorkOnly || 0);
             if (!partnerEntry.isWorkPaid) {
               unpaidWorkWage += (partnerEntry.wageWorkOnly || 0);
@@ -2857,7 +2854,7 @@
           </div>
         </div>
 
-        <!-- HLAVNÍ PRACOVNÍK (NA SÁM NA SEBE SE PROVIZE NA SEBE NEPŘIDÁVÁ) -->
+        <!-- HLAVNÍ PRACOVNÍK -->
         <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
           <div class="flex justify-between items-center text-slate-800 font-bold text-[11px] border-b border-slate-200 pb-1">
             <span>👤 ${r.worker} (hlavní / řidič)</span>
@@ -2904,7 +2901,7 @@
           ` : ''}
         </div>
 
-        <!-- PARŤÁCI NA ZAKÁZCE + ŠÉFOVSKÝ ROZPAD S INDIVIDUÁLNÍ MARŽÍ -->
+        <!-- PARŤÁCI NA ZAKÁZCE - TEĎ S KOMPLETNÍM PŘÍKLADEM I TUČNÝM VÝSLEDKEM! -->
         ${r.partners && r.partners.length > 0 ? `
           <div class="space-y-1.5 pt-0.5">
             <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
@@ -2916,7 +2913,7 @@
                   <div class="flex justify-between items-center">
                     <div>
                       <span class="font-bold text-slate-800">${p.name}</span>
-                      <span class="text-[10px] text-slate-500 ml-1">(${p.hours} h × ${p.rateH} Kč)</span>
+                      <span class="text-[10px] text-slate-600 ml-1 font-medium">(${p.hours} h × ${p.rateH} Kč) = <b class="text-slate-950 font-black text-[11px]">${p.wageWorkOnly} Kč</b></span>
                     </div>
                     <button type="button" onclick="togglePartnerWorkPaid(${r.id}, ${pIdx})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${p.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
                       ${p.isWorkPaid ? '✓ Proplaceno' : '○ Čeká na výplatu'}
@@ -2927,11 +2924,11 @@
                     <div class="bg-white p-2 rounded-lg border border-sky-200 grid grid-cols-2 gap-1 text-[10px]">
                       <div>
                         <span class="text-slate-400 font-semibold block">Dluh parťákovi:</span>
-                        <b class="text-rose-700">${p.wageWorkOnly} Kč</b>
+                        <b class="text-rose-700 font-black">${p.wageWorkOnly} Kč</b>
                       </div>
                       <div>
                         <span class="text-slate-400 font-semibold block">Od investora (+${markup} Kč/h):</span>
-                        <b class="text-sky-800">${clientBillForPartner} Kč</b>
+                        <b class="text-sky-800 font-black">${clientBillForPartner} Kč</b>
                       </div>
                     </div>
                   ` : ''}
