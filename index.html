@@ -108,7 +108,7 @@
       </button>
 
       <div class="text-center">
-        <span id="labelCurrentWorker" class="font-black text-sm sm:text-base text-emerald-400 block leading-tight">Jan (já)</span>
+        <span id="labelCurrentWorker" class="font-black text-sm sm:text-base text-emerald-400 block leading-tight">Jan</span>
         <span id="badgeCurrentWorkerStatus" class="text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700">⚪ Volno</span>
       </div>
       
@@ -176,6 +176,7 @@
           <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           <input type="hidden" id="gpsLocation">
           <input type="text" id="gpsAddressManual" placeholder="Místo / Adresa (nepovinné)" class="w-full border border-slate-300 rounded-xl p-1.5 text-xs bg-slate-50 outline-none mt-1">
+          <span id="gpsStatus" class="text-[10px] text-slate-400 block truncate">📍 GPS nepřipojena</span>
         </div>
 
         <div class="w-full sm:w-1/2 space-y-1">
@@ -947,7 +948,6 @@
     projSel.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     projSel.value = item.project;
 
-    // Seznam parťáků s možností zaškrtnout/odškrtnout kohokoliv
     const partnerContainer = document.getElementById('editShiftPartnersList');
     const existingPartnerNames = (item.partners || []).map(p => p.name);
     const availablePartners = Object.keys(cloudUsers).filter(u => u !== item.worker);
@@ -988,18 +988,17 @@
       hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
     }
 
-    const wageWorkOnly = Math.round(hours * item.rateH);
-    const wageTravelOnly = Math.round(newKm * item.rateK);
+    const wageWorkOnly = Math.round(hours * (item.rateH || 300));
+    const wageTravelOnly = Math.round(newKm * (item.rateK || 7));
     const workAndTravelTotal = wageWorkOnly + wageTravelOnly + (item.extraPauchal || 0);
 
-    // Sestavení nového pole parťáků podle zaškrtávátek
     const checkedBoxes = document.querySelectorAll('input[name="editPartnerCheck"]:checked');
     const updatedPartners = [];
     checkedBoxes.forEach(cb => {
       const pName = cb.value;
       const prev = (item.partners || []).find(p => p.name === pName);
       const pData = cloudUsers[pName] || { rateH: 300 };
-      const pRateH = prev ? prev.rateH : pData.rateH;
+      const pRateH = prev && prev.rateH !== undefined ? prev.rateH : (pData.rateH || 300);
       const pPaid = prev ? prev.isWorkPaid : false;
 
       updatedPartners.push({
@@ -1011,8 +1010,7 @@
       });
     });
 
-    const { error } = await db.from('team_shifts').update({
-      boss: newBoss,
+    const updatePayload = {
       project: newProject,
       date: newDate,
       km_total: newKm,
@@ -1024,8 +1022,11 @@
       work_and_travel_total: workAndTravelTotal,
       photos_link: newPhotosLink,
       desc_text: newDesc,
-      partners_json: JSON.stringify(updatedPartners)
-    }).eq('id', shiftId);
+      partners_json: JSON.stringify(updatedPartners),
+      boss: newBoss
+    };
+
+    const { error } = await db.from('team_shifts').update(updatePayload).eq('id', shiftId);
 
     if (error) return alert("Chyba při ukládání: " + error.message);
 
@@ -1148,7 +1149,8 @@
   function confirmMapLocation() {
     document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
     document.getElementById('gpsAddressManual').value = selectedMapText;
-    document.getElementById('gpsStatus').innerText = `📍 ${selectedMapText.substring(0, 30)}...`;
+    const status = document.getElementById('gpsStatus');
+    if (status) status.innerText = `📍 ${selectedMapText.substring(0, 30)}...`;
     closeMapModal();
   }
 
@@ -1256,18 +1258,18 @@
     updateLiveCalculations();
   }
 
-  // --- NAČTENÍ ZE SUPABASE (VČETNĚ GOOGLE FOTEK A OSOBNÍCH PRACÍ) ---
+  // --- NAČTENÍ ZE SUPABASE ---
   async function fetchAllFromCloud() {
     try {
       const { data: uData } = await db.from('team_users').select('*');
       cloudUsers = {};
       if (uData) {
         uData.forEach(u => {
-          let cleanName = u.username.trim();
+          let cleanName = (u.username || '').trim();
           if (cleanName.toLowerCase() === 'jirka' || cleanName.toLowerCase() === 'jiri' || cleanName.toLowerCase() === 'jiří') {
             cleanName = 'Jiří';
           }
-          cloudUsers[cleanName] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t };
+          cloudUsers[cleanName] = { pass: u.password, rateH: u.rate_h || 300, rateK: u.rate_k || 7, rateD: u.rate_d || 150, rateT: u.rate_t || 100 };
         });
       }
 
@@ -1315,14 +1317,14 @@
 
           return {
             id: s.id, worker: s.worker, project: s.project, date: s.date, t1: s.t1, t2: s.t2,
-            hours: Number(s.hours), rateH: s.rate_h, rateK: s.rate_k, wageWorkOnly: s.wage_work_only,
-            kmTotal: s.km_total, wageTravelOnly: s.wage_travel_only, stops: s.stops || [],
-            extraPauchal: s.extra_pauchal || 0, workAndTravelTotal: s.work_and_travel_total,
-            desc: s.desc_text, workPhotos, matPurchases, matCost: s.mat_cost,
+            hours: Number(s.hours) || 0, rateH: s.rate_h || 300, rateK: s.rate_k || 7, wageWorkOnly: s.wage_work_only || 0,
+            kmTotal: s.km_total || 0, wageTravelOnly: s.wage_travel_only || 0, stops: s.stops || [],
+            extraPauchal: s.extra_pauchal || 0, workAndTravelTotal: s.work_and_travel_total || 0,
+            desc: s.desc_text, workPhotos, matPurchases, matCost: s.mat_cost || 0,
             isWorkPaid: s.is_work_paid, isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
             isMatPaid: s.is_mat_paid, gps: s.gps, boss: s.boss || 'Jiří',
             partners: partnersData,
-            photosLink: s.photos_link || '' // Odkaz na Google Fotky
+            photosLink: s.photos_link || ''
           };
         });
       }
@@ -1346,10 +1348,10 @@
 
   function updateLiveCalculations() {
     const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    const rateH = Number(document.getElementById('rateHour').value) || uData.rateH;
-    const rateK = Number(document.getElementById('rateKm').value) || uData.rateK;
-    const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD;
-    const rateT = Number(document.getElementById('rateTools').value) || uData.rateT;
+    const rateH = Number(document.getElementById('rateHour').value) || uData.rateH || 0;
+    const rateK = Number(document.getElementById('rateKm').value) || uData.rateK || 0;
+    const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD || 0;
+    const rateT = Number(document.getElementById('rateTools').value) || uData.rateT || 0;
 
     const t1 = document.getElementById('timeStart').value;
     const t2 = document.getElementById('timeEnd').value;
@@ -1909,16 +1911,16 @@
   function getGPS(silent = false) {
     const status = document.getElementById('gpsStatus');
     if (!navigator.geolocation) return;
-    if (!silent) status.innerText = "Zjišťuji GPS...";
+    if (!silent && status) status.innerText = "Zjišťuji GPS...";
     navigator.geolocation.getCurrentPosition(
       (p) => {
         const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5);
         const coordStr = `${lat}, ${lon}`;
         document.getElementById('gpsLocation').value = coordStr;
         if (!document.getElementById('gpsAddressManual').value) document.getElementById('gpsAddressManual').value = coordStr;
-        status.innerText = `📍 ${coordStr}`;
+        if (status) status.innerText = `📍 ${coordStr}`;
       },
-      () => { if (!silent) status.innerText = "GPS nedostupná"; },
+      () => { if (!silent && status) status.innerText = "GPS nedostupná"; },
       { timeout: 8000 }
     );
   }
@@ -1989,17 +1991,18 @@
     partnerBoxes.forEach(p => {
       const pName = p.value;
       const pData = cloudUsers[pName] || { rateH: 300 };
+      const partnerRateH = pData.rateH || 300;
       partnersList.push({
         name: pName,
         hours: Number(hours.toFixed(2)),
-        rateH: pData.rateH,
-        wageWorkOnly: Math.round(hours * pData.rateH),
+        rateH: partnerRateH,
+        wageWorkOnly: Math.round(hours * partnerRateH),
         isWorkPaid: false
       });
     });
 
     const recordId = Date.now();
-    const { error } = await db.from('team_shifts').insert([{
+    const payload = {
       id: recordId,
       worker: loggedUser,
       project,
@@ -2025,8 +2028,10 @@
       gps: finalGpsText,
       boss: selectedBoss,
       partners_json: JSON.stringify(partnersList),
-      photos_link: photosLink // Uložení odkazu na Google Fotky
-    }]);
+      photos_link: photosLink
+    };
+
+    const { error } = await db.from('team_shifts').insert([payload]);
 
     btn.disabled = false;
     btn.innerText = "💾 Uložit záznam směny";
@@ -2224,7 +2229,7 @@
           totalMatForChart += s.matCost;
 
           if (!s.isWorkPaid) unpaidWorkWage += s.wageWorkOnly + (s.extraPauchal || 0);
-          (s.partners || []).forEach(p => { if (!p.isWorkPaid) unpaidWorkWage += p.wageWorkOnly; });
+          (s.partners || []).forEach(p => { if (!p.isWorkPaid) unpaidWorkWage += (p.wageWorkOnly || 0); });
 
           if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
           if (!s.isMatPaid) unpaidMatCost += s.matCost;
@@ -2239,10 +2244,10 @@
             if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
             if (!s.isMatPaid) unpaidMatCost += s.matCost;
           } else if (partnerEntry) {
-            totalWorkForChart += partnerEntry.wageWorkOnly;
+            totalWorkForChart += (partnerEntry.wageWorkOnly || 0);
             if (!partnerEntry.isWorkPaid) {
-              unpaidWorkWage += partnerEntry.wageWorkOnly;
-              unpaidWorkHours += partnerEntry.hours;
+              unpaidWorkWage += (partnerEntry.wageWorkOnly || 0);
+              unpaidWorkHours += (partnerEntry.hours || 0);
             }
           }
         }
@@ -2257,13 +2262,12 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
-    // 2. Filtrování v seznamu (pokud jsem parťák v práci "Sám na sebe", taky ji vidím!)
+    // 2. Filtrování v seznamu
     const filtered = cloudShifts.filter(s => {
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
       const isPartner = (s.partners || []).some(p => p.name === loggedUser);
 
-      // Pokud je kšeft "Sám na sebe", vidí ho jen zakladatel A VŠICHNI PARŤÁCI, kteří na něm dělali
       if (shiftBoss === 'Sám na sebe' && !isCreator && !isPartner) return false;
 
       if (myRole === 'self') {
