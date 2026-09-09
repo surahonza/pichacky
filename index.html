@@ -384,8 +384,8 @@
     </div>
   </div>
 
-  <!-- SPOLEČNÝ ADMIN PANEL (PRO LOGIN I NASTAVENÍ) -->
-  <div id="masterAdminModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
+  <!-- SPOLEČNÝ ADMIN PANEL (ZOBRAZUJE SE VŽDY ZCELA VPŘEDU - Z-60) -->
+  <div id="masterAdminModal" class="fixed inset-0 bg-black/85 z-[60] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-xl mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
         <div>
@@ -451,7 +451,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) -->
+  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO - Z-50) -->
   <div id="settingsBackdrop" onclick="toggleSettingsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="settingsMenu" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 shadow-2xl p-4 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
     <div class="space-y-4">
@@ -543,7 +543,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO) -->
+  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO - Z-50) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
@@ -736,16 +736,16 @@
 
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
 
-  // FORMÁTOVÁNÍ DATA: den. měsíc. rok (např. 9. 9. 2026)
+  // NEROZDĚLENÉ FORMÁTOVÁNÍ DATA: den.&nbsp;měsíc.&nbsp;rok (např. 9. 9. 2026)
   function formatCzechDate(dateStr) {
     if (!dateStr) return "";
     const parts = dateStr.split('-');
     if (parts.length === 3) {
-      return `${parseInt(parts[2], 10)}. ${parseInt(parts[1], 10)}. ${parts[0]}`;
+      return `${parseInt(parts[2], 10)}.\u00A0${parseInt(parts[1], 10)}.\u00A0${parts[0]}`;
     }
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+    return `${d.getDate()}.\u00A0${d.getMonth() + 1}.\u00A0${d.getFullYear()}`;
   }
 
   function setScrollLock(lock) {
@@ -792,10 +792,12 @@
     }
   }
 
-  // --- MASTER ADMIN ROZHRANÍ ---
+  // --- MASTER ADMIN ROZHRANÍ (ZASUNE BOČNÍ PANEL A OTEVŘE SE VPŘEDU) ---
   function openMasterAdminModal() {
     const entered = prompt("Zadej správcovské heslo (Master PIN):");
     if (entered === MASTER_BACKUP_PASSWORD) {
+      // Pokud bylo otevřené boční menu nastavení, zavřeme ho, aby nezavazelo
+      toggleSettingsMenu(false);
       setScrollLock(true);
       document.getElementById('masterAdminModal').classList.remove('hidden');
       refreshMasterAdminUI();
@@ -951,7 +953,6 @@
     const wageTravelOnly = Math.round(newKm * item.rateK);
     const workAndTravelTotal = wageWorkOnly + wageTravelOnly + (item.extraPauchal || 0);
 
-    // Přepočet hodin a mezd i u parťáků na směně
     if (item.partners && item.partners.length > 0) {
       item.partners.forEach(p => {
         p.hours = Number(hours.toFixed(2));
@@ -1199,6 +1200,7 @@
     updateLiveCalculations();
   }
 
+  // --- NAČTENÍ ZE SUPABASE ---
   async function fetchAllFromCloud() {
     try {
       const { data: uData } = await db.from('team_users').select('*');
@@ -1864,6 +1866,7 @@
     );
   }
 
+  // --- SPOLEČNÉ ULOŽENÍ SMĚNY ---
   async function saveRecord() {
     const btn = document.getElementById('btnSaveShift');
     btn.disabled = true;
@@ -1994,7 +1997,6 @@
     alert('Směna úspěšně uložena!');
   }
 
-  // --- KONTROLA OPRÁVNĚNÍ ---
   function canManageShift(shiftItem) {
     const shiftBoss = shiftItem.boss || 'Jiří';
     const isCreator = (shiftItem.worker === loggedUser);
@@ -2114,7 +2116,7 @@
     return true;
   }
 
-  // --- VÝPIS HISTORIE A KASY ---
+  // --- VÝPIS HISTORIE A KASY S FORMÁTOVANÝM DATEM A ČISTOU HLAVIČKOU ---
   function renderAll() {
     if (!loggedUser) return;
 
@@ -2133,7 +2135,6 @@
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
 
-    // 1. Výpočet Kasy
     cloudShifts.forEach(s => {
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
@@ -2192,7 +2193,6 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
-    // 2. Filtrování v seznamu
     const filtered = cloudShifts.filter(s => {
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
@@ -2228,16 +2228,17 @@
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
       
       div.innerHTML = `
-        <div class="flex justify-between items-start">
-          <div>
-            <span class="inline-block font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-lg text-[11px] mr-1">${r.project}</span>
-            <span class="inline-block font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-lg text-[11px] mr-1">Založil: ${r.worker}</span>
-            <span class="text-slate-500 font-semibold text-[10px]">(${r.boss || 'Jiří'})</span>
-            <span class="text-slate-600 font-bold ml-1">${formatCzechDate(r.date)}</span>
+        <!-- PŘEHLEDNÁ HLAVIČKA ZÁZNAMU BEZ ZALAMOVÁNÍ -->
+        <div class="flex flex-wrap sm:flex-nowrap justify-between items-start gap-1.5 border-b border-slate-100 pb-2">
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span class="font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-lg text-[11px] truncate max-w-[140px] sm:max-w-[200px]">${r.project}</span>
+            <span class="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-lg text-[10px]">Založil:\u00A0${r.worker}</span>
+            <span class="text-slate-500 font-semibold text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">šéf:\u00A0${r.boss || 'Jiří'}</span>
+            <span class="text-slate-600 font-bold text-[11px] whitespace-nowrap bg-slate-100 px-2 py-0.5 rounded-lg">${formatCzechDate(r.date)}</span>
           </div>
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-1 flex-shrink-0 self-start">
             ${canManage ? `
-              <button type="button" onclick="openEditShiftModal(${r.id})" title="Upravit záznam" class="text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-xs transition">✏️ Upravit</button>
+              <button type="button" onclick="openEditShiftModal(${r.id})" title="Upravit záznam" class="text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-xs transition">✏️</button>
               <button type="button" onclick="deleteRecord(${r.id})" title="Smazat zakázku" class="text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 font-black px-2 py-0.5 rounded-lg text-xs transition">✕</button>
             ` : ''}
           </div>
@@ -2312,7 +2313,7 @@
                 <div class="bg-white p-2 rounded-xl border border-amber-200/80 space-y-1.5 shadow-2xs">
                   <div class="flex justify-between items-center text-[11px] font-semibold text-slate-800">
                     <span>${m.desc || 'Nákup'} - <b class="text-amber-900">${m.cost} Kč</b></span>
-                    <button type="button" onclick="toggleSingleMaterialPaid(${r.id}, ${mIdx})" class="px-2 py-0.5 rounded font-bold text-[10px] transition shadow-2xs ${m.isPaid ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}">
+                    <button type="button" onclick="toggleSingleMaterialPaid(${r.id}, ${mIdx})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${m.isPaid ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}">
                       ${m.isPaid ? '✓ Proplaceno' : '○ Čeká na nákup'}
                     </button>
                   </div>
