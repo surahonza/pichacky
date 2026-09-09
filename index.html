@@ -313,7 +313,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA S VYSOKOU PRIORITOU Z-[75] -->
+  <!-- INTERAKTIVNÍ MAPA (z-[75]) -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-[75] hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -389,13 +389,11 @@
           </div>
         </div>
 
-        <!-- Úprava parťáků na stavbě -->
         <div class="bg-sky-50/70 p-2.5 rounded-xl border border-sky-200 space-y-1">
           <span class="text-[11px] font-bold text-sky-900 block uppercase tracking-wider">👥 Parťáci na této zakázce:</span>
           <div id="editShiftPartnersList" class="flex flex-wrap gap-2 pt-0.5"></div>
         </div>
 
-        <!-- Úprava odkazu na Google fotky -->
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">🔗 ODKAZ NA GOOGLE FOTKY / ALBUM</label>
           <input type="url" id="editShiftPhotosLink" placeholder="https://photos.app.goo.gl/..." class="w-full border rounded-xl p-2 text-xs bg-slate-50">
@@ -431,7 +429,7 @@
           <div id="masterAdminPasswordsList" class="bg-slate-50 border rounded-2xl p-2 text-xs space-y-1 divide-y divide-slate-200"></div>
         </div>
 
-        <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA -->
+        <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA (OPRAVENO) -->
         <div class="space-y-2 pt-2 border-t">
           <span class="text-xs font-bold text-amber-700 block uppercase">2. 👑 Povýšení na Šéfa / Správa rolí:</span>
           <p class="text-[10px] text-slate-500">Šéfové schvalují výplaty a vystupují jako volitelní šéfové zakázek:</p>
@@ -489,7 +487,7 @@
           <select id="masterAdminShiftSelect" onchange="showSelectedAdminShiftDetails()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
         </div>
 
-        <!-- 5. RESET HESLA (OPRAVENO) -->
+        <!-- 5. RESET HESLA (OPRAVENO A PLNE FUNKCNI) -->
         <div class="space-y-1.5 pt-2 border-t">
           <span class="text-xs font-bold text-slate-700 block uppercase">5. Změnit heslo uživateli:</span>
           <div class="flex gap-1.5">
@@ -503,7 +501,7 @@
         <div class="space-y-1.5 pt-2 border-t">
           <span class="text-xs font-bold text-rose-700 block uppercase">6. Smazat uživatele z databáze:</span>
           <div class="flex gap-1.5">
-            <select id="masterAdminDeleteUser" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <select id="masterAdminDeleteUser" class="flex-1 border border-rose-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
           </div>
         </div>
@@ -663,7 +661,7 @@
         </div>
       </div>
 
-      <!-- SPECIÁLNÍ KASA PRO ŠÉFA (PROVIZE & DLUHY ZAMĚSTNANCŮM) -->
+      <!-- SPECIÁLNÍ KASA PRO ŠÉFA -->
       <div id="bossFinancialSummaryBox" class="hidden bg-amber-50 border border-amber-300 p-3 rounded-xl space-y-2 text-xs">
         <span class="font-bold text-amber-950 block uppercase text-[10px] tracking-wider">👑 Šéfovské vyúčtování (Marže & Dluhy):</span>
         <div class="grid grid-cols-2 gap-2 text-center">
@@ -825,24 +823,20 @@
     return str.length > 4 ? str.slice(-4) : str;
   }
 
+  // Role šéfa je 100% řízena z databáze
   function isUserBoss(username) {
     if (!username) return false;
     const u = cloudUsers[username];
-    if (u && u.isBoss !== undefined) return u.isBoss;
-    return false;
+    return !!(u && u.isBoss === true);
   }
 
   function getBossList() {
-    const list = Object.keys(cloudUsers).filter(u => isUserBoss(u));
-    if (list.length === 0) {
-      if (cloudUsers['Jiří']) list.push('Jiří');
-      if (cloudUsers['Petr']) list.push('Petr');
-    }
-    return Array.from(new Set(list));
+    return Object.keys(cloudUsers).filter(u => isUserBoss(u));
   }
 
   function getUserPermissions(username) {
-    const defaultBosses = isUserBoss(username) ? [username] : getBossList();
+    const bosses = getBossList();
+    const defaultBosses = isUserBoss(username) ? [username] : bosses;
     const defaultWorkers = isUserBoss(username) ? Object.keys(cloudUsers) : [username];
 
     const u = cloudUsers[username];
@@ -851,10 +845,6 @@
         allowedBosses: Array.isArray(u.perms.allowedBosses) ? u.perms.allowedBosses : defaultBosses,
         allowedWorkers: Array.isArray(u.perms.allowedWorkers) ? u.perms.allowedWorkers : defaultWorkers
       };
-    }
-    const local = localStorage.getItem('user_perms_' + username);
-    if (local) {
-      try { return JSON.parse(local); } catch(e) {}
     }
     return {
       allowedBosses: defaultBosses,
@@ -945,13 +935,7 @@
     }
 
     const uData = cloudUsers[loggedUser] || {};
-    let markups = {};
-    if (uData.bossMarkups) {
-      markups = uData.bossMarkups;
-    } else {
-      const local = localStorage.getItem('boss_markups_' + loggedUser);
-      if (local) { try { markups = JSON.parse(local); } catch(e){} }
-    }
+    const markups = uData.bossMarkups || {};
 
     container.innerHTML = others.map(worker => {
       const currentMarkup = markups[worker] !== undefined ? markups[worker] : 50;
@@ -973,17 +957,10 @@
     if (!inp) return;
     const val = Number(inp.value) || 0;
 
-    let markups = {};
     const uData = cloudUsers[loggedUser] || {};
-    if (uData.bossMarkups) markups = uData.bossMarkups;
-    else {
-      const local = localStorage.getItem('boss_markups_' + loggedUser);
-      if (local) { try { markups = JSON.parse(local); } catch(e){} }
-    }
-
+    const markups = uData.bossMarkups || {};
     markups[workerName] = val;
     uData.bossMarkups = markups;
-    localStorage.setItem('boss_markups_' + loggedUser, JSON.stringify(markups));
 
     try {
       await db.from('team_users').update({ permissions_json: JSON.stringify({ perms: getUserPermissions(loggedUser), markups }) }).eq('username', loggedUser);
@@ -997,17 +974,10 @@
     if (uData && uData.bossMarkups && uData.bossMarkups[workerName] !== undefined) {
       return Number(uData.bossMarkups[workerName]) || 0;
     }
-    const local = localStorage.getItem('boss_markups_' + bossName);
-    if (local) {
-      try {
-        const m = JSON.parse(local);
-        if (m[workerName] !== undefined) return Number(m[workerName]) || 0;
-      } catch(e){}
-    }
     return 50;
   }
 
-  // --- MASTER ADMIN ROZHRANÍ ---
+  // --- MASTER ADMIN ROZHRANÍ (PLNĚ OPRAVENÉ) ---
   function openMasterAdminModal() {
     const entered = prompt("Zadej správcovské heslo (Master PIN):");
     if (entered === MASTER_BACKUP_PASSWORD) {
@@ -1078,22 +1048,19 @@
     const currentStatus = isUserBoss(user);
     const newStatus = !currentStatus;
 
-    if (cloudUsers[user]) cloudUsers[user].isBoss = newStatus;
-    localStorage.setItem('user_is_boss_' + user, newStatus ? '1' : '0');
+    if (cloudUsers[user]) {
+      cloudUsers[user].isBoss = newStatus;
+    }
 
     try {
-      const { data: existing } = await db.from('team_users').select('id').eq('username', user);
-      if (existing && existing.length > 0) {
-        await db.from('team_users').update({ is_boss: newStatus }).eq('username', user);
-      } else {
-        await db.from('team_users').insert([{
-          username: user,
-          password: cloudUsers[user] ? cloudUsers[user].pass : '1234',
-          is_boss: newStatus
-        }]);
-      }
+      // Upsert: Aktualizuje nebo vytvoří řádek
+      await db.from('team_users').upsert({
+        username: user,
+        password: cloudUsers[user] ? cloudUsers[user].pass : '1234',
+        is_boss: newStatus
+      }, { onConflict: 'username' });
     } catch(e) {
-      console.error("Chyba při aktualizaci role šéfa:", e);
+      console.error("Chyba při aktualizaci role šéfa v DB:", e);
     }
 
     alert(newStatus ? `Uživatel ${user} je nyní 👑 ŠÉF!` : `Uživateli ${user} byla role šéfa odebrána.`);
@@ -1157,7 +1124,6 @@
     if (cloudUsers[targetUser]) {
       cloudUsers[targetUser].perms = permObj;
     }
-    localStorage.setItem('user_perms_' + targetUser, JSON.stringify(permObj));
 
     try {
       const uData = cloudUsers[targetUser] || {};
@@ -1254,25 +1220,28 @@
     renderAll();
   }
 
+  // SPOLEHLIVÁ ZMĚNA HESLA PRO KOHOKOLIV (VČETNĚ ŠÉFŮ)
   async function masterAdminChangePass() {
     const target = document.getElementById('masterAdminResetUser').value;
     const newPass = document.getElementById('masterAdminNewPass').value.trim();
     if (!newPass) return alert("Zadej nové heslo.");
 
     try {
-      const { data: existing } = await db.from('team_users').select('id').eq('username', target);
-      if (existing && existing.length > 0) {
-        await db.from('team_users').update({ password: newPass }).eq('username', target);
-      } else {
-        await db.from('team_users').insert([{
-          username: target,
-          password: newPass,
-          is_boss: isUserBoss(target)
-        }]);
+      // Upsert: Pokud uživatel existuje, přepíše heslo. Pokud neexistoval v DB, vytvoří ho.
+      const isBossFlag = isUserBoss(target);
+      const { error } = await db.from('team_users').upsert({
+        username: target,
+        password: newPass,
+        is_boss: isBossFlag
+      }, { onConflict: 'username' });
+
+      if (error) throw error;
+
+      if (cloudUsers[target]) {
+        cloudUsers[target].pass = newPass;
       }
-      if (cloudUsers[target]) cloudUsers[target].pass = newPass;
       document.getElementById('masterAdminNewPass').value = '';
-      alert(`Heslo pro ${target} bylo úspěšně změněno!`);
+      alert(`Heslo pro ${target} bylo úspěšně změněno na: ${newPass}`);
       refreshMasterAdminUI();
     } catch(err) {
       alert("Chyba při změně hesla: " + err.message);
@@ -1294,6 +1263,43 @@
     populateUserFilter();
     renderPartnerCheckboxes();
     renderBossButtons();
+  }
+
+  // --- POPULACE PROJEKTŮ A FILTRU ---
+  function populateProjects() {
+    const workSelect = document.getElementById('workProject');
+    const filterSelect = document.getElementById('filterProject');
+    const badgeList = document.getElementById('projectBadgeList');
+
+    workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
+    
+    const savedFilter = filterSelect.value || 'ALL';
+    filterSelect.innerHTML = `
+      <option value="ALL">Všechny zakázky</option>
+      <option value="SELF_ONLY">👤 Pouze Sám na sebe</option>
+    ` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
+    filterSelect.value = savedFilter;
+
+    badgeList.innerHTML = cloudProjects.length === 0 ? '<span class="text-[11px] text-slate-400">Žádné stavby.</span>' : cloudProjects.map(p => `
+      <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
+        <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="editProject('${p}')" title="Přejmenovat" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
+          <button type="button" onclick="deleteProject('${p}')" title="Smazat" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 border border-rose-200">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function populateUserFilter() {
+    const filterSelect = document.getElementById('filterUser');
+    const savedVal = filterSelect.value || 'ALL';
+    
+    const users = Object.keys(cloudUsers);
+    filterSelect.innerHTML = `<option value="ALL">Všichni pracovníci</option>` +
+      users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
+      
+    filterSelect.value = savedVal;
   }
 
   // --- KOMPLETNÍ ÚPRAVA CELÉHO ZÁZNAMU SMĚNY ---
@@ -1465,7 +1471,7 @@
     const container = document.getElementById('bossButtonContainer');
     if (!container) return;
     const bosses = getBossList();
-    const currentBoss = document.getElementById('selectedBoss').value || bosses[0] || 'Jiří';
+    const currentBoss = document.getElementById('selectedBoss').value || (bosses[0] || 'Jiří');
 
     let html = bosses.map(b => {
       const active = (currentBoss === b);
@@ -1726,12 +1732,6 @@
       if (uData) {
         uData.forEach(u => {
           let cleanName = (u.username || '').trim();
-          if (cleanName.toLowerCase() === 'jirka' || cleanName.toLowerCase() === 'jiri' || cleanName.toLowerCase() === 'jiří') {
-            cleanName = 'Jiří';
-          }
-          const storedBoss = localStorage.getItem('user_is_boss_' + cleanName);
-          const isBossFlag = u.is_boss !== undefined && u.is_boss !== null ? u.is_boss : (storedBoss !== null ? storedBoss === '1' : (cleanName === 'Jiří' || cleanName === 'Petr'));
-
           let userPerms = null;
           let userMarkups = null;
           if (u.permissions_json) {
@@ -1748,18 +1748,20 @@
             rateK: u.rate_k || 7,
             rateD: u.rate_d || 150,
             rateT: u.rate_t || 100,
-            isBoss: isBossFlag,
+            isBoss: (u.is_boss === true),
             perms: userPerms,
-            bossMarkups: userPerms ? userMarkups : null
+            bossMarkups: userMarkups
           };
         });
       }
 
-      if (!cloudUsers['Petr']) cloudUsers['Petr'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: true };
-      if (!cloudUsers['Jiří']) cloudUsers['Jiří'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: true };
-      if (!cloudUsers['Jan']) cloudUsers['Jan'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
-      if (!cloudUsers['Matěj']) cloudUsers['Matěj'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
-      if (!cloudUsers['Martin']) cloudUsers['Martin'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
+      // Bezpečné založení profilů, pokud v DB dosud nejsou
+      const defaultCheck = ['Jan', 'Matěj', 'Martin', 'Jiří', 'Petr'];
+      defaultCheck.forEach(dName => {
+        if (!cloudUsers[dName]) {
+          cloudUsers[dName] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
+        }
+      });
 
       const { data: pData } = await db.from('team_projects').select('*');
       if (pData && pData.length > 0) cloudProjects = pData.map(p => p.name);
@@ -2257,42 +2259,6 @@
     return await Promise.all(files.map(f => compressImage(f)));
   }
 
-  function populateProjects() {
-    const workSelect = document.getElementById('workProject');
-    const filterSelect = document.getElementById('filterProject');
-    const badgeList = document.getElementById('projectBadgeList');
-
-    workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
-    
-    const savedFilter = filterSelect.value || 'ALL';
-    filterSelect.innerHTML = `
-      <option value="ALL">Všechny zakázky</option>
-      <option value="SELF_ONLY">👤 Pouze Sám na sebe</option>
-    ` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
-    filterSelect.value = savedFilter;
-
-    badgeList.innerHTML = cloudProjects.length === 0 ? '<span class="text-[11px] text-slate-400">Žádné stavby.</span>' : cloudProjects.map(p => `
-      <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-        <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
-        <div class="flex items-center gap-1">
-          <button type="button" onclick="editProject('${p}')" title="Přejmenovat" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
-          <button type="button" onclick="deleteProject('${p}')" title="Smazat" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 border border-rose-200">✕</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  function populateUserFilter() {
-    const filterSelect = document.getElementById('filterUser');
-    const savedVal = filterSelect.value || 'ALL';
-    
-    const users = Object.keys(cloudUsers);
-    filterSelect.innerHTML = `<option value="ALL">Všichni pracovníci</option>` +
-      users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
-      
-    filterSelect.value = savedVal;
-  }
-
   async function addProject() {
     const input = document.getElementById('newProjectName');
     const val = input.value.trim();
@@ -2715,7 +2681,7 @@
     return true;
   }
 
-  // --- VÝPIS HISTORIE A KASY S VÝPOČTEM ŠÉFOVSKÉ MARŽE ---
+  // --- VÝPIS HISTORIE A KASY S VÝPOČTEM ŠÉFOVSKÉ MARŽE (VČETNĚ ŘIDIČE/CESTY) ---
   function renderAll() {
     if (!loggedUser) return;
 
