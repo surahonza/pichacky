@@ -243,15 +243,22 @@
         </label>
       </div>
 
-      <!-- Popis a Fotky práce -->
+      <!-- Popis a Fotky práce + Odkaz na Google Fotky -->
       <div class="space-y-2">
-        <label class="text-[11px] font-bold text-slate-500 block">POPIS PRÁCE & FOTKY Z MÍSTA</label>
+        <label class="text-[11px] font-bold text-slate-500 block">POPIS PRÁCE & FOTOGRAFIE</label>
         <textarea id="workDesc" rows="2" placeholder="Co jsi dnes na zakázce dělal..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></textarea>
-        <div>
-          <label class="text-[11px] text-slate-500 block mb-1 font-medium">📸 Fotky z montáže</label>
-          <input type="file" id="workPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-slate-200 file:font-bold file:text-slate-800 hover:file:bg-slate-300">
-          <input type="hidden" id="clonedWorkPhotos">
-          <div id="clonedPhotoPreview" class="hidden mt-1 text-[10px] text-sky-700 bg-sky-50 p-1.5 rounded-lg">✓ Budou použity fotky zkopírované od kolegy</div>
+        
+        <div class="space-y-1.5 pt-1">
+          <div>
+            <label class="text-[11px] text-slate-600 block mb-0.5 font-medium">🔗 Odkaz na album (Google Fotky):</label>
+            <input type="url" id="workPhotosLink" placeholder="https://photos.app.goo.gl/..." class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-500 block mb-0.5 font-medium">nebo vybrat fotky přímo z telefonu:</label>
+            <input type="file" id="workPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-slate-200 file:font-bold file:text-slate-800 hover:file:bg-slate-300">
+            <input type="hidden" id="clonedWorkPhotos">
+            <div id="clonedPhotoPreview" class="hidden mt-1 text-[10px] text-sky-700 bg-sky-50 p-1.5 rounded-lg">✓ Budou použity fotky zkopírované od kolegy</div>
+          </div>
         </div>
       </div>
 
@@ -331,20 +338,29 @@
     </div>
   </div>
 
-  <!-- MODÁLNÍ OKNO PRO ÚPRAVU ZÁZNAMU SMĚNY -->
+  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY -->
   <div id="editShiftModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
-    <div class="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+    <div class="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
         <div>
-          <h3 class="font-black text-sm sm:text-base">✏️ Úprava záznamu práce</h3>
-          <p class="text-[10px] text-slate-400">Uprav údaje a ulož změny</p>
+          <h3 class="font-black text-sm sm:text-base">✏️ Úprava kompletního záznamu</h3>
+          <p class="text-[10px] text-slate-400">Uprav časy, kilometry, šéfa, parťáky i odkaz na fotky</p>
         </div>
         <button type="button" onclick="closeEditShiftModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
 
-      <div class="p-4 overflow-y-auto space-y-3">
+      <div class="p-4 overflow-y-auto space-y-3.5">
         <input type="hidden" id="editShiftId">
         
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 block mb-1">PRO KOHO SE PRACOVALO (ŠÉF)</label>
+          <select id="editShiftBoss" class="w-full border rounded-xl p-2 text-xs bg-slate-50 font-bold">
+            <option value="Jiří">👨‍💼 Jiří</option>
+            <option value="Petr">👨‍💼 Petr</option>
+            <option value="Sám na sebe">👤 Sám na sebe</option>
+          </select>
+        </div>
+
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">STAVBA / ZAKÁZKA</label>
           <select id="editShiftProject" class="w-full border rounded-xl p-2 text-xs bg-slate-50 font-bold"></select>
@@ -372,9 +388,21 @@
           </div>
         </div>
 
+        <!-- Úprava parťáků na stavbě -->
+        <div class="bg-sky-50/70 p-2.5 rounded-xl border border-sky-200 space-y-1">
+          <span class="text-[11px] font-bold text-sky-900 block uppercase tracking-wider">👥 Parťáci na této zakázce:</span>
+          <div id="editShiftPartnersList" class="flex flex-wrap gap-2 pt-0.5"></div>
+        </div>
+
+        <!-- Úprava odkazu na Google fotky -->
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 block mb-1">🔗 ODKAZ NA GOOGLE FOTKY / ALBUM</label>
+          <input type="url" id="editShiftPhotosLink" placeholder="https://photos.app.goo.gl/..." class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+        </div>
+
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">POPIS PRÁCE</label>
-          <textarea id="editShiftDesc" rows="3" class="w-full border rounded-xl p-2 text-xs bg-slate-50"></textarea>
+          <textarea id="editShiftDesc" rows="2" class="w-full border rounded-xl p-2 text-xs bg-slate-50"></textarea>
         </div>
 
         <button type="button" onclick="saveEditedShift()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl shadow transition text-xs">
@@ -384,7 +412,7 @@
     </div>
   </div>
 
-  <!-- SPOLEČNÝ ADMIN PANEL (ZOBRAZUJE SE VŽDY ZCELA VPŘEDU - Z-60) -->
+  <!-- SPOLEČNÝ ADMIN PANEL (Z-60) -->
   <div id="masterAdminModal" class="fixed inset-0 bg-black/85 z-[60] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-xl mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
@@ -451,7 +479,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO - Z-50) -->
+  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) -->
   <div id="settingsBackdrop" onclick="toggleSettingsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="settingsMenu" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 shadow-2xl p-4 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
     <div class="space-y-4">
@@ -543,7 +571,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO - Z-50) -->
+  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
@@ -736,7 +764,6 @@
 
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
 
-  // NEROZDĚLENÉ FORMÁTOVÁNÍ DATA: den.&nbsp;měsíc.&nbsp;rok (např. 9. 9. 2026)
   function formatCzechDate(dateStr) {
     if (!dateStr) return "";
     const parts = dateStr.split('-');
@@ -792,11 +819,10 @@
     }
   }
 
-  // --- MASTER ADMIN ROZHRANÍ (ZASUNE BOČNÍ PANEL A OTEVŘE SE VPŘEDU) ---
+  // --- MASTER ADMIN ROZHRANÍ ---
   function openMasterAdminModal() {
     const entered = prompt("Zadej správcovské heslo (Master PIN):");
     if (entered === MASTER_BACKUP_PASSWORD) {
-      // Pokud bylo otevřené boční menu nastavení, zavřeme ho, aby nezavazelo
       toggleSettingsMenu(false);
       setScrollLock(true);
       document.getElementById('masterAdminModal').classList.remove('hidden');
@@ -814,7 +840,6 @@
   function refreshMasterAdminUI() {
     const users = Object.keys(cloudUsers);
 
-    // 1. Hesla
     const passList = document.getElementById('masterAdminPasswordsList');
     passList.innerHTML = users.map(u => `
       <div class="flex justify-between items-center py-1.5 px-2">
@@ -823,7 +848,6 @@
       </div>
     `).join('');
 
-    // 2. Selecty pro role, reset a mazání účtů
     const roleSel = document.getElementById('masterAdminRoleUser');
     const resetSel = document.getElementById('masterAdminResetUser');
     const delSel = document.getElementById('masterAdminDeleteUser');
@@ -834,7 +858,6 @@
     resetSel.innerHTML = optionsHtml;
     delSel.innerHTML = optionsHtml;
 
-    // 4. Možnost mazání směn ze systému pro admina
     if (cloudShifts.length === 0) {
       shiftSel.innerHTML = '<option value="">Žádné směny k dispozici</option>';
     } else {
@@ -901,7 +924,7 @@
     renderAll();
   }
 
-  // --- ÚPRAVA ZÁZNAMŮ SMĚNY ---
+  // --- KOMPLETNÍ ÚPRAVA CELÉHO ZÁZNAMU SMĚNY ---
   function openEditShiftModal(shiftId) {
     const item = cloudShifts.find(s => s.id === shiftId);
     if (!item) return;
@@ -912,15 +935,29 @@
 
     setScrollLock(true);
     document.getElementById('editShiftId').value = item.id;
+    document.getElementById('editShiftBoss').value = item.boss || 'Jiří';
     document.getElementById('editShiftDate').value = item.date;
     document.getElementById('editShiftKm').value = item.kmTotal || 0;
     document.getElementById('editShiftT1').value = item.t1 || '';
     document.getElementById('editShiftT2').value = item.t2 || '';
+    document.getElementById('editShiftPhotosLink').value = item.photosLink || '';
     document.getElementById('editShiftDesc').value = item.desc || '';
 
     const projSel = document.getElementById('editShiftProject');
     projSel.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     projSel.value = item.project;
+
+    // Seznam parťáků s možností zaškrtnout/odškrtnout kohokoliv
+    const partnerContainer = document.getElementById('editShiftPartnersList');
+    const existingPartnerNames = (item.partners || []).map(p => p.name);
+    const availablePartners = Object.keys(cloudUsers).filter(u => u !== item.worker);
+
+    partnerContainer.innerHTML = availablePartners.map(u => `
+      <label class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-sky-300 text-xs font-semibold cursor-pointer">
+        <input type="checkbox" name="editPartnerCheck" value="${u}" ${existingPartnerNames.includes(u) ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-600">
+        <span>${u}</span>
+      </label>
+    `).join('');
 
     document.getElementById('editShiftModal').classList.remove('hidden');
   }
@@ -935,11 +972,13 @@
     const item = cloudShifts.find(s => s.id === shiftId);
     if (!item) return;
 
+    const newBoss = document.getElementById('editShiftBoss').value;
     const newProject = document.getElementById('editShiftProject').value;
     const newDate = document.getElementById('editShiftDate').value;
     const newKm = Number(document.getElementById('editShiftKm').value) || 0;
     const newT1 = document.getElementById('editShiftT1').value;
     const newT2 = document.getElementById('editShiftT2').value;
+    const newPhotosLink = document.getElementById('editShiftPhotosLink').value.trim();
     const newDesc = document.getElementById('editShiftDesc').value;
 
     let hours = 0;
@@ -953,14 +992,27 @@
     const wageTravelOnly = Math.round(newKm * item.rateK);
     const workAndTravelTotal = wageWorkOnly + wageTravelOnly + (item.extraPauchal || 0);
 
-    if (item.partners && item.partners.length > 0) {
-      item.partners.forEach(p => {
-        p.hours = Number(hours.toFixed(2));
-        p.wageWorkOnly = Math.round(hours * p.rateH);
+    // Sestavení nového pole parťáků podle zaškrtávátek
+    const checkedBoxes = document.querySelectorAll('input[name="editPartnerCheck"]:checked');
+    const updatedPartners = [];
+    checkedBoxes.forEach(cb => {
+      const pName = cb.value;
+      const prev = (item.partners || []).find(p => p.name === pName);
+      const pData = cloudUsers[pName] || { rateH: 300 };
+      const pRateH = prev ? prev.rateH : pData.rateH;
+      const pPaid = prev ? prev.isWorkPaid : false;
+
+      updatedPartners.push({
+        name: pName,
+        hours: Number(hours.toFixed(2)),
+        rateH: pRateH,
+        wageWorkOnly: Math.round(hours * pRateH),
+        isWorkPaid: pPaid
       });
-    }
+    });
 
     const { error } = await db.from('team_shifts').update({
+      boss: newBoss,
       project: newProject,
       date: newDate,
       km_total: newKm,
@@ -970,12 +1022,14 @@
       wage_work_only: wageWorkOnly,
       wage_travel_only: wageTravelOnly,
       work_and_travel_total: workAndTravelTotal,
+      photos_link: newPhotosLink,
       desc_text: newDesc,
-      partners_json: JSON.stringify(item.partners || [])
+      partners_json: JSON.stringify(updatedPartners)
     }).eq('id', shiftId);
 
     if (error) return alert("Chyba při ukládání: " + error.message);
 
+    item.boss = newBoss;
     item.project = newProject;
     item.date = newDate;
     item.kmTotal = newKm;
@@ -985,11 +1039,13 @@
     item.wageWorkOnly = wageWorkOnly;
     item.wageTravelOnly = wageTravelOnly;
     item.workAndTravelTotal = workAndTravelTotal;
+    item.photosLink = newPhotosLink;
     item.desc = newDesc;
+    item.partners = updatedPartners;
 
     closeEditShiftModal();
     renderAll();
-    alert("Záznam byl úspěšně upraven a přepočítán!");
+    alert("Směna byla kompletně upravena a přepočítána!");
   }
 
   // --- SWIPE GESTA ---
@@ -1200,7 +1256,7 @@
     updateLiveCalculations();
   }
 
-  // --- NAČTENÍ ZE SUPABASE ---
+  // --- NAČTENÍ ZE SUPABASE (VČETNĚ GOOGLE FOTEK A OSOBNÍCH PRACÍ) ---
   async function fetchAllFromCloud() {
     try {
       const { data: uData } = await db.from('team_users').select('*');
@@ -1265,7 +1321,8 @@
             desc: s.desc_text, workPhotos, matPurchases, matCost: s.mat_cost,
             isWorkPaid: s.is_work_paid, isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
             isMatPaid: s.is_mat_paid, gps: s.gps, boss: s.boss || 'Jiří',
-            partners: partnersData
+            partners: partnersData,
+            photosLink: s.photos_link || '' // Odkaz na Google Fotky
           };
         });
       }
@@ -1866,7 +1923,7 @@
     );
   }
 
-  // --- SPOLEČNÉ ULOŽENÍ SMĚNY ---
+  // --- SPOLEČNÉ ULOŽENÍ SMĚNY (VČETNĚ ODKAZU NA FOTKY) ---
   async function saveRecord() {
     const btn = document.getElementById('btnSaveShift');
     btn.disabled = true;
@@ -1876,6 +1933,7 @@
     const t1 = document.getElementById('timeStart').value;
     const t2 = document.getElementById('timeEnd').value;
     const selectedBoss = document.getElementById('selectedBoss').value;
+    const photosLink = document.getElementById('workPhotosLink').value.trim();
 
     let hours = 0;
     if (t1 && t2) {
@@ -1966,7 +2024,8 @@
       is_mat_paid: false,
       gps: finalGpsText,
       boss: selectedBoss,
-      partners_json: JSON.stringify(partnersList)
+      partners_json: JSON.stringify(partnersList),
+      photos_link: photosLink // Uložení odkazu na Google Fotky
     }]);
 
     btn.disabled = false;
@@ -1982,6 +2041,7 @@
     document.getElementById('kmStart').value = '';
     document.getElementById('kmEnd').value = '';
     document.getElementById('gpsAddressManual').value = '';
+    document.getElementById('workPhotosLink').value = '';
     initStopsDefault();
     initMaterialDefault();
     document.getElementById('workPhotosInput').value = '';
@@ -2109,14 +2169,17 @@
     if (period === 'week') {
       const tempNow = new Date(now), day = tempNow.getDay();
       const diff = tempNow.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(tempNow.setDate(diff)); monday.setHours(0,0,0,0);
-      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23,59,59,999);
+      const monday = new Date(tempNow.setDate(diff));
+      monday.setHours(0,0,0,0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23,59,59,999);
       return d >= monday && d <= sunday;
     }
     return true;
   }
 
-  // --- VÝPIS HISTORIE A KASY S FORMÁTOVANÝM DATEM A ČISTOU HLAVIČKOU ---
+  // --- VÝPIS HISTORIE A KASY S PODPOROU "SÁM NA SEBE" PRO PARŤÁKY ---
   function renderAll() {
     if (!loggedUser) return;
 
@@ -2135,6 +2198,7 @@
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
 
+    // 1. Výpočet Kasy
     cloudShifts.forEach(s => {
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
@@ -2193,12 +2257,14 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
+    // 2. Filtrování v seznamu (pokud jsem parťák v práci "Sám na sebe", taky ji vidím!)
     const filtered = cloudShifts.filter(s => {
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
       const isPartner = (s.partners || []).some(p => p.name === loggedUser);
 
-      if (shiftBoss === 'Sám na sebe' && !isCreator) return false;
+      // Pokud je kšeft "Sám na sebe", vidí ho jen zakladatel A VŠICHNI PARŤÁCI, kteří na něm dělali
+      if (shiftBoss === 'Sám na sebe' && !isCreator && !isPartner) return false;
 
       if (myRole === 'self') {
         if (!isCreator && !isPartner) return false;
@@ -2228,17 +2294,17 @@
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
       
       div.innerHTML = `
-        <!-- PŘEHLEDNÁ HLAVIČKA ZÁZNAMU BEZ ZALAMOVÁNÍ -->
+        <!-- HLAVIČKA ZÁZNAMU -->
         <div class="flex flex-wrap sm:flex-nowrap justify-between items-start gap-1.5 border-b border-slate-100 pb-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <span class="font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-lg text-[11px] truncate max-w-[140px] sm:max-w-[200px]">${r.project}</span>
             <span class="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-lg text-[10px]">Založil:\u00A0${r.worker}</span>
-            <span class="text-slate-500 font-semibold text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">šéf:\u00A0${r.boss || 'Jiří'}</span>
+            <span class="text-slate-500 font-semibold text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">režim:\u00A0${r.boss || 'Jiří'}</span>
             <span class="text-slate-600 font-bold text-[11px] whitespace-nowrap bg-slate-100 px-2 py-0.5 rounded-lg">${formatCzechDate(r.date)}</span>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0 self-start">
             ${canManage ? `
-              <button type="button" onclick="openEditShiftModal(${r.id})" title="Upravit záznam" class="text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-xs transition">✏️</button>
+              <button type="button" onclick="openEditShiftModal(${r.id})" title="Upravit celý záznam" class="text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-xs transition">✏️</button>
               <button type="button" onclick="deleteRecord(${r.id})" title="Smazat zakázku" class="text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 font-black px-2 py-0.5 rounded-lg text-xs transition">✕</button>
             ` : ''}
           </div>
@@ -2293,6 +2359,16 @@
 
         ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl border border-slate-100">${r.desc}</div>` : ''}
         
+        <!-- TLAČÍTKO PRO OTEVŘENÍ ODKAZU NA GOOGLE FOTKY -->
+        ${r.photosLink ? `
+          <div class="pt-0.5">
+            <a href="${r.photosLink}" target="_blank" rel="noopener noreferrer" class="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-xs transition text-xs">
+              <span>📸</span>
+              <span>Otevřít album (Google Fotky) ↗</span>
+            </a>
+          </div>
+        ` : ''}
+
         ${r.workPhotos && r.workPhotos.length > 0 ? `
           <div>
             <span class="text-[10px] text-slate-400 font-bold block mb-1">📸 FOTKY Z PRÁCE (${r.workPhotos.length}):</span>
@@ -2336,11 +2412,11 @@
 
   function exportToCSV() {
     if (cloudShifts.length === 0) return alert('Žádná data.');
-    let csv = "Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Partaci;Material (Kc);Stav Prace;Stav Km;GPS\n";
+    let csv = "Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Partaci;Material (Kc);Stav Prace;Stav Km;Odkaz Fotky;GPS\n";
     cloudShifts.forEach(s => {
       const matSum = (s.matPurchases || []).reduce((a,b)=>a+b.cost, 0);
       const partStr = (s.partners || []).map(p => `${p.name} (${p.hours}h/${p.wageWorkOnly}Kc)`).join(' | ');
-      csv += `"${formatCzechDate(s.date)}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${partStr}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.gps || ''}"\n`;
+      csv += `"${formatCzechDate(s.date)}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${partStr}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.photosLink || ''}";"${s.gps || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "vyuctovani.csv"; link.click();
