@@ -101,7 +101,7 @@
   <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden space-y-3">
 
-    <!-- HORNÍ LIŠTA S REFRESHEM (EKVIVALENT F5) -->
+    <!-- HORNÍ LIŠTA S REFRESHEM -->
     <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
@@ -503,7 +503,7 @@
         <div class="space-y-1.5 pt-2 border-t">
           <span class="text-xs font-bold text-rose-700 block uppercase">6. Smazat uživatele z databáze:</span>
           <div class="flex gap-1.5">
-            <select id="masterAdminDeleteUser" class="flex-1 border border-rose-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <select id="masterAdminDeleteUser" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
           </div>
         </div>
@@ -916,7 +916,6 @@
     }
   }
 
-  // --- KOMPLETNÍ RESTART APLIKACE (F5 EKVIIVALENT) ---
   function manualReloadApp() {
     const btn = document.getElementById('btnAppRefresh');
     if (btn) btn.classList.add('animate-spin');
@@ -1003,10 +1002,10 @@
         if (m[workerName] !== undefined) return Number(m[workerName]) || 0;
       } catch(e){}
     }
-    return 50; // výchozí provize 50 Kč/h
+    return 50;
   }
 
-  // --- MASTER ADMIN ROZHRANÍ ---
+  // --- MASTER ADMIN ROZHRANÍ (OPRAVENO PRO JEDNODUCHÝ VÝBĚR UŽIVATELE) ---
   function openMasterAdminModal() {
     const entered = prompt("Zadej správcovské heslo (Master PIN):");
     if (entered === MASTER_BACKUP_PASSWORD) {
@@ -1046,11 +1045,11 @@
     const bossUserSel = document.getElementById('masterAdminBossUserSelect');
     const permTargetSel = document.getElementById('permTargetUserSelect');
 
-    const optionsHtml = users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
-    resetSel.innerHTML = optionsHtml;
-    delSel.innerHTML = optionsHtml;
-    bossUserSel.innerHTML = optionsHtml;
-    permTargetSel.innerHTML = optionsHtml;
+    const cleanOptionsHtml = users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (Šéf)' : ''}</option>`).join('');
+    resetSel.innerHTML = cleanOptionsHtml;
+    delSel.innerHTML = cleanOptionsHtml;
+    bossUserSel.innerHTML = cleanOptionsHtml;
+    permTargetSel.innerHTML = cleanOptionsHtml;
 
     updateBossToggleBtnUI();
     loadPermissionsUIForSelectedUser();
@@ -1272,6 +1271,43 @@
     populateUserFilter();
     renderPartnerCheckboxes();
     renderBossButtons();
+  }
+
+  // --- POPULACE PROJEKTŮ A FILTRU (VČETNĚ "SÁM NA SEBE") ---
+  function populateProjects() {
+    const workSelect = document.getElementById('workProject');
+    const filterSelect = document.getElementById('filterProject');
+    const badgeList = document.getElementById('projectBadgeList');
+
+    workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
+    
+    const savedFilter = filterSelect.value || 'ALL';
+    filterSelect.innerHTML = `
+      <option value="ALL">Všechny zakázky</option>
+      <option value="SELF_ONLY">👤 Pouze Sám na sebe</option>
+    ` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
+    filterSelect.value = savedFilter;
+
+    badgeList.innerHTML = cloudProjects.length === 0 ? '<span class="text-[11px] text-slate-400">Žádné stavby.</span>' : cloudProjects.map(p => `
+      <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
+        <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="editProject('${p}')" title="Přejmenovat" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
+          <button type="button" onclick="deleteProject('${p}')" title="Smazat" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 border border-rose-200">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function populateUserFilter() {
+    const filterSelect = document.getElementById('filterUser');
+    const savedVal = filterSelect.value || 'ALL';
+    
+    const users = Object.keys(cloudUsers);
+    filterSelect.innerHTML = `<option value="ALL">Všichni pracovníci</option>` +
+      users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
+      
+    filterSelect.value = savedVal;
   }
 
   // --- KOMPLETNÍ ÚPRAVA CELÉHO ZÁZNAMU SMĚNY ---
@@ -2243,7 +2279,10 @@
     workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     
     const savedFilter = filterSelect.value || 'ALL';
-    filterSelect.innerHTML = `<option value="ALL">Všechny zakázky</option>` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
+    filterSelect.innerHTML = `
+      <option value="ALL">Všechny zakázky</option>
+      <option value="SELF_ONLY">👤 Pouze Sám na sebe</option>
+    ` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     filterSelect.value = savedFilter;
 
     badgeList.innerHTML = cloudProjects.length === 0 ? '<span class="text-[11px] text-slate-400">Žádné stavby.</span>' : cloudProjects.map(p => `
@@ -2732,7 +2771,6 @@
           let shiftWork = s.wageWorkOnly + (s.extraPauchal || 0);
           let clientWorkForShift = s.wageWorkOnly + (s.extraPauchal || 0);
 
-          // Pokud hlavní pracovník (řidič) na šéfovské zakázce není sám šéf, aplikujeme marži i na něj
           if (!isUserBoss(s.worker)) {
             const driverMarkup = getWorkerMarkup(activeBossName, s.worker);
             clientWorkForShift += Math.round(s.hours * driverMarkup);
@@ -2815,14 +2853,22 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
-    // 2. Filtrování záznamů v seznamu
+    // 2. Filtrování záznamů v seznamu (včetně filtru "Pouze Sám na sebe")
     const filtered = cloudShifts.filter(s => {
       if (!isShiftVisibleForUser(s, loggedUser)) return false;
 
-      const matchUser = (filterUser === 'ALL' || s.worker === filterUser || (s.partners || []).some(p => p.name === filterUser));
-      const matchProject = (filterProject === 'ALL' || s.project === filterProject);
+      const shiftBoss = s.boss || 'Jiří';
+      const isCreator = (s.worker === loggedUser);
+      const isPartner = (s.partners || []).some(p => p.name === loggedUser);
 
-      return matchUser && matchProject;
+      if (filterProject === 'SELF_ONLY') {
+        if (shiftBoss !== 'Sám na sebe') return false;
+      } else if (filterProject !== 'ALL' && s.project !== filterProject) {
+        return false;
+      }
+
+      const matchUser = (filterUser === 'ALL' || s.worker === filterUser || isPartner);
+      return matchUser;
     });
 
     list.innerHTML = "";
@@ -2860,7 +2906,7 @@
           </div>
         </div>
 
-        <!-- HLAVNÍ PRACOVNÍK (VČETNĚ MARŽI PRO ŠÉFA, POKUD ŘÍDIL/PRACOVAL ZAMĚSTNANEC) -->
+        <!-- HLAVNÍ PRACOVNÍK -->
         <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
           <div class="flex justify-between items-center text-slate-800 font-bold text-[11px] border-b border-slate-200 pb-1">
             <span>👤 ${r.worker} (hlavní / řidič)</span>
