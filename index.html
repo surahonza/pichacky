@@ -9,11 +9,9 @@
   <meta name="apple-mobile-web-app-title" content="Píchačky">
   <title>Pracovní Deník & Píchačky</title>
 
-  <!-- PWA IKONA -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 
-  <!-- DYNAMICKÝ PWA MANIFEST -->
   <script>
     const manifestJson = {
       name: "Pracovní Deník & Píchačky",
@@ -29,16 +27,13 @@
         purpose: "any maskable"
       }]
     };
-    const stringManifest = JSON.stringify(manifestJson);
-    const blob = new Blob([stringManifest], {type: 'application/json'});
-    const manifestURL = URL.createObjectURL(blob);
+    const blob = new Blob([JSON.stringify(manifestJson)], {type: 'application/json'});
     const link = document.createElement('link');
     link.rel = 'manifest';
-    link.href = manifestURL;
+    link.href = URL.createObjectURL(blob);
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY & LEAFLET MAPA -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -76,7 +71,7 @@
       <div id="loginFormContainer" class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
-          <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Martin, Jiří (šéf), Petr (šéf)..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none font-semibold transition">
+          <input type="text" id="loginUsername" placeholder="Jan, Matěj, Martin, Jiří, Petr..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none font-semibold transition">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">HESLO NEBO PIN</label>
@@ -93,33 +88,10 @@
         </button>
 
         <div class="flex justify-between items-center pt-1 text-[11px]">
-          <button type="button" onclick="toggleAuthResetMode(true)" class="text-amber-700 font-bold hover:underline">🔑 Zapomněl jsi heslo?</button>
-          <button type="button" onclick="handleRegister()" class="text-sky-600 font-bold hover:underline">Zaregistrovat nový účet</button>
+          <button type="button" onclick="openMasterAdminModal()" class="text-amber-700 font-bold hover:underline">🔒 Správa & Hesla</button>
+          <button type="button" onclick="handleRegister()" class="text-sky-600 font-bold hover:underline">Nový účet</button>
         </div>
       </div>
-
-      <div id="authResetContainer" class="space-y-3 pt-1 hidden bg-amber-50/70 p-3 rounded-2xl border border-amber-200">
-        <div class="flex justify-between items-center">
-          <span class="text-xs font-bold text-amber-900">Záchranný reset hesla</span>
-          <button type="button" onclick="toggleAuthResetMode(false)" class="text-slate-400 hover:text-slate-700 font-bold text-xs">✕ Zpět</button>
-        </div>
-        <div>
-          <label class="text-[10px] font-bold text-slate-600 block mb-0.5">UŽIVATELSKÉ JMÉNO</label>
-          <select id="authResetUserSelect" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
-        </div>
-        <div>
-          <label class="text-[10px] font-bold text-slate-600 block mb-0.5">NOVÉ HESLO</label>
-          <input type="password" id="authResetNewPass" placeholder="Nové heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none">
-        </div>
-        <div>
-          <label class="text-[10px] font-bold text-amber-800 block mb-0.5">SPRÁVCOVSKÉ HESLO</label>
-          <input type="password" id="authResetMasterPass" placeholder="Masatjebuh19" class="w-full border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none">
-        </div>
-        <button type="button" onclick="executeAuthReset()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs shadow-xs transition">
-          Potvrdit a nastavit nové heslo
-        </button>
-      </div>
-
     </div>
   </div>
 
@@ -188,7 +160,7 @@
         <select id="workProject" onchange="updateLiveCalculations()" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
       </div>
 
-      <!-- VÝBĚR PARŤÁKŮ NA STAVBĚ -->
+      <!-- VÝBĚR PARŤÁKŮ NA STAVBĚ (VČETNĚ PETRA) -->
       <div class="bg-sky-50/70 p-3 rounded-xl border border-sky-200 space-y-1.5">
         <span class="text-[11px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kdo byl se mnou v práci (společná píchačka):</span>
         <div id="partnerCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
@@ -198,7 +170,7 @@
         <div class="w-full sm:w-1/2 space-y-1">
           <div class="flex justify-between items-center">
             <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
-            <button type="button" onclick="openMapModal()" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">📍 Vybrat GPS na mapě / adrese</button>
+            <button type="button" onclick="openMapModal()" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">📍 Vybrat GPS na mapě</button>
           </div>
           <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           <input type="hidden" id="gpsLocation">
@@ -275,7 +247,7 @@
         <label class="text-[11px] font-bold text-slate-500 block">POPIS PRÁCE & FOTKY Z MÍSTA</label>
         <textarea id="workDesc" rows="2" placeholder="Co jsi dnes na zakázce dělal..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></textarea>
         <div>
-          <label class="text-[11px] text-slate-500 block mb-1 font-medium">📸 Fotky z montáže (lze vybrat i vyfotit více fotek)</label>
+          <label class="text-[11px] text-slate-500 block mb-1 font-medium">📸 Fotky z montáže</label>
           <input type="file" id="workPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-slate-200 file:font-bold file:text-slate-800 hover:file:bg-slate-300">
           <input type="hidden" id="clonedWorkPhotos">
           <div id="clonedPhotoPreview" class="hidden mt-1 text-[10px] text-sky-700 bg-sky-50 p-1.5 rounded-lg">✓ Budou použity fotky zkopírované od kolegy</div>
@@ -328,7 +300,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA MODÁLNÍ OKNO -->
+  <!-- INTERAKTIVNÍ MAPA -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -340,7 +312,7 @@
       </div>
 
       <div class="p-3 bg-slate-100 border-b flex gap-2 flex-shrink-0">
-        <input type="text" id="mapSearchInput" placeholder="Zadej adresu nebo obec (např. Stříbro)..." class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white outline-none font-medium">
+        <input type="text" id="mapSearchInput" placeholder="Zadej adresu nebo obec..." class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white outline-none font-medium">
         <button type="button" onclick="searchLocationOnMap()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Hledat</button>
       </div>
 
@@ -353,6 +325,64 @@
         <div class="flex gap-2 w-full sm:w-auto">
           <button type="button" onclick="useCurrentGpsPosition()" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-2.5 rounded-xl text-xs transition">Moje GPS</button>
           <button type="button" onclick="confirmMapLocation()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition">Potvrdit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPOLEČNÝ ADMIN PANEL (PRO LOGIN I NASTAVENÍ) -->
+  <div id="masterAdminModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
+    <div class="bg-white w-full max-w-xl mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <div>
+          <h3 class="font-black text-sm sm:text-base">🔒 Hlavní Správcovské Rozhraní</h3>
+          <p class="text-[10px] text-amber-400">Správa přístupů, hesel a mazání účtů</p>
+        </div>
+        <button type="button" onclick="closeMasterAdminModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4">
+        <!-- 1. HESLA VŠECH UŽIVATELŮ -->
+        <div class="space-y-1.5">
+          <span class="text-xs font-bold text-slate-700 block uppercase">1. Aktuální hesla všech účtů:</span>
+          <div id="masterAdminPasswordsList" class="bg-slate-50 border rounded-2xl p-2 text-xs space-y-1 divide-y divide-slate-200"></div>
+        </div>
+
+        <!-- 2. NASTAVENÍ VIDITELNOSTI PRACÍ PRO PRACOVNÍKY -->
+        <div class="space-y-1.5 pt-2 border-t">
+          <span class="text-xs font-bold text-slate-700 block uppercase">2. Režim viditelnosti prací pro kolegy:</span>
+          <p class="text-[10px] text-slate-500">Zvol, co daný pracovník uvidí v přehledu prací:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <select id="masterAdminRoleUser" onchange="loadUserRoleSetting()" class="border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <select id="masterAdminRoleSetting" class="border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none">
+              <option value="self">Pouze své vlastní práce</option>
+              <option value="shared">Sdílené dle šéfa (Jiřího i Petrovy práce pro tým)</option>
+              <option value="boss_jiri">Šéf Jiří (vše pro Jiřího)</option>
+              <option value="boss_petr">Šéf Petr (vše pro Petra)</option>
+            </select>
+          </div>
+          <button type="button" onclick="saveUserRoleSetting()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs transition">
+            Uložit pravidlo viditelnosti
+          </button>
+        </div>
+
+        <!-- 3. RESET HESLA -->
+        <div class="space-y-1.5 pt-2 border-t">
+          <span class="text-xs font-bold text-slate-700 block uppercase">3. Změnit heslo uživateli:</span>
+          <div class="flex gap-1.5">
+            <select id="masterAdminResetUser" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <input type="password" id="masterAdminNewPass" placeholder="Nové heslo" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white outline-none">
+            <button type="button" onclick="masterAdminChangePass()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Uložit</button>
+          </div>
+        </div>
+
+        <!-- 4. MAZÁNÍ ÚČTŮ (POUZE PRO ADMINA) -->
+        <div class="space-y-1.5 pt-2 border-t">
+          <span class="text-xs font-bold text-rose-700 block uppercase">4. Smazat uživatele z databáze:</span>
+          <div class="flex gap-1.5">
+            <select id="masterAdminDeleteUser" class="flex-1 border border-rose-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
+          </div>
         </div>
       </div>
     </div>
@@ -390,35 +420,9 @@
           </div>
         </div>
 
-        <!-- ZABEZPEČENÁ ZÓNA PRO SPRÁVCE (Hesla a Reset) -->
-        <div class="space-y-1.5 pt-2 border-t border-slate-200">
-          <button type="button" id="btnUnlockAdmin" onclick="unlockAdminPanel()" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5">
-            <span>🔒</span> Zobrazit Správcovské rozhraní
-          </button>
-          
-          <div id="adminPanelArea" class="hidden bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-3 mt-2">
-            <span class="text-[11px] font-black text-amber-900 uppercase tracking-wider block border-b border-amber-200/50 pb-1">Zabezpečená zóna</span>
-            
-            <div class="space-y-1">
-              <span class="text-[10px] font-bold text-slate-600 block">HESLA VŠECH UŽIVATELŮ:</span>
-              <div id="adminUserPasswordsList" class="bg-white rounded-lg border border-amber-200 p-1.5 max-h-32 overflow-y-auto text-xs space-y-0.5"></div>
-            </div>
-
-            <div class="space-y-1 pt-1 border-t border-amber-200/50">
-              <span class="text-[10px] font-bold text-slate-600 block">RESET HESLA KOLEGY:</span>
-              <select id="resetUserTarget" class="w-full border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
-              <div class="flex gap-1.5 mt-1">
-                <input type="password" id="resetUserNewPass" placeholder="Nové heslo" class="flex-1 border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none">
-                <button type="button" onclick="adminResetPasswordDirect()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition">Reset</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="pt-2 border-t border-slate-200">
-          <button type="button" onclick="deleteMyAccount()" class="w-full text-left text-xs text-rose-600 hover:text-rose-700 font-bold py-1 flex items-center justify-between">
-            <span>🗑️ Smazat můj účet z cloudu</span>
-            <span class="text-[10px] text-slate-400">nevratné</span>
+          <button type="button" onclick="openMasterAdminModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5">
+            <span>🔒</span> Otevřít Správcovské rozhraní
           </button>
         </div>
       </div>
@@ -636,7 +640,6 @@
 </div>
 
 <script>
-  // --- KONSTANTY & SUPABASE ---
   const MASTER_BACKUP_PASSWORD = "Masatjebuh19";
 
   const SUPABASE_URL = "https://iscjzjvsunfghreqklhe.supabase.co";
@@ -677,7 +680,8 @@
       const isAnyOpen = !document.getElementById('settingsMenu').classList.contains('-translate-x-full') ||
                         !document.getElementById('statsMenu').classList.contains('translate-x-full') ||
                         !document.getElementById('photoLightbox').classList.contains('hidden') ||
-                        !document.getElementById('mapModal').classList.contains('hidden');
+                        !document.getElementById('mapModal').classList.contains('hidden') ||
+                        !document.getElementById('masterAdminModal').classList.contains('hidden');
       if (!isAnyOpen) document.body.classList.remove('modal-open');
     }
   }
@@ -690,8 +694,6 @@
       document.getElementById('editUsernameInput').value = loggedUser || '';
       document.getElementById('oldPassInput').value = '';
       document.getElementById('newPassInput').value = '';
-      document.getElementById('btnUnlockAdmin').classList.remove('hidden');
-      document.getElementById('adminPanelArea').classList.add('hidden');
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('-translate-x-full'), 10);
     } else {
@@ -714,7 +716,94 @@
     }
   }
 
-  // --- SWIPE GESTO PO CELÉ OBRAZOVCE ---
+  // --- SPOLEČNÉ MASTER ADMIN ROZHRANÍ ---
+  function openMasterAdminModal() {
+    const entered = prompt("Zadej správcovské heslo (Master PIN):");
+    if (entered === MASTER_BACKUP_PASSWORD) {
+      setScrollLock(true);
+      document.getElementById('masterAdminModal').classList.remove('hidden');
+      refreshMasterAdminUI();
+    } else if (entered !== null) {
+      alert("Špatné správcovské heslo!");
+    }
+  }
+
+  function closeMasterAdminModal() {
+    document.getElementById('masterAdminModal').classList.add('hidden');
+    setScrollLock(false);
+  }
+
+  function refreshMasterAdminUI() {
+    const users = Object.keys(cloudUsers);
+
+    // 1. Hesla
+    const passList = document.getElementById('masterAdminPasswordsList');
+    passList.innerHTML = users.map(u => `
+      <div class="flex justify-between items-center py-1 px-1.5">
+        <span class="font-bold text-slate-800">${u}</span>
+        <span class="font-mono bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200 font-extrabold select-all">${cloudUsers[u].pass}</span>
+      </div>
+    `).join('');
+
+    // 2. Selecty pro role, reset a mazání
+    const roleSel = document.getElementById('masterAdminRoleUser');
+    const resetSel = document.getElementById('masterAdminResetUser');
+    const delSel = document.getElementById('masterAdminDeleteUser');
+
+    const optionsHtml = users.map(u => `<option value="${u}">${u}</option>`).join('');
+    roleSel.innerHTML = optionsHtml;
+    resetSel.innerHTML = optionsHtml;
+    delSel.innerHTML = optionsHtml;
+
+    loadUserRoleSetting();
+  }
+
+  function loadUserRoleSetting() {
+    const user = document.getElementById('masterAdminRoleUser').value;
+    const current = localStorage.getItem('user_role_' + user) || (user === 'Jiří' ? 'boss_jiri' : (user === 'Petr' ? 'boss_petr' : 'shared'));
+    document.getElementById('masterAdminRoleSetting').value = current;
+  }
+
+  function saveUserRoleSetting() {
+    const user = document.getElementById('masterAdminRoleUser').value;
+    const role = document.getElementById('masterAdminRoleSetting').value;
+    localStorage.setItem('user_role_' + user, role);
+    alert(`Pravidlo pro uživatele "${user}" uloženo!`);
+    renderAll();
+  }
+
+  async function masterAdminChangePass() {
+    const target = document.getElementById('masterAdminResetUser').value;
+    const newPass = document.getElementById('masterAdminNewPass').value.trim();
+    if (!newPass) return alert("Zadej nové heslo.");
+
+    await db.from('team_users').update({ password: newPass }).eq('username', target);
+    if (cloudUsers[target]) cloudUsers[target].pass = newPass;
+
+    document.getElementById('masterAdminNewPass').value = '';
+    alert(`Heslo pro ${target} bylo úspěšně změněno!`);
+    refreshMasterAdminUI();
+  }
+
+  async function masterAdminDeleteAccount() {
+    const target = document.getElementById('masterAdminDeleteUser').value;
+    if (!confirm(`POZOR: Opravdu smazat účet "${target}" z cloudu?\n(Dříve zapsané směny zůstanou zachované).`)) return;
+
+    await db.from('team_users').delete().eq('username', target);
+    await db.from('active_shifts').delete().eq('worker', target);
+
+    delete cloudUsers[target];
+    if (loggedUser === target) {
+      handleLogout();
+    }
+    alert(`Účet "${target}" byl smazán.`);
+    refreshMasterAdminUI();
+    renderQuickBadges();
+    populateUserFilter();
+    renderPartnerCheckboxes();
+  }
+
+  // --- SWIPE GESTA ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
@@ -731,8 +820,9 @@
     const isStatsOpen = !document.getElementById('statsMenu').classList.contains('translate-x-full');
     const isMapOpen = !document.getElementById('mapModal').classList.contains('hidden');
     const isLightboxOpen = !document.getElementById('photoLightbox').classList.contains('hidden');
+    const isAdminOpen = !document.getElementById('masterAdminModal').classList.contains('hidden');
 
-    if (isMapOpen || isLightboxOpen) return;
+    if (isMapOpen || isLightboxOpen || isAdminOpen) return;
 
     if (isSettingsOpen && diffX < -60 && diffY < 120) {
       toggleSettingsMenu(false);
@@ -749,7 +839,6 @@
     }
   }, { passive: true });
 
-  // --- VÝBĚR ŠÉFA ---
   function setBoss(bossName) {
     document.getElementById('selectedBoss').value = bossName;
     const bJ = document.getElementById('bossJiří');
@@ -762,7 +851,7 @@
     renderAll();
   }
 
-  // INTERAKTIVNÍ MAPA
+  // MAPA
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
@@ -817,6 +906,7 @@
     closeMapModal();
   }
 
+  // GALERIE LIGHTBOX
   function openGalleryLightbox(imagesArray, startIndex = 0, title = "Fotografie") {
     if (!imagesArray || imagesArray.length === 0) return;
     currentGalleryImages = imagesArray; currentGalleryIndex = startIndex; resetImageTransform();
@@ -896,139 +986,47 @@
     }
   }, { passive: true });
 
-  // --- ZÁCHRANNÝ RESET NA ÚVODU ---
-  function toggleAuthResetMode(show) {
-    const formContainer = document.getElementById('loginFormContainer');
-    const resetContainer = document.getElementById('authResetContainer');
-    if (show) {
-      formContainer.classList.add('hidden');
-      resetContainer.classList.remove('hidden');
-      populateAuthResetUsers();
-    } else {
-      resetContainer.classList.add('hidden');
-      formContainer.classList.remove('hidden');
-    }
-  }
-
-  function populateAuthResetUsers() {
-    const select = document.getElementById('authResetUserSelect');
-    if (!select) return;
-    const users = Object.keys(cloudUsers);
-    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
-  }
-
-  async function executeAuthReset() {
-    const targetUser = document.getElementById('authResetUserSelect').value;
-    const newPass = document.getElementById('authResetNewPass').value.trim();
-    const masterPass = document.getElementById('authResetMasterPass').value.trim();
-
-    if (!masterPass) return alert("Zadej správcovské heslo.");
-    if (masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
-    if (!newPass) return alert("Zadej nové heslo.");
-
-    await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
-    if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
-
-    document.getElementById('authResetNewPass').value = '';
-    document.getElementById('authResetMasterPass').value = '';
-    alert(`Heslo pro uživatele "${targetUser}" bylo úspěšně resetováno! Nyní se můžeš přihlásit.`);
-    toggleAuthResetMode(false);
-  }
-
-  // --- SPRÁVCOVSKÉ ROZHRANÍ V NASTAVENÍ ---
-  function unlockAdminPanel() {
-    const pass = prompt("Zadej správcovské heslo pro odemčení této sekce:");
-    if (pass === MASTER_BACKUP_PASSWORD) {
-      document.getElementById('btnUnlockAdmin').classList.add('hidden');
-      document.getElementById('adminPanelArea').classList.remove('hidden');
-      
-      const passList = document.getElementById('adminUserPasswordsList');
-      const users = Object.keys(cloudUsers);
-      passList.innerHTML = users.map(u => `
-        <div class="flex justify-between items-center px-1.5 py-1 hover:bg-slate-50 rounded">
-          <span class="font-semibold text-slate-700">${u}</span>
-          <span class="font-mono text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 select-all">${cloudUsers[u].pass}</span>
-        </div>
-      `).join('');
-      
-      populateAdminResetUsersDirect();
-    } else {
-      if (pass !== null) alert("Neplatné heslo!");
-    }
-  }
-
-  function populateAdminResetUsersDirect() {
-    const select = document.getElementById('resetUserTarget');
-    if (!select) return;
-    const users = Object.keys(cloudUsers);
-    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
-  }
-
-  async function adminResetPasswordDirect() {
-    const targetUser = document.getElementById('resetUserTarget').value;
-    const newPass = document.getElementById('resetUserNewPass').value.trim();
-    if (!newPass) return alert("Zadej nové heslo.");
-    
-    await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
-    if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
-    
-    document.getElementById('resetUserNewPass').value = '';
-    alert(`Heslo pro ${targetUser} resetováno!`);
-    
-    const passList = document.getElementById('adminUserPasswordsList');
-    passList.innerHTML = Object.keys(cloudUsers).map(u => `
-      <div class="flex justify-between items-center px-1.5 py-1 hover:bg-slate-50 rounded">
-        <span class="font-semibold text-slate-700">${u}</span>
-        <span class="font-mono text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 select-all">${cloudUsers[u].pass}</span>
-      </div>
-    `).join('');
-  }
-
   function toggleAutoGps() {
-    const check = document.getElementById('prefAutoGps').checked;
-    localStorage.setItem('pref_auto_gps', check ? '1' : '0');
+    const check = document.getElementById('prefAutoGps').checked; localStorage.setItem('pref_auto_gps', check ? '1' : '0');
     if (check) getGPS(true);
   }
 
   function applyAutoGps() {
     const isAuto = localStorage.getItem('pref_auto_gps') === '1';
-    document.getElementById('prefAutoGps').checked = isAuto;
-    if (isAuto) getGPS(true);
+    document.getElementById('prefAutoGps').checked = isAuto; if (isAuto) getGPS(true);
   }
 
   function toggleExtrasVisibility() {
-    const check = document.getElementById('prefShowExtras').checked;
-    localStorage.setItem('pref_show_extras', check ? '1' : '0');
+    const check = document.getElementById('prefShowExtras').checked; localStorage.setItem('pref_show_extras', check ? '1' : '0');
     applyExtrasVisibility();
   }
 
   function applyExtrasVisibility() {
     const isVisible = localStorage.getItem('pref_show_extras') !== '0';
     document.getElementById('prefShowExtras').checked = isVisible;
-    const box = document.getElementById('extrasBox');
-    const liveCard = document.getElementById('liveExtrasCard');
-    const liveGrid = document.getElementById('livePreviewGrid');
-
-    if (isVisible) {
-      box.classList.remove('hidden'); liveCard.classList.remove('hidden'); liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs";
-    } else {
-      box.classList.add('hidden'); liveCard.classList.add('hidden'); liveGrid.className = "grid grid-cols-3 gap-2 text-xs";
-      document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false;
-    }
+    const box = document.getElementById('extrasBox'), liveCard = document.getElementById('liveExtrasCard'), liveGrid = document.getElementById('livePreviewGrid');
+    if (isVisible) { box.classList.remove('hidden'); liveCard.classList.remove('hidden'); liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"; }
+    else { box.classList.add('hidden'); liveCard.classList.add('hidden'); liveGrid.className = "grid grid-cols-3 gap-2 text-xs"; document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false; }
     updateLiveCalculations();
   }
 
+  // --- NAČTENÍ ZE SUPABASE S ČIŠTĚNÍM DUPLICIT (JEDEN JIŘÍ) ---
   async function fetchAllFromCloud() {
     try {
       const { data: uData } = await db.from('team_users').select('*');
       cloudUsers = {};
       if (uData) {
         uData.forEach(u => {
-          cloudUsers[u.username] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t };
+          let cleanName = u.username.trim();
+          // Normalizace jména Jiří / Jirka do jednoho profilu "Jiří"
+          if (cleanName.toLowerCase() === 'jirka' || cleanName.toLowerCase() === 'jiri' || cleanName.toLowerCase() === 'jiří') {
+            cleanName = 'Jiří';
+          }
+          cloudUsers[cleanName] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t };
         });
       }
 
-      // GARANCE ZÁKLADNÍCH ÚČTŮ VČETNĚ PETRA (ŠÉFA)
+      // Výchozí garantované profily bez duplicit
       if (!cloudUsers['Petr']) cloudUsers['Petr'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
       if (!cloudUsers['Jiří']) cloudUsers['Jiří'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
       if (!cloudUsers['Jan']) cloudUsers['Jan'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
@@ -1036,11 +1034,8 @@
       if (!cloudUsers['Martin']) cloudUsers['Martin'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
 
       const { data: pData } = await db.from('team_projects').select('*');
-      if (pData && pData.length > 0) {
-        cloudProjects = pData.map(p => p.name);
-      } else if (cloudProjects.length === 0) {
-        cloudProjects = ['Dílna', 'Bytový dům Plzeň', 'Rodinný dům Stříbro'];
-      }
+      if (pData && pData.length > 0) cloudProjects = pData.map(p => p.name);
+      else if (cloudProjects.length === 0) cloudProjects = ['Dílna', 'Bytový dům Plzeň', 'Rodinný dům Stříbro'];
 
       const { data: aData } = await db.from('active_shifts').select('*');
       cloudActiveShifts = {};
@@ -1085,11 +1080,13 @@
     }
   }
 
+  // --- PARŤÁCI NA STAVBĚ (VČETNĚ PETRA) ---
   function renderPartnerCheckboxes() {
     const container = document.getElementById('partnerCheckboxes');
     if (!container) return;
-    const others = Object.keys(cloudUsers).filter(u => u !== loggedUser && u !== 'Petr' && u !== 'Jiří');
-    container.innerHTML = others.map(u => `
+    // Petr je nyní zařazen, Jiří (hlavní šéf) je vynechán pokud není potřeba
+    const candidates = Object.keys(cloudUsers).filter(u => u !== loggedUser && u !== 'Jiří');
+    container.innerHTML = candidates.map(u => `
       <label class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-sky-200 text-xs font-semibold text-slate-700 cursor-pointer shadow-2xs">
         <input type="checkbox" name="shiftPartner" value="${u}" class="w-3.5 h-3.5 rounded text-sky-600">
         <span>${u}</span>
@@ -1193,12 +1190,11 @@
     checkLiveShift();
   }
 
-  // --- RYCHLÝ VÝBĚR PROFILŮ S PETREM (ŠÉFEM) ---
   function renderQuickBadges() {
     const container = document.getElementById('quickUserBadges');
     if (!container) return;
     
-    // Zaručené profily pro rychlý výběr
+    // Zaručené profily pro rychlý výběr bez duplicitního Jiřího
     const defaultProfiles = ['Jan', 'Matěj', 'Martin', 'Jiří', 'Petr'];
     const allUsers = Array.from(new Set([...defaultProfiles, ...Object.keys(cloudUsers)]));
 
@@ -1325,21 +1321,6 @@
     document.getElementById('oldPassInput').value = '';
     document.getElementById('newPassInput').value = '';
     alert("Heslo úspěšně změněno!");
-  }
-
-  async function deleteMyAccount() {
-    if (!confirm(`Smazat profil "${loggedUser}"?`)) return;
-    await db.from('team_users').delete().eq('username', loggedUser);
-    await db.from('active_shifts').delete().eq('worker', loggedUser);
-    localStorage.removeItem('persistent_user');
-    sessionStorage.removeItem('session_user');
-    loggedUser = null;
-    toggleSettingsMenu(false);
-    alert("Profil smazán.");
-    await fetchAllFromCloud();
-    document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('appScreen').classList.add('hidden');
-    renderQuickBadges();
   }
 
   async function saveUserRates() {
@@ -1518,7 +1499,6 @@
     return await Promise.all(files.map(f => compressImage(f)));
   }
 
-  // --- SPOLEHLIVÉ VYPLNĚNÍ VÝBĚRU ZAKÁZEK A UŽIVATELŮ ---
   function populateProjects() {
     const workSelect = document.getElementById('workProject');
     const filterSelect = document.getElementById('filterProject');
@@ -1526,7 +1506,6 @@
 
     workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     
-    // Záchrana hodnoty filtru při obnovení
     const savedFilter = filterSelect.value || 'ALL';
     filterSelect.innerHTML = `<option value="ALL">Všechny zakázky</option>` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
     filterSelect.value = savedFilter;
@@ -1544,7 +1523,7 @@
 
   function populateUserFilter() {
     const filterSelect = document.getElementById('filterUser');
-    const savedVal = filterSelect.value || (loggedUser === 'Jiří' || loggedUser === 'Petr' ? 'ALL' : loggedUser);
+    const savedVal = filterSelect.value || 'ALL';
     
     const users = Object.keys(cloudUsers);
     filterSelect.innerHTML = `<option value="ALL">Všichni pracovníci</option>` +
@@ -1629,14 +1608,14 @@
       cloudActiveShifts[loggedUser] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
       document.getElementById('timeStart').value = timeStr;
 
-      // Spuštění pro zaškrtnuté parťáky
+      // Spuštění pro zaškrtnuté parťáky (včetně Petra pokud byl vybrán)
       const partners = document.querySelectorAll('input[name="shiftPartner"]:checked');
       for (const p of partners) {
         const partnerName = p.value;
         await db.from('active_shifts').upsert([{ worker: partnerName, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
         cloudActiveShifts[partnerName] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
       }
-      alert("Směna spuštěna pro tebe i parťáky!");
+      alert("Směna spuštěna pro tebe i vybrané parťáky!");
     } else {
       document.getElementById('timeStart').value = myShift.start;
       document.getElementById('timeEnd').value = timeStr;
@@ -1770,7 +1749,7 @@
       is_work_paid: false, is_km_paid: false, is_mat_paid: false, gps: finalGpsText, boss: selectedBoss
     }]);
 
-    // 2. Záznam pro PARŤÁKY (vozíš je ty -> km = 0)
+    // 2. Záznam pro PARŤÁKY (0 km)
     const partners = document.querySelectorAll('input[name="shiftPartner"]:checked');
     for (const p of partners) {
       const partnerName = p.value;
@@ -1907,7 +1886,7 @@
     return true;
   }
 
-  // --- KOMPLETNĚ OPRAVENÝ VÝPIS HISTORIE A KASY ---
+  // --- KOMPLETNÍ LOGIKA VIDITELNOSTI & FILTROVÁNÍ ZÁZNAMŮ ---
   function renderAll() {
     if (!loggedUser) return;
 
@@ -1920,16 +1899,30 @@
     const filterProject = (filterProjectEl && filterProjectEl.value) ? filterProjectEl.value : 'ALL';
     const activeBoss = (activeBossEl && activeBossEl.value) ? activeBossEl.value : 'Jiří';
 
+    // Role přihlášeného uživatele (self / shared / boss_jiri / boss_petr)
+    const myRole = localStorage.getItem('user_role_' + loggedUser) || 
+                   (loggedUser === 'Jiří' ? 'boss_jiri' : (loggedUser === 'Petr' ? 'boss_petr' : 'shared'));
+
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
 
-    // 1. Výpočet Kasy pro přihlášeného a aktuálního šéfa
+    // 1. Výpočet Kasy pro přihlášeného
     cloudShifts.forEach(s => {
       const shiftBoss = s.boss || 'Jiří';
-      const isBossMatch = (loggedUser === 'Jiří' || loggedUser === 'Petr') ? (shiftBoss === loggedUser) : (shiftBoss === activeBoss);
-      const isUserMatch = (s.worker === loggedUser);
+      const isMine = (s.worker === loggedUser);
 
-      if (isUserMatch && isBossMatch && isDateInPeriod(s.date, selectedPeriod)) {
+      // Pravidla do Kasy:
+      let includeInKasa = false;
+      if (myRole === 'boss_jiri') {
+        includeInKasa = (shiftBoss === 'Jiří');
+      } else if (myRole === 'boss_petr') {
+        includeInKasa = (shiftBoss === 'Petr');
+      } else {
+        // Běžný pracovník: počítá své směny dle zvoleného tlačítka šéfa
+        includeInKasa = isMine && (shiftBoss === activeBoss);
+      }
+
+      if (includeInKasa && isDateInPeriod(s.date, selectedPeriod)) {
         const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
         totalWorkForChart += shiftWorkTotal;
         totalTravelForChart += s.wageTravelOnly;
@@ -1960,21 +1953,26 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
-    // 2. Filtrování záznamů v seznamu
+    // 2. Filtrování záznamů v historii dle nastavené role viditelnosti
     const filtered = cloudShifts.filter(s => {
       const shiftBoss = s.boss || 'Jiří';
+      const isMine = (s.worker === loggedUser);
 
-      // Pokud je přihlášen šéf (Jiří/Petr), vidí JEN SVÉ ZAKÁZKY
-      if (loggedUser === 'Jiří' && shiftBoss !== 'Jiří') return false;
-      if (loggedUser === 'Petr' && shiftBoss !== 'Petr') return false;
+      // Soukromé práce "Sám na sebe" vidí VŽDY jen ten, kdo je dělal
+      if (shiftBoss === 'Sám na sebe' && !isMine) return false;
 
-      // Soukromé práce vidí jen ten, kdo je dělal
-      if (shiftBoss === 'Sám na sebe' && s.worker !== loggedUser) return false;
+      if (myRole === 'self') {
+        // Vidí jen a pouze své práce
+        if (!isMine) return false;
+      } else if (myRole === 'shared') {
+        // Vidí své práce a pokud se dělá pro Jiřího/Petra, vidí i práce kolegů pro daného šéfa
+        if (shiftBoss !== activeBoss) return false;
+      } else if (myRole === 'boss_jiri') {
+        if (shiftBoss !== 'Jiří') return false;
+      } else if (myRole === 'boss_petr') {
+        if (shiftBoss !== 'Petr') return false;
+      }
 
-      // Pokud je přihlášen pracovník, filtrujeme podle zvoleného tlačítka šéfa
-      if (loggedUser !== 'Jiří' && loggedUser !== 'Petr' && shiftBoss !== activeBoss) return false;
-
-      // Filtry z roletek (pracovník a zakázka)
       const matchUser = (filterUser === 'ALL' || s.worker === filterUser);
       const matchProject = (filterProject === 'ALL' || s.project === filterProject);
 
@@ -1983,7 +1981,7 @@
 
     list.innerHTML = "";
     if (filtered.length === 0) {
-      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy pro výběr (${activeBoss}).</p>`;
+      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy k zobrazení.</p>`;
       return;
     }
 
@@ -2081,10 +2079,7 @@
       csv += `"${s.date}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.isMatPaid ? 'Ano' : 'Ne'}";"${s.gps || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "vyuctovani.csv";
-    link.click();
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "vyuctovani.csv"; link.click();
   }
 
   async function initApp() {
@@ -2112,7 +2107,6 @@
     initMaterialDefault();
     checkLiveShift();
     
-    // Pokud je přihlášen Petr nebo Jiří, automaticky přepneme režim šéfa
     if (loggedUser === 'Petr') setBoss('Petr');
     else if (loggedUser === 'Jiří') setBoss('Jiří');
 
