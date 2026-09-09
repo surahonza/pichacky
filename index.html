@@ -38,7 +38,7 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY & LEAFLET MAPA -->
+  <!-- KNIHOVNY & MAPA -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -76,7 +76,7 @@
       <div id="loginFormContainer" class="space-y-3 pt-1">
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">UŽIVATELSKÉ JMÉNO</label>
-          <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Martin, Jiří (šéf)..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none font-semibold transition">
+          <input type="text" id="loginUsername" placeholder="Jan (já), Matěj, Jiří (šéf), Petr (šéf)..." class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none font-semibold transition">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">HESLO NEBO PIN</label>
@@ -172,12 +172,13 @@
     <!-- FORMULÁŘ ZÁPISU SMĚNY -->
     <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3.5">
       
-      <!-- VÝBĚR ŠÉFA (JIŘÍ / PETR) -->
+      <!-- VÝBĚR ŠÉFA NEBO SÁM NA SEBE -->
       <div>
         <label class="text-[11px] font-bold text-slate-500 block mb-1">PRO KTERÉHO ŠÉFA SE PRACUJE</label>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-3 gap-2">
           <button type="button" id="bossJiří" onclick="setBoss('Jiří')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs">👨‍💼 Jiří</button>
           <button type="button" id="bossPetr" onclick="setBoss('Petr')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300">👨‍💼 Petr</button>
+          <button type="button" id="bossSám" onclick="setBoss('Sám na sebe')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300">👤 Sám na sebe</button>
         </div>
         <input type="hidden" id="selectedBoss" value="Jiří">
       </div>
@@ -389,17 +390,29 @@
           </div>
         </div>
 
+        <!-- ZABEZPEČENÁ ZÓNA PRO SPRÁVCE (Hesla a Reset) -->
         <div class="space-y-1.5 pt-2 border-t border-slate-200">
-          <div class="flex justify-between items-center">
-            <span class="text-[10px] font-bold text-slate-700 block uppercase">🔑 Reset hesla kolegy</span>
-            <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Správce</span>
-          </div>
-          <select id="resetUserTarget" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
-          <input type="password" id="resetUserNewPass" placeholder="Nové heslo kolegy" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none">
-          <input type="password" id="adminMasterPassInput" placeholder="Zadej správcovské heslo" class="w-full border rounded-lg p-1.5 text-xs bg-white outline-none border-amber-300">
-          <button type="button" onclick="adminResetPasswordSecure()" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold shadow-xs transition">
-            Ověřit klíč a resetovat heslo
+          <button type="button" id="btnUnlockAdmin" onclick="unlockAdminPanel()" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5">
+            <span>🔒</span> Zobrazit Správcovské rozhraní
           </button>
+          
+          <div id="adminPanelArea" class="hidden bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-3 mt-2">
+            <span class="text-[11px] font-black text-amber-900 uppercase tracking-wider block border-b border-amber-200/50 pb-1">Zabezpečená zóna</span>
+            
+            <div class="space-y-1">
+              <span class="text-[10px] font-bold text-slate-600 block">HESLA VŠECH UŽIVATELŮ:</span>
+              <div id="adminUserPasswordsList" class="bg-white rounded-lg border border-amber-200 p-1.5 max-h-32 overflow-y-auto text-xs space-y-0.5"></div>
+            </div>
+
+            <div class="space-y-1 pt-1 border-t border-amber-200/50">
+              <span class="text-[10px] font-bold text-slate-600 block">RESET HESLA KOLEGY:</span>
+              <select id="resetUserTarget" class="w-full border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none font-semibold"></select>
+              <div class="flex gap-1.5 mt-1">
+                <input type="password" id="resetUserNewPass" placeholder="Nové heslo" class="flex-1 border border-amber-300 rounded-lg p-1.5 text-xs bg-white outline-none">
+                <button type="button" onclick="adminResetPasswordDirect()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition">Reset</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="pt-2 border-t border-slate-200">
@@ -677,7 +690,8 @@
       document.getElementById('editUsernameInput').value = loggedUser || '';
       document.getElementById('oldPassInput').value = '';
       document.getElementById('newPassInput').value = '';
-      populateAdminResetUsers();
+      document.getElementById('btnUnlockAdmin').classList.remove('hidden');
+      document.getElementById('adminPanelArea').classList.add('hidden');
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('-translate-x-full'), 10);
     } else {
@@ -700,7 +714,7 @@
     }
   }
 
-  // --- SPOLEHLIVÉ SWIPE GESTO PO CELÉ OBRAZOVCE ---
+  // --- VYLADĚNÉ SWIPE GESTO KDEKOLIV NA PLOŠE ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
@@ -720,24 +734,38 @@
 
     if (isMapOpen || isLightboxOpen) return;
 
-    if (isSettingsOpen && diffX < -50 && diffY < 120) {
+    if (isSettingsOpen && diffX < -60 && diffY < 120) {
       toggleSettingsMenu(false);
       return;
     }
-    if (isStatsOpen && diffX > 50 && diffY < 120) {
+    if (isStatsOpen && diffX > 60 && diffY < 120) {
       toggleStatsMenu(false);
       return;
     }
 
-    if (!isSettingsOpen && !isStatsOpen && diffY < 100 && Math.abs(diffX) > 70) {
+    if (!isSettingsOpen && !isStatsOpen && diffY < 100 && Math.abs(diffX) > 80) {
       if (diffX > 0) {
-        toggleSettingsMenu(true); // Švih doprava -> Nastavení
+        toggleSettingsMenu(true);
       } else {
-        toggleStatsMenu(true);  // Švih doleva -> Tým/Kasa
+        toggleStatsMenu(true);
       }
     }
   }, { passive: true });
 
+  // --- VÝBĚR ŠÉFA ---
+  function setBoss(bossName) {
+    document.getElementById('selectedBoss').value = bossName;
+    const bJ = document.getElementById('bossJiří');
+    const bP = document.getElementById('bossPetr');
+    const bS = document.getElementById('bossSám');
+    [bJ, bP, bS].forEach(b => b.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300");
+
+    const activeBtn = document.getElementById('boss' + (bossName === 'Sám na sebe' ? 'Sám' : bossName));
+    activeBtn.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs";
+    renderAll();
+  }
+
+  // INTERAKTIVNÍ MAPA
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
@@ -807,13 +835,25 @@
   }
 
   function renderGalleryView() {
-    const total = currentGalleryImages.length, currentSrc = currentGalleryImages[currentGalleryIndex];
-    const img = document.getElementById('lightboxImage'), dlBtn = document.getElementById('lightboxDownloadBtn'), counter = document.getElementById('lightboxCounter');
-    const prevBtn = document.getElementById('lightboxPrevBtn'), nextBtn = document.getElementById('lightboxNextBtn'), thumbsContainer = document.getElementById('lightboxThumbnails');
+    const total = currentGalleryImages.length;
+    const currentSrc = currentGalleryImages[currentGalleryIndex];
+    const img = document.getElementById('lightboxImage');
+    const dlBtn = document.getElementById('lightboxDownloadBtn');
+    const counter = document.getElementById('lightboxCounter');
+    const prevBtn = document.getElementById('lightboxPrevBtn');
+    const nextBtn = document.getElementById('lightboxNextBtn');
+    const thumbsContainer = document.getElementById('lightboxThumbnails');
 
-    img.src = currentSrc; resetImageTransform(); dlBtn.href = currentSrc; counter.innerText = `Fotka ${currentGalleryIndex + 1} z ${total}`;
-    if (total <= 1) { prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); thumbsContainer.classList.add('hidden'); }
-    else { prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); thumbsContainer.classList.remove('hidden'); }
+    img.src = currentSrc;
+    resetImageTransform();
+    dlBtn.href = currentSrc;
+    counter.innerText = `Fotka ${currentGalleryIndex + 1} z ${total}`;
+
+    if (total <= 1) {
+      prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); thumbsContainer.classList.add('hidden');
+    } else {
+      prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); thumbsContainer.classList.remove('hidden');
+    }
 
     thumbsContainer.innerHTML = currentGalleryImages.map((src, idx) => `
       <img src="${src}" onclick="jumpToGalleryPhoto(${idx})" class="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border-2 cursor-pointer transition flex-shrink-0 ${idx === currentGalleryIndex ? 'border-sky-400 scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'}">
@@ -821,8 +861,10 @@
   }
 
   function navigateGallery(direction) {
-    const total = currentGalleryImages.length; if (total <= 1) return;
-    currentGalleryIndex = (currentGalleryIndex + direction + total) % total; renderGalleryView();
+    const total = currentGalleryImages.length;
+    if (total <= 1) return;
+    currentGalleryIndex = (currentGalleryIndex + direction + total) % total;
+    renderGalleryView();
   }
 
   function jumpToGalleryPhoto(index) { currentGalleryIndex = index; renderGalleryView(); }
@@ -843,74 +885,162 @@
 
   touchArea.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
-      const now = Date.now(), touch = e.touches[0];
+      const now = Date.now();
+      const touch = e.touches[0];
       if (now - lastTapTime < 300) {
         e.preventDefault();
         if (currentZoom > 1.2) { resetImageTransform(); applyTransform(true); }
         else { currentZoom = 2.5; panX = 0; panY = 0; applyTransform(true); }
         lastTapTime = 0; return;
       }
-      lastTapTime = now; isDragging = true; startX = touch.clientX - panX; startY = touch.clientY - panY;
+      lastTapTime = now;
+      isDragging = true; startX = touch.clientX - panX; startY = touch.clientY - panY;
     }
   }, { passive: false });
 
   touchArea.addEventListener('touchmove', e => {
     if (!isDragging || e.touches.length !== 1) return;
     const touch = e.touches[0];
-    if (currentZoom > 1) { e.preventDefault(); panX = touch.clientX - startX; panY = touch.clientY - startY; applyTransform(false); }
+    if (currentZoom > 1) {
+      e.preventDefault();
+      panX = touch.clientX - startX; panY = touch.clientY - startY;
+      applyTransform(false);
+    }
   }, { passive: false });
 
   touchArea.addEventListener('touchend', e => {
-    if (!isDragging) return; isDragging = false;
+    if (!isDragging) return;
+    isDragging = false;
     if (currentZoom <= 1.05) {
-      const touch = e.changedTouches[0], diffX = touch.clientX - startX;
-      if (diffX < -45) navigateGallery(1); if (diffX > 45) navigateGallery(-1);
+      const touch = e.changedTouches[0];
+      const diffX = touch.clientX - startX;
+      if (diffX < -45) navigateGallery(1);
+      if (diffX > 45) navigateGallery(-1);
       resetImageTransform();
     }
   }, { passive: true });
 
+  // --- ZÁCHRANNÝ RESET NA ÚVODU ---
   function toggleAuthResetMode(show) {
-    const formContainer = document.getElementById('loginFormContainer'), resetContainer = document.getElementById('authResetContainer');
-    if (show) { formContainer.classList.add('hidden'); resetContainer.classList.remove('hidden'); populateAuthResetUsers(); }
-    else { resetContainer.classList.add('hidden'); formContainer.classList.remove('hidden'); }
+    const formContainer = document.getElementById('loginFormContainer');
+    const resetContainer = document.getElementById('authResetContainer');
+    if (show) {
+      formContainer.classList.add('hidden');
+      resetContainer.classList.remove('hidden');
+      populateAuthResetUsers();
+    } else {
+      resetContainer.classList.add('hidden');
+      formContainer.classList.remove('hidden');
+    }
   }
 
   function populateAuthResetUsers() {
-    const select = document.getElementById('authResetUserSelect'); if (!select) return;
-    const users = Object.keys(cloudUsers); select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
+    const select = document.getElementById('authResetUserSelect');
+    if (!select) return;
+    const users = Object.keys(cloudUsers);
+    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
   }
 
   async function executeAuthReset() {
-    const targetUser = document.getElementById('authResetUserSelect').value, newPass = document.getElementById('authResetNewPass').value.trim(), masterPass = document.getElementById('authResetMasterPass').value.trim();
-    if (!masterPass || masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
+    const targetUser = document.getElementById('authResetUserSelect').value;
+    const newPass = document.getElementById('authResetNewPass').value.trim();
+    const masterPass = document.getElementById('authResetMasterPass').value.trim();
+
+    if (!masterPass) return alert("Zadej správcovské heslo.");
+    if (masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
     if (!newPass) return alert("Zadej nové heslo.");
+
     await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
     if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
-    document.getElementById('authResetNewPass').value = ''; document.getElementById('authResetMasterPass').value = '';
-    alert(`Heslo pro "${targetUser}" resetováno!`); toggleAuthResetMode(false);
+
+    document.getElementById('authResetNewPass').value = '';
+    document.getElementById('authResetMasterPass').value = '';
+    alert(`Heslo pro uživatele "${targetUser}" bylo úspěšně resetováno! Nyní se můžeš přihlásit.`);
+    toggleAuthResetMode(false);
+  }
+
+  // --- SPRÁVCOVSKÉ ROZHRANÍ V NASTAVENÍ ---
+  function unlockAdminPanel() {
+    const pass = prompt("Zadej správcovské heslo pro odemčení této sekce:");
+    if (pass === MASTER_BACKUP_PASSWORD) {
+      document.getElementById('btnUnlockAdmin').classList.add('hidden');
+      document.getElementById('adminPanelArea').classList.remove('hidden');
+      
+      const passList = document.getElementById('adminUserPasswordsList');
+      const users = Object.keys(cloudUsers);
+      passList.innerHTML = users.map(u => `
+        <div class="flex justify-between items-center px-1.5 py-1 hover:bg-slate-50 rounded">
+          <span class="font-semibold text-slate-700">${u}</span>
+          <span class="font-mono text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 select-all">${cloudUsers[u].pass}</span>
+        </div>
+      `).join('');
+      
+      populateAdminResetUsersDirect();
+    } else {
+      if (pass !== null) alert("Neplatné heslo!");
+    }
+  }
+
+  function populateAdminResetUsersDirect() {
+    const select = document.getElementById('resetUserTarget');
+    if (!select) return;
+    const users = Object.keys(cloudUsers);
+    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
+  }
+
+  async function adminResetPasswordDirect() {
+    const targetUser = document.getElementById('resetUserTarget').value;
+    const newPass = document.getElementById('resetUserNewPass').value.trim();
+    
+    if (!newPass) return alert("Zadej nové heslo.");
+    
+    await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
+    if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
+    
+    document.getElementById('resetUserNewPass').value = '';
+    alert(`Heslo pro ${targetUser} resetováno!`);
+    
+    // Obnovení seznamu hesel
+    const passList = document.getElementById('adminUserPasswordsList');
+    passList.innerHTML = Object.keys(cloudUsers).map(u => `
+      <div class="flex justify-between items-center px-1.5 py-1 hover:bg-slate-50 rounded">
+        <span class="font-semibold text-slate-700">${u}</span>
+        <span class="font-mono text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 select-all">${cloudUsers[u].pass}</span>
+      </div>
+    `).join('');
   }
 
   function toggleAutoGps() {
-    const check = document.getElementById('prefAutoGps').checked; localStorage.setItem('pref_auto_gps', check ? '1' : '0');
+    const check = document.getElementById('prefAutoGps').checked;
+    localStorage.setItem('pref_auto_gps', check ? '1' : '0');
     if (check) getGPS(true);
   }
 
   function applyAutoGps() {
     const isAuto = localStorage.getItem('pref_auto_gps') === '1';
-    document.getElementById('prefAutoGps').checked = isAuto; if (isAuto) getGPS(true);
+    document.getElementById('prefAutoGps').checked = isAuto;
+    if (isAuto) getGPS(true);
   }
 
   function toggleExtrasVisibility() {
-    const check = document.getElementById('prefShowExtras').checked; localStorage.setItem('pref_show_extras', check ? '1' : '0');
+    const check = document.getElementById('prefShowExtras').checked;
+    localStorage.setItem('pref_show_extras', check ? '1' : '0');
     applyExtrasVisibility();
   }
 
   function applyExtrasVisibility() {
     const isVisible = localStorage.getItem('pref_show_extras') !== '0';
     document.getElementById('prefShowExtras').checked = isVisible;
-    const box = document.getElementById('extrasBox'), liveCard = document.getElementById('liveExtrasCard'), liveGrid = document.getElementById('livePreviewGrid');
-    if (isVisible) { box.classList.remove('hidden'); liveCard.classList.remove('hidden'); liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"; }
-    else { box.classList.add('hidden'); liveCard.classList.add('hidden'); liveGrid.className = "grid grid-cols-3 gap-2 text-xs"; document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false; }
+    const box = document.getElementById('extrasBox');
+    const liveCard = document.getElementById('liveExtrasCard');
+    const liveGrid = document.getElementById('livePreviewGrid');
+
+    if (isVisible) {
+      box.classList.remove('hidden'); liveCard.classList.remove('hidden'); liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs";
+    } else {
+      box.classList.add('hidden'); liveCard.classList.add('hidden'); liveGrid.className = "grid grid-cols-3 gap-2 text-xs";
+      document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false;
+    }
     updateLiveCalculations();
   }
 
@@ -919,7 +1049,9 @@
       const { data: uData } = await db.from('team_users').select('*');
       if (uData) {
         cloudUsers = {};
-        uData.forEach(u => { cloudUsers[u.username] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t }; });
+        uData.forEach(u => {
+          cloudUsers[u.username] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t };
+        });
       }
 
       const { data: pData } = await db.from('team_projects').select('*');
@@ -935,28 +1067,65 @@
       if (sData) {
         cloudShifts = sData.map(s => {
           let workPhotos = [];
-          if (s.work_photo) { try { workPhotos = JSON.parse(s.work_photo); if (!Array.isArray(workPhotos)) workPhotos = [s.work_photo]; } catch(e) { workPhotos = [s.work_photo]; } }
+          if (s.work_photo) {
+            try { workPhotos = JSON.parse(s.work_photo); if (!Array.isArray(workPhotos)) workPhotos = [s.work_photo]; }
+            catch(e) { workPhotos = [s.work_photo]; }
+          }
 
           let matPurchases = [];
-          if (s.mat_desc && s.mat_desc.startsWith('[')) { try { matPurchases = JSON.parse(s.mat_desc); } catch(e) { matPurchases = []; } }
+          if (s.mat_desc && s.mat_desc.startsWith('[')) {
+            try { matPurchases = JSON.parse(s.mat_desc); } catch(e) { matPurchases = []; }
+          }
           if (!matPurchases.length && (s.mat_cost > 0 || s.mat_desc)) {
             let photos = [];
-            if (s.mat_photo) { try { photos = JSON.parse(s.mat_photo); if (!Array.isArray(photos)) photos = [s.mat_photo]; } catch(e) { photos = [s.mat_photo]; } }
+            if (s.mat_photo) {
+              try { photos = JSON.parse(s.mat_photo); if (!Array.isArray(photos)) photos = [s.mat_photo]; }
+              catch(e) { photos = [s.mat_photo]; }
+            }
             matPurchases = [{ desc: s.mat_desc || 'Nákup', cost: s.mat_cost || 0, photos, isPaid: s.is_mat_paid }];
           }
 
           return {
-            id: s.id, worker: s.worker, project: s.project, date: s.date, t1: s.t1, t2: s.t2,
-            hours: Number(s.hours), rateH: s.rate_h, rateK: s.rate_k, wageWorkOnly: s.wage_work_only,
-            kmTotal: s.km_total, wageTravelOnly: s.wage_travel_only, stops: s.stops || [],
-            extraPauchal: s.extra_pauchal || 0, workAndTravelTotal: s.work_and_travel_total,
-            desc: s.desc_text, workPhotos, matPurchases, matCost: s.mat_cost,
-            isWorkPaid: s.is_work_paid, isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
-            isMatPaid: s.is_mat_paid, gps: s.gps, boss: s.boss || 'Jiří'
+            id: s.id,
+            worker: s.worker,
+            project: s.project,
+            date: s.date,
+            t1: s.t1,
+            t2: s.t2,
+            hours: Number(s.hours),
+            rateH: s.rate_h,
+            rateK: s.rate_k,
+            wageWorkOnly: s.wage_work_only,
+            kmTotal: s.km_total,
+            wageTravelOnly: s.wage_travel_only,
+            stops: s.stops || [],
+            extraPauchal: s.extra_pauchal || 0,
+            workAndTravelTotal: s.work_and_travel_total,
+            desc: s.desc_text,
+            workPhotos,
+            matPurchases,
+            matCost: s.mat_cost,
+            isWorkPaid: s.is_work_paid,
+            isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
+            isMatPaid: s.is_mat_paid,
+            gps: s.gps,
+            boss: s.boss || 'Jiří'
           };
         });
       }
     } catch (err) { console.error("Chyba:", err); }
+  }
+
+  function renderPartnerCheckboxes() {
+    const container = document.getElementById('partnerCheckboxes');
+    if (!container) return;
+    const others = Object.keys(cloudUsers).filter(u => u !== loggedUser);
+    container.innerHTML = others.map(u => `
+      <label class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-sky-200 text-xs font-semibold text-slate-700 cursor-pointer shadow-2xs">
+        <input type="checkbox" name="shiftPartner" value="${u}" class="w-3.5 h-3.5 rounded text-sky-600">
+        <span>${u}</span>
+      </label>
+    `).join('');
   }
 
   function updateLiveCalculations() {
@@ -966,18 +1135,32 @@
     const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD;
     const rateT = Number(document.getElementById('rateTools').value) || uData.rateT;
 
-    const t1 = document.getElementById('timeStart').value, t2 = document.getElementById('timeEnd').value;
-    let hours = 0; if (t1 && t2) { const [h1, m1] = t1.split(':').map(Number), [h2, m2] = t2.split(':').map(Number); hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60); }
+    const t1 = document.getElementById('timeStart').value;
+    const t2 = document.getElementById('timeEnd').value;
+    let hours = 0;
+    if (t1 && t2) {
+      const [h1, m1] = t1.split(':').map(Number);
+      const [h2, m2] = t2.split(':').map(Number);
+      hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
+    }
     const wageWork = Math.round(hours * rateH);
 
     let kmTotal = 0;
     if (activeKmMode === 'quick') kmTotal = Number(document.getElementById('kmDirect').value) || 0;
     else if (activeKmMode === 'stops') kmTotal = calcStopsSum();
-    else if (activeKmMode === 'odo') { const km1 = Number(document.getElementById('kmStart').value) || 0, km2 = Number(document.getElementById('kmEnd').value) || 0; kmTotal = (km2 > km1) ? (km2 - km1) : 0; }
+    else if (activeKmMode === 'odo') {
+      const km1 = Number(document.getElementById('kmStart').value) || 0;
+      const km2 = Number(document.getElementById('kmEnd').value) || 0;
+      kmTotal = (km2 > km1) ? (km2 - km1) : 0;
+    }
     const wageTravel = Math.round(kmTotal * rateK);
 
-    const extras = (document.getElementById('checkDiet').checked ? rateD : 0) + (document.getElementById('checkTools').checked ? rateT : 0);
-    let matCost = 0; document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
+    const hasDiet = document.getElementById('checkDiet').checked;
+    const hasTools = document.getElementById('checkTools').checked;
+    const extras = (hasDiet ? rateD : 0) + (hasTools ? rateT : 0);
+
+    let matCost = 0;
+    document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
 
     document.getElementById('liveHours').innerText = hours.toFixed(1) + 'h';
     document.getElementById('liveWorkWage').innerText = wageWork.toLocaleString() + ' Kč';
@@ -1007,125 +1190,233 @@
   }
 
   function renderTeamStatusList() {
-    const container = document.getElementById('teamLiveStatusList'); if (!container) return;
+    const container = document.getElementById('teamLiveStatusList');
+    if (!container) return;
     const users = Object.keys(cloudUsers);
+
     container.innerHTML = users.map(u => {
       const active = cloudActiveShifts[u];
       if (active) {
-        return `<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs"><div><span class="font-bold text-xs text-slate-900 block">${u} (${active.boss})</span><span class="text-[10px] text-slate-500 font-medium">📍 ${active.project} (od ${active.start})</span></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Pracuje</span></div>`;
+        return `
+          <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs">
+            <div>
+              <span class="font-bold text-xs text-slate-900 block">${u} (${active.boss})</span>
+              <span class="text-[10px] text-slate-500 font-medium">📍 ${active.project} (od ${active.start})</span>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+              🟢 Pracuje
+            </span>
+          </div>
+        `;
       } else {
-        return `<div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200"><span class="font-bold text-xs text-slate-700">${u}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">⚪ Volno</span></div>`;
+        return `
+          <div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200">
+            <span class="font-bold text-xs text-slate-700">${u}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+              ⚪ Volno
+            </span>
+          </div>
+        `;
       }
     }).join('');
   }
 
-  async function refreshTeamStatus() { await fetchAllFromCloud(); renderTeamStatusList(); checkLiveShift(); }
-
-  function renderQuickBadges() {
-    const container = document.getElementById('quickUserBadges'); if (!container) return;
-    const names = Object.keys(cloudUsers);
-    container.innerHTML = names.map(u => `<button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-xs">👤 ${u}</button>`).join('');
+  async function refreshTeamStatus() {
+    await fetchAllFromCloud();
+    renderTeamStatusList();
+    checkLiveShift();
   }
 
-  function selectQuickUser(name) { document.getElementById('loginUsername').value = name; document.getElementById('loginPassword').focus(); }
+  function renderQuickBadges() {
+    const container = document.getElementById('quickUserBadges');
+    if (!container) return;
+    const names = Object.keys(cloudUsers);
+    container.innerHTML = names.map(u => `
+      <button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-xs">
+        👤 ${u}
+      </button>
+    `).join('');
+  }
+
+  function selectQuickUser(name) {
+    document.getElementById('loginUsername').value = name;
+    document.getElementById('loginPassword').focus();
+  }
 
   async function handleLogin() {
-    const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value.trim(), remember = document.getElementById('rememberMe').checked;
+    const u = document.getElementById('loginUsername').value.trim();
+    const p = document.getElementById('loginPassword').value.trim();
+    const remember = document.getElementById('rememberMe').checked;
+
     if (!u || !p) return alert("Vyplň jméno i heslo.");
+
     await fetchAllFromCloud();
+
     const userObj = cloudUsers[u];
-    if (userObj && (userObj.pass === p || p === MASTER_BACKUP_PASSWORD)) {
+    const isPassValid = userObj && (userObj.pass === p || p === MASTER_BACKUP_PASSWORD);
+
+    if (isPassValid) {
       loggedUser = u;
-      if (remember) { localStorage.setItem('persistent_user', u); sessionStorage.removeItem('session_user'); }
-      else { sessionStorage.setItem('session_user', u); localStorage.removeItem('persistent_user'); }
+      if (remember) {
+        localStorage.setItem('persistent_user', u);
+        sessionStorage.removeItem('session_user');
+      } else {
+        sessionStorage.setItem('session_user', u);
+        localStorage.removeItem('persistent_user');
+      }
       initApp();
-    } else { alert("Špatné jméno nebo heslo."); }
+    } else {
+      alert("Špatné jméno nebo heslo.");
+    }
   }
 
   async function handleRegister() {
-    const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value.trim(), remember = document.getElementById('rememberMe').checked;
-    if (!u || !p) return alert("Zadej jméno a heslo.");
-    await fetchAllFromCloud(); if (cloudUsers[u]) return alert("Uživatel už existuje.");
-    await db.from('team_users').insert([{ username: u, password: p, rate_h: 300, rate_k: 7, rate_d: 150, rate_t: 100 }]);
-    loggedUser = u; if (remember) localStorage.setItem('persistent_user', u); else sessionStorage.setItem('session_user', u);
-    alert(`Účet pro ${u} vytvořen!`); await fetchAllFromCloud(); initApp();
+    const u = document.getElementById('loginUsername').value.trim();
+    const p = document.getElementById('loginPassword').value.trim();
+    const remember = document.getElementById('rememberMe').checked;
+    if (!u || !p) return alert("Zadej jméno a heslo pro nový účet.");
+
+    await fetchAllFromCloud();
+
+    if (cloudUsers[u]) return alert("Toto jméno už existuje. Zvol jiné.");
+
+    await db.from('team_users').insert([{
+      username: u,
+      password: p,
+      rate_h: 300,
+      rate_k: 7,
+      rate_d: 150,
+      rate_t: 100
+    }]);
+
+    loggedUser = u;
+    if (remember) localStorage.setItem('persistent_user', u);
+    else sessionStorage.setItem('session_user', u);
+
+    alert(`Účet pro ${u} byl vytvořen a uložen v cloudu!`);
+    await fetchAllFromCloud();
+    initApp();
   }
 
   function handleLogout() {
-    toggleSettingsMenu(false); toggleStatsMenu(false);
-    localStorage.removeItem('persistent_user'); sessionStorage.removeItem('session_user');
-    loggedUser = null; document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('appScreen').classList.add('hidden'); renderQuickBadges();
+    toggleSettingsMenu(false);
+    toggleStatsMenu(false);
+    localStorage.removeItem('persistent_user');
+    sessionStorage.removeItem('session_user');
+    loggedUser = null;
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+    renderQuickBadges();
   }
 
   async function changeUsername() {
     const newName = document.getElementById('editUsernameInput').value.trim();
-    if (!newName || newName === loggedUser) return alert("Zadej platné nové jméno.");
-    if (cloudUsers[newName]) return alert("Uživatel už existuje.");
-    const oldName = loggedUser, myData = cloudUsers[oldName];
-    await db.from('team_users').insert([{ username: newName, password: myData.pass, rate_h: myData.rateH, rate_k: myData.rateK, rate_d: myData.rateD, rate_t: myData.rateT }]);
+    if (!newName) return alert("Zadej nové jméno.");
+    if (newName === loggedUser) return alert("Zadal jsi stejné jméno.");
+    if (cloudUsers[newName]) return alert("Uživatel s tímto jménem už existuje.");
+
+    const oldName = loggedUser;
+    const myData = cloudUsers[oldName];
+
+    await db.from('team_users').insert([{
+      username: newName,
+      password: myData.pass,
+      rate_h: myData.rateH,
+      rate_k: myData.rateK,
+      rate_d: myData.rateD,
+      rate_t: myData.rateT
+    }]);
+
     await db.from('team_users').delete().eq('username', oldName);
     await db.from('team_shifts').update({ worker: newName }).eq('worker', oldName);
     await db.from('active_shifts').update({ worker: newName }).eq('worker', oldName);
+
     if (localStorage.getItem('persistent_user')) localStorage.setItem('persistent_user', newName);
     if (sessionStorage.getItem('session_user')) sessionStorage.setItem('session_user', newName);
-    loggedUser = newName; alert(`Jméno změněno na ${newName}!`); await fetchAllFromCloud(); initApp();
+
+    loggedUser = newName;
+    alert(`Jméno změněno z ${oldName} na ${newName}!`);
+    await fetchAllFromCloud();
+    initApp();
   }
 
   async function changePassword() {
-    const oldP = document.getElementById('oldPassInput').value.trim(), newP = document.getElementById('newPassInput').value.trim();
-    if (!oldP || !newP) return alert("Vyplň hesla.");
+    const oldP = document.getElementById('oldPassInput').value.trim();
+    const newP = document.getElementById('newPassInput').value.trim();
+    if (!oldP || !newP) return alert("Vyplň staré i nové heslo.");
+
     const userObj = cloudUsers[loggedUser];
-    if (!userObj || (userObj.pass !== oldP && oldP !== MASTER_BACKUP_PASSWORD)) return alert("Původní heslo nesouhlasí.");
+    const isCurrentValid = userObj && (userObj.pass === oldP || oldP === MASTER_BACKUP_PASSWORD);
+
+    if (!isCurrentValid) {
+      return alert("Původní heslo není správné.");
+    }
+
     await db.from('team_users').update({ password: newP }).eq('username', loggedUser);
     cloudUsers[loggedUser].pass = newP;
-    document.getElementById('oldPassInput').value = ''; document.getElementById('newPassInput').value = '';
-    alert("Heslo úspěšně změněno!");
-  }
-
-  function populateAdminResetUsers() {
-    const select = document.getElementById('resetUserTarget'); if (!select) return;
-    const users = Object.keys(cloudUsers); select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
-  }
-
-  async function adminResetPasswordSecure() {
-    const targetUser = document.getElementById('resetUserTarget').value, newPass = document.getElementById('resetUserNewPass').value.trim(), masterPass = document.getElementById('adminMasterPassInput').value.trim();
-    if (!masterPass || masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
-    if (!newPass) return alert("Zadej nové heslo.");
-    await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
-    if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
-    document.getElementById('resetUserNewPass').value = ''; document.getElementById('adminMasterPassInput').value = '';
-    alert(`Heslo pro ${targetUser} resetováno!`);
+    document.getElementById('oldPassInput').value = '';
+    document.getElementById('newPassInput').value = '';
+    alert("Tvoje heslo bylo úspěšně změněno!");
   }
 
   async function deleteMyAccount() {
-    if (!confirm(`Smazat profil "${loggedUser}"?`)) return;
+    const confirmDelete = confirm(`Opravdu chceš smazat profil "${loggedUser}"?\n\nTvé dříve zapsané směny zůstanou bezpečně zachované v databázi.`);
+    if (!confirmDelete) return;
+
     await db.from('team_users').delete().eq('username', loggedUser);
     await db.from('active_shifts').delete().eq('worker', loggedUser);
-    localStorage.removeItem('persistent_user'); sessionStorage.removeItem('session_user');
-    loggedUser = null; toggleSettingsMenu(false); alert("Profil smazán.");
-    await fetchAllFromCloud(); document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('appScreen').classList.add('hidden'); renderQuickBadges();
+
+    localStorage.removeItem('persistent_user');
+    sessionStorage.removeItem('session_user');
+    loggedUser = null;
+
+    toggleSettingsMenu(false);
+    alert("Tvůj profil byl smazán.");
+    await fetchAllFromCloud();
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+    renderQuickBadges();
   }
 
   async function saveUserRates() {
     if (!loggedUser) return;
-    const rH = Number(document.getElementById('rateHour').value) || 0, rK = Number(document.getElementById('rateKm').value) || 0, rD = Number(document.getElementById('rateDiet').value) || 0, rT = Number(document.getElementById('rateTools').value) || 0;
-    await db.from('team_users').update({ rate_h: rH, rate_k: rK, rate_d: rD, rate_t: rT }).eq('username', loggedUser);
-    if (cloudUsers[loggedUser]) { cloudUsers[loggedUser].rateH = rH; cloudUsers[loggedUser].rateK = rK; cloudUsers[loggedUser].rateD = rD; cloudUsers[loggedUser].rateT = rT; }
+    const rH = Number(document.getElementById('rateHour').value) || 0;
+    const rK = Number(document.getElementById('rateKm').value) || 0;
+    const rD = Number(document.getElementById('rateDiet').value) || 0;
+    const rT = Number(document.getElementById('rateTools').value) || 0;
+
+    await db.from('team_users').update({
+      rate_h: rH,
+      rate_k: rK,
+      rate_d: rD,
+      rate_t: rT
+    }).eq('username', loggedUser);
+
+    if (cloudUsers[loggedUser]) {
+      cloudUsers[loggedUser].rateH = rH;
+      cloudUsers[loggedUser].rateK = rK;
+      cloudUsers[loggedUser].rateD = rD;
+      cloudUsers[loggedUser].rateT = rT;
+    }
     updateLiveCalculations();
   }
 
   function loadUserRates() {
     const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    document.getElementById('rateHour').value = uData.rateH; document.getElementById('rateKm').value = uData.rateK;
-    document.getElementById('rateDiet').value = uData.rateD; document.getElementById('rateTools').value = uData.rateT;
+    document.getElementById('rateHour').value = uData.rateH;
+    document.getElementById('rateKm').value = uData.rateK;
+    document.getElementById('rateDiet').value = uData.rateD;
+    document.getElementById('rateTools').value = uData.rateT;
     updateLiveCalculations();
   }
 
+  // --- ZASTÁVKY A PŘEJEZDY S PEVNOU ŠIPKOU ---
   function initStopsDefault() {
-    const container = document.getElementById('stopsContainer'); if (!container) return; container.innerHTML = '';
-    addStopRow("Dílna", "Stavba", ""); addStopRow("Stavba", "DEK / Sklad", "");
+    const container = document.getElementById('stopsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    addStopRow("Dílna", "Stavba", "");
+    addStopRow("Stavba", "DEK / Sklad", "");
   }
 
   function addStopRow(fromPlace = "", toPlace = "", km = "") {
@@ -1139,77 +1430,139 @@
       <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum(); updateLiveCalculations();" class="w-14 border rounded-lg p-1 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
       <button type="button" onclick="removeStopRow(this)" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs">✕</button>
     `;
-    container.appendChild(row); calcStopsSum();
+    container.appendChild(row);
+    calcStopsSum();
   }
 
   function removeStopRow(btn) {
     const container = document.getElementById('stopsContainer');
-    if (container.children.length > 1) { btn.parentElement.remove(); calcStopsSum(); }
-    else { const row = btn.parentElement; row.querySelector('.stop-from').value = ''; row.querySelector('.stop-to').value = ''; row.querySelector('.stop-km').value = ''; calcStopsSum(); }
+    if (container.children.length > 1) {
+      btn.parentElement.remove();
+      calcStopsSum();
+    } else {
+      const row = btn.parentElement;
+      row.querySelector('.stop-from').value = '';
+      row.querySelector('.stop-to').value = '';
+      row.querySelector('.stop-km').value = '';
+      calcStopsSum();
+    }
     updateLiveCalculations();
   }
 
   function calcStopsSum() {
-    let sum = 0; document.querySelectorAll('.stop-km').forEach(inp => { sum += Number(inp.value) || 0; });
-    document.getElementById('stopsSumDisplay').innerText = sum; return sum;
+    let sum = 0;
+    document.querySelectorAll('.stop-km').forEach(inp => { sum += Number(inp.value) || 0; });
+    document.getElementById('stopsSumDisplay').innerText = sum;
+    return sum;
   }
 
   function getStopsData() {
     const list = [];
     document.querySelectorAll('.stop-row').forEach(row => {
-      const fromP = row.querySelector('.stop-from').value.trim(), toP = row.querySelector('.stop-to').value.trim(), km = Number(row.querySelector('.stop-km').value) || 0;
-      if (fromP || toP || km > 0) list.push({ place: (fromP || 'Místo') + ' ➔ ' + (toP || 'Cíl'), km });
+      const fromP = row.querySelector('.stop-from').value.trim();
+      const toP = row.querySelector('.stop-to').value.trim();
+      const km = Number(row.querySelector('.stop-km').value) || 0;
+      if (fromP || toP || km > 0) {
+        const placeStr = (fromP || 'Místo') + ' ➔ ' + (toP || 'Cíl');
+        list.push({ place: placeStr, km });
+      }
     });
     return list;
   }
 
   function setKmMode(mode) {
     activeKmMode = mode;
-    const qBox = document.getElementById('quickKmBox'), sBox = document.getElementById('stopsKmBox'), oBox = document.getElementById('odoKmBox');
-    const bQ = document.getElementById('btnModeQuick'), bS = document.getElementById('btnModeStops'), bO = document.getElementById('btnModeOdo');
-    qBox.classList.add('hidden'); sBox.classList.add('hidden'); oBox.classList.add('hidden');
+    const qBox = document.getElementById('quickKmBox');
+    const sBox = document.getElementById('stopsKmBox');
+    const oBox = document.getElementById('odoKmBox');
+    const bQ = document.getElementById('btnModeQuick');
+    const bS = document.getElementById('btnModeStops');
+    const bO = document.getElementById('btnModeOdo');
+
+    qBox.classList.add('hidden');
+    sBox.classList.add('hidden');
+    oBox.classList.add('hidden');
+
     bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
     bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
     bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
 
-    if (mode === 'quick') { qBox.classList.remove('hidden'); bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition"; }
-    else if (mode === 'stops') { sBox.classList.remove('hidden'); bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition"; calcStopsSum(); }
-    else if (mode === 'odo') { oBox.classList.remove('hidden'); bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition"; }
+    if (mode === 'quick') {
+      qBox.classList.remove('hidden');
+      bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
+    } else if (mode === 'stops') {
+      sBox.classList.remove('hidden');
+      bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
+      calcStopsSum();
+    } else if (mode === 'odo') {
+      oBox.classList.remove('hidden');
+      bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
+    }
     updateLiveCalculations();
   }
 
-  function initMaterialDefault() { const container = document.getElementById('materialContainer'); container.innerHTML = ''; addMaterialRow(); }
+  // --- VÍCE NÁKUPŮ MATERIÁLU ---
+  function initMaterialDefault() {
+    const container = document.getElementById('materialContainer');
+    container.innerHTML = '';
+    addMaterialRow();
+  }
+
   function addMaterialRow(desc = "", cost = "") {
     const container = document.getElementById('materialContainer');
     const index = container.children.length;
     const div = document.createElement('div');
     div.className = "p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2 mat-purchase-row shadow-xs";
     div.innerHTML = `
-      <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-500 uppercase">Položka #${index + 1}</span><button type="button" onclick="removeMaterialRow(this)" class="text-rose-500 hover:text-rose-700 font-bold text-xs hover:bg-rose-50 px-1 rounded">✕ Smazat</button></div>
-      <div class="grid grid-cols-3 gap-2"><input type="text" placeholder="Kde / co jsi koupil" value="${desc}" class="col-span-2 border border-slate-300 rounded-lg p-1.5 text-xs bg-white mat-item-desc outline-none"><input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum(); updateLiveCalculations();" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none"></div>
-      <div><label class="text-[10px] text-slate-500 block mb-0.5 font-medium">🧾 Foto účtenek / faktur</label><input type="file" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 file:font-semibold mat-item-photos"></div>
+      <div class="flex justify-between items-center">
+        <span class="text-[10px] font-bold text-slate-500 uppercase">Položka #${index + 1}</span>
+        <button type="button" onclick="removeMaterialRow(this)" class="text-rose-500 hover:text-rose-700 font-bold text-xs hover:bg-rose-50 px-1 rounded">✕ Smazat</button>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <input type="text" placeholder="Kde / co jsi koupil" value="${desc}" class="col-span-2 border border-slate-300 rounded-lg p-1.5 text-xs bg-white mat-item-desc outline-none">
+        <input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum(); updateLiveCalculations();" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
+      </div>
+      <div>
+        <label class="text-[10px] text-slate-500 block mb-0.5 font-medium">🧾 Foto účtenek / faktur</label>
+        <input type="file" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 file:font-semibold mat-item-photos">
+      </div>
     `;
     container.appendChild(div);
   }
 
   function removeMaterialRow(btn) {
     const container = document.getElementById('materialContainer');
-    if (container.children.length > 1) { btn.closest('.mat-purchase-row').remove(); }
-    else { const row = btn.closest('.mat-purchase-row'); row.querySelector('.mat-item-desc').value = ''; row.querySelector('.mat-item-cost').value = ''; row.querySelector('.mat-item-photos').value = ''; }
+    if (container.children.length > 1) {
+      btn.closest('.mat-purchase-row').remove();
+    } else {
+      const row = btn.closest('.mat-purchase-row');
+      row.querySelector('.mat-item-desc').value = '';
+      row.querySelector('.mat-item-cost').value = '';
+      row.querySelector('.mat-item-photos').value = '';
+    }
     updateLiveCalculations();
   }
 
   function compressImage(file, maxWidth = 900, quality = 0.65) {
     return new Promise((resolve) => {
       if (!file) return resolve("");
-      const reader = new FileReader(); reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
       reader.onload = (e) => {
-        const img = new Image(); img.src = e.target.result;
+        const img = new Image();
+        img.src = e.target.result;
         img.onload = () => {
-          const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
-          if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', quality));
         };
       };
@@ -1218,155 +1571,79 @@
 
   async function processMultipleFiles(fileInput) {
     const files = Array.from(fileInput.files || []);
-    return await Promise.all(files.map(f => compressImage(f)));
+    const promises = files.map(f => compressImage(f));
+    return await Promise.all(promises);
   }
 
   async function initApp() {
     await fetchAllFromCloud();
-    if (!loggedUser) { document.getElementById('authScreen').classList.remove('hidden'); document.getElementById('appScreen').classList.add('hidden'); renderQuickBadges(); return; }
-    document.getElementById('authScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden');
-    document.getElementById('labelCurrentWorker').innerText = loggedUser; document.getElementById('dashWorkerName').innerText = loggedUser;
-    loadUserRates(); applyExtrasVisibility(); applyAutoGps(); populateProjects(); populateUserFilter(); renderPartnerCheckboxes();
-    initStopsDefault(); initMaterialDefault(); checkLiveShift(); renderAll(); updateLiveCalculations();
-  }
 
-  function populateProjects() {
-    const workSelect = document.getElementById('workProject'), filterSelect = document.getElementById('filterProject'), badgeList = document.getElementById('projectBadgeList');
-    workSelect.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
-    const currentFilter = filterSelect.value || 'ALL';
-    filterSelect.innerHTML = `<option value="ALL">Všechny zakázky</option>` + cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
-    filterSelect.value = currentFilter;
-
-    badgeList.innerHTML = cloudProjects.length === 0 ? '<span class="text-[11px] text-slate-400">Žádné stavby.</span>' : cloudProjects.map(p => `
-      <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-        <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
-        <div class="flex items-center gap-1">
-          <button type="button" onclick="editProject('${p}')" title="Přejmenovat stavbu" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
-          <button type="button" onclick="deleteProject('${p}')" title="Smazat stavbu" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50">✕</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  async function addProject() {
-    const input = document.getElementById('newProjectName'), val = input.value.trim();
-    if (!val) return;
-    if (!cloudProjects.includes(val)) { await db.from('team_projects').insert([{ name: val }]); cloudProjects.push(val); populateProjects(); }
-    input.value = '';
-  }
-
-  async function editProject(oldName) {
-    const newName = prompt(`Zadej nový název pro stavbu "${oldName}":`, oldName);
-    if (!newName || newName.trim() === "" || newName.trim() === oldName) return;
-    const trimmed = newName.trim();
-    if (cloudProjects.includes(trimmed)) { alert("Stavba s tímto názvem již existuje."); return; }
-
-    await db.from('team_projects').insert([{ name: trimmed }]);
-    await db.from('team_shifts').update({ project: trimmed }).eq('project', oldName);
-    await db.from('team_projects').delete().eq('name', oldName);
-
-    cloudProjects = cloudProjects.map(p => p === oldName ? trimmed : p);
-    populateProjects(); await fetchAllFromCloud(); renderAll();
-    alert(`Stavba přejmenována na "${trimmed}".`);
-  }
-
-  async function deleteProject(projectName) {
-    if (!confirm(`Smazat zakázku "${projectName}"?\n\nDříve zapsané směny zůstanou zachované.`)) return;
-    await db.from('team_projects').delete().eq('name', projectName);
-    cloudProjects = cloudProjects.filter(p => p !== projectName); populateProjects();
-  }
-
-  function populateUserFilter() {
-    const users = Object.keys(cloudUsers), filterSelect = document.getElementById('filterUser');
-    filterSelect.innerHTML = `<option value="${loggedUser}">Jen moje záznamy (${loggedUser})</option><option value="ALL">Všichni kolegové</option>` +
-      users.filter(u => u !== loggedUser).map(u => `<option value="${u}">Jen ${u}</option>`).join('');
-  }
-
-  // --- AUTOMATICKÉ PŘEDVYPLNĚNÍ PRO PARŤÁKY KDYŽ MAJÍ AKTIVNÍ SPLEČNOU PÍCHAČKU ---
-  function checkPartnerAutoFill() {
-    const myActive = cloudActiveShifts[loggedUser];
-    if (myActive) {
-      document.getElementById('workProject').value = myActive.project;
-      setBoss(myActive.boss || 'Jiří');
+    if (!loggedUser) {
+      document.getElementById('authScreen').classList.remove('hidden');
+      document.getElementById('appScreen').classList.add('hidden');
+      renderQuickBadges();
+      return;
     }
-  }
 
-  async function toggleLiveShift() {
-    const myShift = cloudActiveShifts[loggedUser], now = new Date(), timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    const selectedBoss = document.getElementById('selectedBoss').value;
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+    document.getElementById('labelCurrentWorker').innerText = loggedUser;
+    document.getElementById('dashWorkerName').innerText = loggedUser;
 
-    if (!myShift) {
-      if (localStorage.getItem('pref_auto_gps') === '1') getGPS(true);
-      const proj = document.getElementById('workProject').value, d = document.getElementById('workDate').value;
-      
-      // Spuštění pro mě
-      await db.from('active_shifts').upsert([{ worker: loggedUser, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
-      cloudActiveShifts[loggedUser] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
-      document.getElementById('timeStart').value = timeStr;
-
-      // Spuštění pro zaškrtnuté parťáky (s nulovými kilometry při uložení)
-      const partners = document.querySelectorAll('input[name="shiftPartner"]:checked');
-      for (const p of partners) {
-        const partnerName = p.value;
-        await db.from('active_shifts').upsert([{ worker: partnerName, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
-        cloudActiveShifts[partnerName] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
-      }
-      alert("Směna spuštěna pro tebe i parťáky!");
-    } else {
-      document.getElementById('timeStart').value = myShift.start; document.getElementById('timeEnd').value = timeStr;
-      document.getElementById('workProject').value = myShift.project;
-      setBoss(myShift.boss || 'Jiří');
-      await db.from('active_shifts').delete().eq('worker', loggedUser); delete cloudActiveShifts[loggedUser];
-      alert(`Směna ukončena v ${timeStr}. Zkontroluj a ulož.`);
-    }
-    checkLiveShift(); renderTeamStatusList(); updateLiveCalculations();
-  }
-
-  async function changeActiveShiftProject() {
-    const myShift = cloudActiveShifts[loggedUser]; if (!myShift) return;
-    const newProj = prompt(`Nový název stavby pro běžící směnu:`, myShift.project);
-    if (newProj && newProj.trim() !== "" && newProj.trim() !== myShift.project) {
-      const trimmed = newProj.trim();
-      if (!cloudProjects.includes(trimmed)) { await db.from('team_projects').insert([{ name: trimmed }]); cloudProjects.push(trimmed); populateProjects(); }
-      await db.from('active_shifts').update({ project: trimmed }).eq('worker', loggedUser);
-      cloudActiveShifts[loggedUser].project = trimmed; document.getElementById('workProject').value = trimmed;
-      checkLiveShift(); renderTeamStatusList(); alert(`Stavba změněna na "${trimmed}".`);
-    }
-  }
-
-  function addKmQuick(val) { document.getElementById('kmDirect').value = (Number(document.getElementById('kmDirect').value) || 0) + val; updateLiveCalculations(); }
-  function setNow(id) { const now = new Date(); document.getElementById(id).value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'); updateLiveCalculations(); }
-
-  function getGPS(silent = false) {
-    const status = document.getElementById('gpsStatus'); if (!navigator.geolocation) return;
-    if (!silent) status.innerText = "Zjišťuji GPS...";
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5), coordStr = `${lat}, ${lon}`;
-        document.getElementById('gpsLocation').value = coordStr;
-        if (!document.getElementById('gpsAddressManual').value) document.getElementById('gpsAddressManual').value = coordStr;
-        status.innerText = `📍 ${coordStr}`;
-      },
-      () => { if (!silent) status.innerText = "GPS nedostupná"; }, { timeout: 8000 }
-    );
+    loadUserRates();
+    applyExtrasVisibility();
+    applyAutoGps();
+    populateProjects();
+    populateUserFilter();
+    renderPartnerCheckboxes();
+    initStopsDefault();
+    initMaterialDefault();
+    checkLiveShift();
+    renderAll();
+    updateLiveCalculations();
   }
 
   async function saveRecord() {
-    const btn = document.getElementById('btnSaveShift'); btn.disabled = true; btn.innerText = "⏳ Ukládám...";
-    const project = document.getElementById('workProject').value, t1 = document.getElementById('timeStart').value, t2 = document.getElementById('timeEnd').value;
+    const btn = document.getElementById('btnSaveShift');
+    btn.disabled = true;
+    btn.innerText = "⏳ Ukládám...";
+
+    const project = document.getElementById('workProject').value;
+    const t1 = document.getElementById('timeStart').value;
+    const t2 = document.getElementById('timeEnd').value;
     const selectedBoss = document.getElementById('selectedBoss').value;
-    let hours = 0; if (t1 && t2) { const [h1, m1] = t1.split(':').map(Number), [h2, m2] = t2.split(':').map(Number); hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60); }
+    let hours = 0;
+    if (t1 && t2) {
+      const [h1, m1] = t1.split(':').map(Number);
+      const [h2, m2] = t2.split(':').map(Number);
+      hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
+    }
 
-    let kmTotal = 0, stopsList = [];
-    if (activeKmMode === 'quick') kmTotal = Number(document.getElementById('kmDirect').value) || 0;
-    else if (activeKmMode === 'stops') { stopsList = getStopsData(); kmTotal = calcStopsSum(); }
-    else if (activeKmMode === 'odo') { const km1 = Number(document.getElementById('kmStart').value) || 0, km2 = Number(document.getElementById('kmEnd').value) || 0; kmTotal = (km2 > km1) ? (km2 - km1) : 0; }
+    let kmTotal = 0;
+    let stopsList = [];
 
-    const rateH = Number(document.getElementById('rateHour').value) || 0, rateK = Number(document.getElementById('rateKm').value) || 0;
-    const rateD = Number(document.getElementById('rateDiet').value) || 0, rateT = Number(document.getElementById('rateTools').value) || 0;
-    const extraPauchal = (document.getElementById('checkDiet').checked ? rateD : 0) + (document.getElementById('checkTools').checked ? rateT : 0);
+    if (activeKmMode === 'quick') {
+      kmTotal = Number(document.getElementById('kmDirect').value) || 0;
+    } else if (activeKmMode === 'stops') {
+      stopsList = getStopsData();
+      kmTotal = calcStopsSum();
+    } else if (activeKmMode === 'odo') {
+      const km1 = Number(document.getElementById('kmStart').value) || 0;
+      const km2 = Number(document.getElementById('kmEnd').value) || 0;
+      kmTotal = (km2 > km1) ? (km2 - km1) : 0;
+    }
 
-    const wageWorkOnly = Math.round(hours * rateH), wageTravelOnly = Math.round(kmTotal * rateK);
+    const rateH = Number(document.getElementById('rateHour').value) || 0;
+    const rateK = Number(document.getElementById('rateKm').value) || 0;
+    const rateD = Number(document.getElementById('rateDiet').value) || 0;
+    const rateT = Number(document.getElementById('rateTools').value) || 0;
+
+    const hasDiet = document.getElementById('checkDiet').checked;
+    const hasTools = document.getElementById('checkTools').checked;
+    const extraPauchal = (hasDiet ? rateD : 0) + (hasTools ? rateT : 0);
+
+    const wageWorkOnly = Math.round(hours * rateH);
+    const wageTravelOnly = Math.round(kmTotal * rateK);
     const workAndTravelTotal = wageWorkOnly + wageTravelOnly + extraPauchal;
 
     let workPhotos = await processMultipleFiles(document.getElementById('workPhotosInput'));
@@ -1374,9 +1651,13 @@
       try { workPhotos = JSON.parse(document.getElementById('clonedWorkPhotos').value); } catch(e) {}
     }
 
-    const matRows = document.querySelectorAll('.mat-purchase-row'), matPurchases = []; let matCostTotal = 0;
+    const matRows = document.querySelectorAll('.mat-purchase-row');
+    const matPurchases = [];
+    let matCostTotal = 0;
+
     for (const row of matRows) {
-      const desc = row.querySelector('.mat-item-desc').value.trim(), cost = Number(row.querySelector('.mat-item-cost').value) || 0;
+      const desc = row.querySelector('.mat-item-desc').value.trim();
+      const cost = Number(row.querySelector('.mat-item-cost').value) || 0;
       const photos = await processMultipleFiles(row.querySelector('.mat-item-photos'));
       if (desc || cost > 0 || photos.length > 0) {
         matPurchases.push({ desc: desc || "Nákup", cost, photos, isPaid: false });
@@ -1388,7 +1669,7 @@
     const gpsCoord = document.getElementById('gpsLocation').value;
     const finalGpsText = manualAddr ? (gpsCoord ? `${manualAddr} (${gpsCoord})` : manualAddr) : gpsCoord;
 
-    // 1. Uložení pro mě
+    // 1. Uložení pro MĚ
     const recordId = Date.now();
     await db.from('team_shifts').insert([{
       id: recordId, worker: loggedUser, project, date: document.getElementById('workDate').value,
@@ -1400,7 +1681,7 @@
       is_work_paid: false, is_km_paid: false, is_mat_paid: false, gps: finalGpsText, boss: selectedBoss
     }]);
 
-    // 2. Uložení i pro parťáky (ale s 0 km a bez materiálu/paušálů, aby to měli čisté a vozils je ty)
+    // 2. Uložení pro PARŤÁKY
     const partners = document.querySelectorAll('input[name="shiftPartner"]:checked');
     for (const p of partners) {
       const partnerName = p.value;
@@ -1416,31 +1697,57 @@
       }]);
     }
 
-    btn.disabled = false; btn.innerText = "💾 Uložit záznam směny";
-    document.getElementById('workDesc').value = ''; document.getElementById('kmDirect').value = '';
-    document.getElementById('kmStart').value = ''; document.getElementById('kmEnd').value = '';
-    document.getElementById('gpsAddressManual').value = '';
-    initStopsDefault(); initMaterialDefault(); document.getElementById('workPhotosInput').value = '';
-    document.getElementById('clonedWorkPhotos').value = ''; document.getElementById('clonedPhotoPreview').classList.add('hidden');
-    document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false;
+    btn.disabled = false;
+    btn.innerText = "💾 Uložit záznam směny";
 
-    await fetchAllFromCloud(); renderAll(); updateLiveCalculations(); alert('Směna uložena pro tebe i parťáky!');
+    document.getElementById('workDesc').value = '';
+    document.getElementById('kmDirect').value = '';
+    document.getElementById('kmStart').value = '';
+    document.getElementById('kmEnd').value = '';
+    document.getElementById('gpsAddressManual').value = '';
+    initStopsDefault();
+    initMaterialDefault();
+    document.getElementById('workPhotosInput').value = '';
+    document.getElementById('clonedWorkPhotos').value = '';
+    document.getElementById('clonedPhotoPreview').classList.add('hidden');
+    document.getElementById('checkDiet').checked = false;
+    document.getElementById('checkTools').checked = false;
+
+    // Reset zaškrtávacích políček pro parťáky
+    document.querySelectorAll('input[name="shiftPartner"]').forEach(cb => cb.checked = false);
+
+    await fetchAllFromCloud();
+    renderAll();
+    updateLiveCalculations();
+    alert('Směna úspěšně uložena pro tebe i parťáky!');
   }
 
   function cloneShiftToMyForm(id) {
-    const item = cloudShifts.find(s => s.id === id); if (!item) return;
-    document.getElementById('workDate').value = item.date; document.getElementById('workProject').value = item.project;
-    document.getElementById('timeStart').value = item.t1 || ''; document.getElementById('timeEnd').value = item.t2 || '';
-    document.getElementById('workDesc').value = item.desc || ''; document.getElementById('gpsLocation').value = item.gps || '';
+    const item = cloudShifts.find(s => s.id === id);
+    if (!item) return;
+
+    document.getElementById('workDate').value = item.date;
+    document.getElementById('workProject').value = item.project;
+    document.getElementById('timeStart').value = item.t1 || '';
+    document.getElementById('timeEnd').value = item.t2 || '';
+    document.getElementById('workDesc').value = item.desc || '';
+    document.getElementById('gpsLocation').value = item.gps || '';
     document.getElementById('gpsAddressManual').value = item.gps || '';
     setBoss(item.boss || 'Jiří');
-    setKmMode('quick'); document.getElementById('kmDirect').value = '0';
-    initStopsDefault(); initMaterialDefault();
+
+    setKmMode('quick');
+    document.getElementById('kmDirect').value = '0';
+    initStopsDefault();
+    initMaterialDefault();
+
     if (item.workPhotos && item.workPhotos.length > 0) {
       document.getElementById('clonedWorkPhotos').value = JSON.stringify(item.workPhotos);
       document.getElementById('clonedPhotoPreview').classList.remove('hidden');
     }
-    toggleStatsMenu(false); window.scrollTo({ top: 120, behavior: 'smooth' }); updateLiveCalculations();
+
+    toggleStatsMenu(false);
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+    updateLiveCalculations();
     alert(`Směna od ${item.worker} načtena!`);
   }
 
@@ -1463,7 +1770,12 @@
     item.matPurchases[purchaseIndex].isPaid = !item.matPurchases[purchaseIndex].isPaid;
     const allPaid = item.matPurchases.every(m => m.isPaid);
     item.isMatPaid = allPaid;
-    await db.from('team_shifts').update({ mat_desc: JSON.stringify(item.matPurchases), is_mat_paid: allPaid }).eq('id', shiftId);
+
+    await db.from('team_shifts').update({
+      mat_desc: JSON.stringify(item.matPurchases),
+      is_mat_paid: allPaid
+    }).eq('id', shiftId);
+
     renderAll();
   }
 
@@ -1509,6 +1821,7 @@
 
     cloudShifts.forEach(s => {
       const shiftBoss = s.boss || 'Jiří';
+      // Výpočty do Kasy se počítají jen pro aktuálně přihlášeného a aktuálně vybraného šéfa
       if (s.worker === loggedUser && shiftBoss === activeBoss && isDateInPeriod(s.date, selectedPeriod)) {
         const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
         totalWorkForChart += shiftWorkTotal;
@@ -1536,12 +1849,16 @@
 
     const filtered = cloudShifts.filter(s => {
       const shiftBoss = s.boss || 'Jiří';
+      
+      // SOUKROMÉ PRÁCE VIDÍ JEN TEN, KDO JE DĚLAL
+      if (shiftBoss === 'Sám na sebe' && s.worker !== loggedUser) return false;
+
       return (shiftBoss === activeBoss) && (filterUser === 'ALL' || s.worker === filterUser) && (filterProject === 'ALL' || s.project === filterProject);
     });
 
     list.innerHTML = "";
     if (filtered.length === 0) {
-      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy pro šéfa (${activeBoss}).</p>`;
+      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy pro režim: ${activeBoss}.</p>`;
       return;
     }
 
