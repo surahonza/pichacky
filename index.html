@@ -101,7 +101,7 @@
   <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden space-y-3">
 
-    <!-- HORNÍ LIŠTA S REFRESHEM -->
+    <!-- HORNÍ LIŠTA -->
     <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
@@ -429,7 +429,7 @@
           <div id="masterAdminPasswordsList" class="bg-slate-50 border rounded-2xl p-2 text-xs space-y-1 divide-y divide-slate-200"></div>
         </div>
 
-        <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA (OPRAVENO) -->
+        <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA -->
         <div class="space-y-2 pt-2 border-t">
           <span class="text-xs font-bold text-amber-700 block uppercase">2. 👑 Povýšení na Šéfa / Správa rolí:</span>
           <p class="text-[10px] text-slate-500">Šéfové schvalují výplaty a vystupují jako volitelní šéfové zakázek:</p>
@@ -487,7 +487,7 @@
           <select id="masterAdminShiftSelect" onchange="showSelectedAdminShiftDetails()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
         </div>
 
-        <!-- 5. RESET HESLA (OPRAVENO A PLNE FUNKCNI) -->
+        <!-- 5. RESET HESLA -->
         <div class="space-y-1.5 pt-2 border-t">
           <span class="text-xs font-bold text-slate-700 block uppercase">5. Změnit heslo uživateli:</span>
           <div class="flex gap-1.5">
@@ -570,10 +570,10 @@
         </div>
       </div>
 
-      <!-- SEKCE PRO ŠÉFA: NASTAVENÍ PROVIZE ZA HODINU ZAMĚSTNANCŮ -->
-      <div id="bossMarkupSettingsSection" class="border-t pt-3 space-y-2 hidden">
-        <span class="text-[11px] font-bold text-amber-700 uppercase block tracking-wider">👑 Šéfovská provize (příplatek / hod)</span>
-        <p class="text-[10px] text-slate-500">Nastav, kolik navíc účtuješ investorovi za každou hodinu odpracovanou tvým zaměstnancem:</p>
+      <!-- SEKCE PROVIZÍ: DOSTUPNÁ PRO KAŽDÉHO (KDYŽ DĚLÁ KŠEFT NA SEBE) -->
+      <div id="bossMarkupSettingsSection" class="border-t pt-3 space-y-2">
+        <span class="text-[11px] font-bold text-amber-700 uppercase block tracking-wider">👑 Moje provize z kolegů (když dělám na sebe)</span>
+        <p class="text-[10px] text-slate-500">Zadej kolik Kč/h si připočítáš k hodinovce investora za práci daného kolegy:</p>
         <div id="bossMarkupInputsList" class="space-y-1.5 pt-0.5"></div>
       </div>
 
@@ -661,16 +661,16 @@
         </div>
       </div>
 
-      <!-- SPECIÁLNÍ KASA PRO ŠÉFA -->
+      <!-- SPECIÁLNÍ KASA PRO ŠÉFA / PRO PRÁCI NA SEBE -->
       <div id="bossFinancialSummaryBox" class="hidden bg-amber-50 border border-amber-300 p-3 rounded-xl space-y-2 text-xs">
-        <span class="font-bold text-amber-950 block uppercase text-[10px] tracking-wider">👑 Šéfovské vyúčtování (Marže & Dluhy):</span>
+        <span class="font-bold text-amber-950 block uppercase text-[10px] tracking-wider">👑 Vyúčtování zakázek (Investor vs. Kolegové):</span>
         <div class="grid grid-cols-2 gap-2 text-center">
           <div class="bg-white p-2 rounded-lg border border-amber-200">
             <span class="text-[9px] text-slate-500 block uppercase font-bold">Celkem od investora</span>
             <span id="bossTotalClientBill" class="text-sm font-black text-sky-800">0 Kč</span>
           </div>
           <div class="bg-white p-2 rounded-lg border border-amber-200">
-            <span class="text-[9px] text-slate-500 block uppercase font-bold">Dluh parťákům / mzdách</span>
+            <span class="text-[9px] text-slate-500 block uppercase font-bold">Dlužím kolegům za práci</span>
             <span id="bossTotalDebtWorkers" class="text-sm font-black text-rose-700">0 Kč</span>
           </div>
         </div>
@@ -752,7 +752,7 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"/><line x1="8" y1="11" x2="14" y2="11" stroke-width="2"/></svg>
         </button>
         <button type="button" onclick="zoomPhotoStep(0.4)" title="Přiblížit" class="bg-slate-800/90 active:bg-slate-700 text-white w-8 h-8 rounded-xl font-bold flex items-center justify-center border border-slate-700 shadow-sm transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"/><line x1="11" y1="8" x2="11" y2="14" stroke-width="2"/><line x1="8" y1="11" x2="14" y2="11" stroke-width="2"/></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"/><line x1="8" y1="11" x2="14" y2="11" stroke-width="2"/></svg>
         </button>
         <a id="lightboxDownloadBtn" download="foto.jpg" href="#" class="bg-sky-600 active:bg-sky-500 text-white text-xs font-bold px-2.5 sm:px-3 h-8 rounded-xl flex items-center gap-1 shadow transition">
           <span>📥</span><span class="hidden sm:inline">Stáhnout</span>
@@ -916,21 +916,15 @@
     }, 250);
   }
 
-  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE ---
+  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE (DOSTUPNÉ PRO KAŽDÉHO) ---
   function renderBossMarkupSettings() {
     const section = document.getElementById('bossMarkupSettingsSection');
     const container = document.getElementById('bossMarkupInputsList');
     if (!section || !container) return;
 
-    if (!isUserBoss(loggedUser)) {
-      section.classList.add('hidden');
-      return;
-    }
-
-    section.classList.remove('hidden');
     const others = Object.keys(cloudUsers).filter(u => u !== loggedUser);
     if (others.length === 0) {
-      container.innerHTML = '<span class="text-[10px] text-slate-400">Žádní kolegové v systému.</span>';
+      container.innerHTML = '<span class="text-[10px] text-slate-400">Žádní další kolegové v systému.</span>';
       return;
     }
 
@@ -952,7 +946,6 @@
   }
 
   async function saveBossMarkup(workerName) {
-    if (!isUserBoss(loggedUser)) return;
     const inp = document.getElementById(`markupInput_${workerName}`);
     if (!inp) return;
     const val = Number(inp.value) || 0;
@@ -977,7 +970,7 @@
     return 50;
   }
 
-  // --- MASTER ADMIN ROZHRANÍ (PLNĚ OPRAVENÉ) ---
+  // --- MASTER ADMIN ROZHRANÍ ---
   function openMasterAdminModal() {
     const entered = prompt("Zadej správcovské heslo (Master PIN):");
     if (entered === MASTER_BACKUP_PASSWORD) {
@@ -1053,14 +1046,13 @@
     }
 
     try {
-      // Upsert: Aktualizuje nebo vytvoří řádek
       await db.from('team_users').upsert({
         username: user,
         password: cloudUsers[user] ? cloudUsers[user].pass : '1234',
         is_boss: newStatus
       }, { onConflict: 'username' });
     } catch(e) {
-      console.error("Chyba při aktualizaci role šéfa v DB:", e);
+      console.error("Chyba při aktualizaci role šéfa:", e);
     }
 
     alert(newStatus ? `Uživatel ${user} je nyní 👑 ŠÉF!` : `Uživateli ${user} byla role šéfa odebrána.`);
@@ -1220,14 +1212,13 @@
     renderAll();
   }
 
-  // SPOLEHLIVÁ ZMĚNA HESLA PRO KOHOKOLIV (VČETNĚ ŠÉFŮ)
+  // SPOLEHLIVÁ ZMĚNA HESLA
   async function masterAdminChangePass() {
     const target = document.getElementById('masterAdminResetUser').value;
     const newPass = document.getElementById('masterAdminNewPass').value.trim();
     if (!newPass) return alert("Zadej nové heslo.");
 
     try {
-      // Upsert: Pokud uživatel existuje, přepíše heslo. Pokud neexistoval v DB, vytvoří ho.
       const isBossFlag = isUserBoss(target);
       const { error } = await db.from('team_users').upsert({
         username: target,
@@ -1323,7 +1314,7 @@
     const bossSel = document.getElementById('editShiftBoss');
     const bosses = getBossList();
     bossSel.innerHTML = bosses.map(b => `<option value="${b}">👨‍💼 ${b}</option>`).join('') + `<option value="Sám na sebe">👤 Sám na sebe</option>`;
-    bossSel.value = item.boss || bosses[0] || 'Jiří';
+    bossSel.value = item.boss || (bosses[0] || 'Jiří');
 
     const projSel = document.getElementById('editShiftProject');
     projSel.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
@@ -1755,7 +1746,6 @@
         });
       }
 
-      // Bezpečné založení profilů, pokud v DB dosud nejsou
       const defaultCheck = ['Jan', 'Matěj', 'Martin', 'Jiří', 'Petr'];
       defaultCheck.forEach(dName => {
         if (!cloudUsers[dName]) {
@@ -2681,7 +2671,7 @@
     return true;
   }
 
-  // --- VÝPIS HISTORIE A KASY S VÝPOČTEM ŠÉFOVSKÉ MARŽE (VČETNĚ ŘIDIČE/CESTY) ---
+  // --- VÝPIS HISTORIE A KASY S ROZPADEM PROVIZÍ ---
   function renderAll() {
     if (!loggedUser) return;
 
@@ -2699,14 +2689,9 @@
 
     let bossTotalClientBill = 0;
     let bossTotalDebtWorkers = 0;
+    let hasTeamOrSelfLeaderShifts = false;
     const isViewerBoss = isUserBoss(loggedUser);
     const bossSummaryBox = document.getElementById('bossFinancialSummaryBox');
-
-    if (isViewerBoss) {
-      bossSummaryBox.classList.remove('hidden');
-    } else {
-      bossSummaryBox.classList.add('hidden');
-    }
 
     cloudShifts.forEach(s => {
       if (!isShiftVisibleForUser(s, loggedUser)) return;
@@ -2715,34 +2700,39 @@
       const isCreator = (s.worker === loggedUser);
       const partnerEntry = (s.partners || []).find(p => p.name === loggedUser);
       const isParticipant = isCreator || !!partnerEntry;
-      const activeBossName = isUserBoss(loggedUser) ? loggedUser : (shiftBoss === 'Sám na sebe' ? s.worker : shiftBoss);
-      const isMyBossShift = (shiftBoss === loggedUser) || (shiftBoss === 'Sám na sebe' && isCreator);
+      
+      const isMySelfSite = (shiftBoss === 'Sám na sebe' && isCreator);
+      const isMyOfficialBossSite = (isViewerBoss && shiftBoss === loggedUser);
 
       if (isDateInPeriod(s.date, selectedPeriod)) {
         if (isViewerBoss) {
           let shiftWork = s.wageWorkOnly + (s.extraPauchal || 0);
           let clientWorkForShift = s.wageWorkOnly + (s.extraPauchal || 0);
 
-          if (!isUserBoss(s.worker)) {
-            const driverMarkup = getWorkerMarkup(activeBossName, s.worker);
+          // Žádná provize na sebe samého:
+          if (!isMySelfSite && !isUserBoss(s.worker)) {
+            const driverMarkup = getWorkerMarkup(shiftBoss, s.worker);
             clientWorkForShift += Math.round(s.hours * driverMarkup);
           }
 
           (s.partners || []).forEach(p => {
-            const markupPerHour = getWorkerMarkup(activeBossName, p.name);
+            const activeLeaderName = isMySelfSite ? s.worker : shiftBoss;
+            const markupPerHour = getWorkerMarkup(activeLeaderName, p.name);
             const workerBaseWage = p.wageWorkOnly || 0;
             const workerClientAdd = Math.round(p.hours * markupPerHour);
 
             shiftWork += workerBaseWage;
             clientWorkForShift += workerBaseWage + workerClientAdd;
 
-            if (isMyBossShift && !p.isWorkPaid) {
+            if ((isMyOfficialBossSite || isMySelfSite) && !p.isWorkPaid) {
               bossTotalDebtWorkers += workerBaseWage;
+              hasTeamOrSelfLeaderShifts = true;
             }
           });
 
-          if (isMyBossShift) {
+          if (isMyOfficialBossSite || isMySelfSite) {
             bossTotalClientBill += clientWorkForShift + s.wageTravelOnly + s.matCost;
+            if ((s.partners || []).length > 0) hasTeamOrSelfLeaderShifts = true;
           }
 
           totalWorkForChart += shiftWork;
@@ -2757,15 +2747,18 @@
           if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
           if (!s.isMatPaid) unpaidMatCost += s.matCost;
         } else {
+          // Běžný pracovník (např. Jan)
           if (isCreator) {
             const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
             
-            if (shiftBoss === 'Sám na sebe' && (s.partners || []).length > 0) {
+            // Pokud Jan dělá "Sám na sebe" a přibral parťáka:
+            if (isMySelfSite && (s.partners || []).length > 0) {
+              hasTeamOrSelfLeaderShifts = true;
               (s.partners || []).forEach(p => {
                 if (!p.isWorkPaid) bossTotalDebtWorkers += (p.wageWorkOnly || 0);
               });
-              bossSummaryBox.classList.remove('hidden');
-              
+
+              // Na sebe samého ŽÁDNÁ provize:
               let selfClientWork = shiftWorkTotal;
               (s.partners || []).forEach(p => {
                 const markup = getWorkerMarkup(s.worker, p.name);
@@ -2798,9 +2791,12 @@
     document.getElementById('dashTravelKm').innerText = unpaidTravelKm + ' km';
     document.getElementById('dashMatCost').innerText = unpaidMatCost.toLocaleString() + ' Kč';
 
-    if (isViewerBoss || document.getElementById('bossFinancialSummaryBox').classList.contains('hidden') === false) {
+    if (isViewerBoss || hasTeamOrSelfLeaderShifts) {
+      bossSummaryBox.classList.remove('hidden');
       document.getElementById('bossTotalClientBill').innerText = bossTotalClientBill.toLocaleString() + ' Kč';
       document.getElementById('bossTotalDebtWorkers').innerText = bossTotalDebtWorkers.toLocaleString() + ' Kč';
+    } else {
+      bossSummaryBox.classList.add('hidden');
     }
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
@@ -2833,9 +2829,12 @@
       const canManage = canManageShift(r);
       const shortId = getShortId(r.id);
       const shiftBoss = r.boss || 'Jiří';
-      const activeBossName = isUserBoss(loggedUser) ? loggedUser : (shiftBoss === 'Sám na sebe' ? r.worker : shiftBoss);
-      const isMyBossShift = (shiftBoss === loggedUser) || (shiftBoss === 'Sám na sebe' && r.worker === loggedUser);
-      const showBossFinancialDetails = (isViewerBoss || isMyBossShift);
+      const isSelfShift = (shiftBoss === 'Sám na sebe');
+      const isCreator = (r.worker === loggedUser);
+      const activeLeaderName = isSelfShift ? r.worker : shiftBoss;
+      
+      const isMyLeaderRole = (shiftBoss === loggedUser) || (isSelfShift && isCreator);
+      const showBossFinancialDetails = (isViewerBoss || isMyLeaderRole);
 
       const div = document.createElement('div');
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
@@ -2858,7 +2857,7 @@
           </div>
         </div>
 
-        <!-- HLAVNÍ PRACOVNÍK -->
+        <!-- HLAVNÍ PRACOVNÍK (NA SÁM NA SEBE SE PROVIZE NA SEBE NEPŘIDÁVÁ) -->
         <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
           <div class="flex justify-between items-center text-slate-800 font-bold text-[11px] border-b border-slate-200 pb-1">
             <span>👤 ${r.worker} (hlavní / řidič)</span>
@@ -2879,8 +2878,8 @@
             </button>
           </div>
 
-          ${showBossFinancialDetails && !isUserBoss(r.worker) ? (() => {
-            const driverMarkup = getWorkerMarkup(activeBossName, r.worker);
+          ${showBossFinancialDetails && !isSelfShift && !isUserBoss(r.worker) ? (() => {
+            const driverMarkup = getWorkerMarkup(activeLeaderName, r.worker);
             const driverClientAdd = Math.round(r.hours * driverMarkup);
             const driverTotalClientBill = r.wageWorkOnly + r.wageTravelOnly + driverClientAdd;
             return `
@@ -2905,12 +2904,12 @@
           ` : ''}
         </div>
 
-        <!-- PARŤÁCI NA ZAKÁZCE + ŠÉFOVSKÝ ROZPAD -->
+        <!-- PARŤÁCI NA ZAKÁZCE + ŠÉFOVSKÝ ROZPAD S INDIVIDUÁLNÍ MARŽÍ -->
         ${r.partners && r.partners.length > 0 ? `
           <div class="space-y-1.5 pt-0.5">
             <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
             ${r.partners.map((p, pIdx) => {
-              const markup = getWorkerMarkup(activeBossName, p.name);
+              const markup = getWorkerMarkup(activeLeaderName, p.name);
               const clientBillForPartner = (p.wageWorkOnly || 0) + Math.round(p.hours * markup);
               return `
                 <div class="p-2.5 rounded-xl border bg-sky-50/50 border-sky-200 space-y-1.5 text-[11px]">
