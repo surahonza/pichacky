@@ -108,8 +108,11 @@
       </button>
 
       <div class="text-center">
-        <span id="labelCurrentWorker" class="font-black text-sm sm:text-base text-emerald-400 block leading-tight">Jan</span>
-        <span id="badgeCurrentWorkerStatus" class="text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700">⚪ Volno</span>
+        <div class="flex items-center justify-center gap-1.5">
+          <span id="labelCurrentWorker" class="font-black text-sm sm:text-base text-emerald-400 block leading-tight">Jan</span>
+          <span id="badgeCurrentWorkerRole" class="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">👷 Pracovník</span>
+        </div>
+        <span id="badgeCurrentWorkerStatus" class="text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700 mt-0.5">⚪ Volno</span>
       </div>
       
       <button type="button" onclick="toggleStatsMenu(true)" title="Tým, Kasa a Záznamy" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
@@ -148,11 +151,7 @@
     <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3.5">
       <div>
         <label class="text-[11px] font-bold text-slate-500 block mb-1">PRO KTERÉHO ŠÉFA SE PRACUJE</label>
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" id="bossJiří" onclick="setBoss('Jiří')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs">👨‍💼 Jiří</button>
-          <button type="button" id="bossPetr" onclick="setBoss('Petr')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300">👨‍💼 Petr</button>
-          <button type="button" id="bossSám" onclick="setBoss('Sám na sebe')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300">👤 Sám na sebe</button>
-        </div>
+        <div id="bossButtonContainer" class="grid grid-cols-3 gap-2"></div>
         <input type="hidden" id="selectedBoss" value="Jiří">
       </div>
 
@@ -339,8 +338,8 @@
     </div>
   </div>
 
-  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY -->
-  <div id="editShiftModal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
+  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY (z-[75] aby bylo VŽDY PŘED bočním panelem z-50!) -->
+  <div id="editShiftModal" class="fixed inset-0 bg-black/85 z-[75] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
         <div>
@@ -355,11 +354,7 @@
         
         <div>
           <label class="text-[11px] font-bold text-slate-500 block mb-1">PRO KOHO SE PRACOVALO (ŠÉF)</label>
-          <select id="editShiftBoss" class="w-full border rounded-xl p-2 text-xs bg-slate-50 font-bold">
-            <option value="Jiří">👨‍💼 Jiří</option>
-            <option value="Petr">👨‍💼 Petr</option>
-            <option value="Sám na sebe">👤 Sám na sebe</option>
-          </select>
+          <select id="editShiftBoss" class="w-full border rounded-xl p-2 text-xs bg-slate-50 font-bold"></select>
         </div>
 
         <div>
@@ -419,7 +414,7 @@
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
         <div>
           <h3 class="font-black text-sm sm:text-base">🔒 Hlavní Správcovské Rozhraní</h3>
-          <p class="text-[10px] text-amber-400">Správa přístupů, hesel, mazání účtů i prací</p>
+          <p class="text-[10px] text-amber-400">Správa přístupů, šéfů, hesel a bezpečné mazání směn</p>
         </div>
         <button type="button" onclick="closeMasterAdminModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
@@ -427,21 +422,49 @@
       <div class="p-4 overflow-y-auto space-y-4">
         <!-- 1. HESLA VŠECH UŽIVATELŮ -->
         <div class="space-y-1.5">
-          <span class="text-xs font-bold text-slate-700 block uppercase">1. Aktuální hesla všech účtů:</span>
+          <span class="text-xs font-bold text-slate-700 block uppercase">1. Aktuální hesla a role účtů:</span>
           <div id="masterAdminPasswordsList" class="bg-slate-50 border rounded-2xl p-2 text-xs space-y-1 divide-y divide-slate-200"></div>
         </div>
 
-        <!-- 2. NASTAVENÍ VIDITELNOSTI PRACÍ PRO PRACOVNÍKY -->
+        <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA -->
+        <div class="space-y-2 pt-2 border-t">
+          <span class="text-xs font-bold text-amber-700 block uppercase">2. 👑 Povýšení na Šéfa / Správa rolí:</span>
+          <p class="text-[10px] text-slate-500">Šéfové mohou schvalovat výplaty, vidí práce týmu a vystupují jako vedoucí staveb:</p>
+          <div class="flex gap-1.5 items-center">
+            <select id="masterAdminBossUserSelect" onchange="updateBossToggleBtnUI()" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <button type="button" id="btnToggleBossRole" onclick="toggleBossRoleAction()" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-xl text-xs font-black transition">
+              👑 Povýšit na šéfa
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. BEZPEČNÉ MAZÁNÍ SMĚN S VYHLEDÁVÁNÍM PODLE ID -->
+        <div class="space-y-2 pt-2 border-t">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-rose-700 block uppercase">3. 🗑️ Bezpečné Mazání záznamů:</span>
+            <span class="text-[10px] text-slate-400">Hledej např. #1024</span>
+          </div>
+          
+          <div class="flex gap-1.5">
+            <input type="text" id="adminShiftSearchInput" oninput="filterAdminShifts()" placeholder="Zadej krátké ID (např. 4821), jméno nebo stavbu..." class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 outline-none font-semibold focus:bg-white focus:ring-2 focus:ring-rose-400">
+          </div>
+
+          <div id="adminShiftMatchCard" class="bg-rose-50/70 border border-rose-200 rounded-2xl p-3 text-xs space-y-2">
+            <div class="text-slate-500 text-center py-2">Vyber směnu ze seznamu níže nebo zadej ID pro náhled.</div>
+          </div>
+
+          <select id="masterAdminShiftSelect" onchange="showSelectedAdminShiftDetails()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+        </div>
+
+        <!-- 4. NASTAVENÍ VIDITELNOSTI PRACÍ PRO PRACOVNÍKY -->
         <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-slate-700 block uppercase">2. Režim viditelnosti prací pro kolegy:</span>
-          <p class="text-[10px] text-slate-500">Zvol, co daný pracovník uvidí v přehledu prací:</p>
+          <span class="text-xs font-bold text-slate-700 block uppercase">4. Režim viditelnosti prací pro kolegy:</span>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <select id="masterAdminRoleUser" onchange="loadUserRoleSetting()" class="border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <select id="masterAdminRoleSetting" class="border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none">
               <option value="self">Pouze své vlastní práce</option>
-              <option value="shared">Sdílené dle šéfa (Jiřího i Petrovy práce pro tým)</option>
-              <option value="boss_jiri">Šéf Jiří (vše pro Jiřího)</option>
-              <option value="boss_petr">Šéf Petr (vše pro Petra)</option>
+              <option value="shared">Sdílené dle šéfa (práce daného šéfa pro tým)</option>
+              <option value="boss_all">Šéf - Všechny práce v systému</option>
             </select>
           </div>
           <button type="button" onclick="saveUserRoleSetting()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs transition">
@@ -449,9 +472,9 @@
           </button>
         </div>
 
-        <!-- 3. RESET HESLA -->
+        <!-- 5. RESET HESLA -->
         <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-slate-700 block uppercase">3. Změnit heslo uživateli:</span>
+          <span class="text-xs font-bold text-slate-700 block uppercase">5. Změnit heslo uživateli:</span>
           <div class="flex gap-1.5">
             <select id="masterAdminResetUser" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <input type="password" id="masterAdminNewPass" placeholder="Nové heslo" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white outline-none">
@@ -459,18 +482,9 @@
           </div>
         </div>
 
-        <!-- 4. MAZÁNÍ SMĚN / PRACÍ ZE SYSTÉMU (SPRÁVCE) -->
+        <!-- 6. MAZÁNÍ ÚČTŮ -->
         <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-slate-700 block uppercase">4. Správa & Mazání záznamů prací:</span>
-          <div class="flex gap-1.5">
-            <select id="masterAdminShiftSelect" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
-            <button type="button" onclick="masterAdminDeleteShiftAction()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition">Smazat směnu</button>
-          </div>
-        </div>
-
-        <!-- 5. MAZÁNÍ ÚČTŮ (POUZE PRO ADMINA) -->
-        <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-rose-700 block uppercase">5. Smazat uživatele z databáze:</span>
+          <span class="text-xs font-bold text-rose-700 block uppercase">6. Smazat uživatele z databáze:</span>
           <div class="flex gap-1.5">
             <select id="masterAdminDeleteUser" class="flex-1 border border-rose-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
@@ -621,7 +635,7 @@
         <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
           <span class="text-[10px] text-slate-500 font-bold block uppercase">Materiál</span>
           <span id="dashMatCost" class="text-base font-black text-amber-700 block">0 Kč</span>
-          <span class="text-[10px] text-slate-400 font-medium">Nákupy</span>
+          <span id="dashMatCount" class="text-[10px] text-slate-400 font-medium">Nákupy</span>
         </div>
       </div>
 
@@ -765,6 +779,26 @@
 
   document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
 
+  function getShortId(recordId) {
+    if (!recordId) return "0000";
+    const str = String(recordId);
+    return str.length > 4 ? str.slice(-4) : str;
+  }
+
+  function isUserBoss(username) {
+    if (!username) return false;
+    const u = cloudUsers[username];
+    if (u && u.isBoss !== undefined) return u.isBoss;
+    return (username === 'Jiří' || username === 'Petr');
+  }
+
+  function getBossList() {
+    const list = Object.keys(cloudUsers).filter(u => isUserBoss(u));
+    if (!list.includes('Jiří')) list.push('Jiří');
+    if (!list.includes('Petr')) list.push('Petr');
+    return Array.from(new Set(list));
+  }
+
   function formatCzechDate(dateStr) {
     if (!dateStr) return "";
     const parts = dateStr.split('-');
@@ -842,37 +876,164 @@
     const users = Object.keys(cloudUsers);
 
     const passList = document.getElementById('masterAdminPasswordsList');
-    passList.innerHTML = users.map(u => `
-      <div class="flex justify-between items-center py-1.5 px-2">
-        <span class="font-bold text-slate-800">${u}</span>
-        <span class="font-mono bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200 font-extrabold select-all">${cloudUsers[u].pass}</span>
-      </div>
-    `).join('');
+    passList.innerHTML = users.map(u => {
+      const boss = isUserBoss(u);
+      return `
+        <div class="flex justify-between items-center py-1.5 px-2">
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-slate-800">${u}</span>
+            ${boss ? '<span class="text-[9px] bg-amber-100 text-amber-900 border border-amber-300 font-extrabold px-1.5 py-0.2 rounded-md">👑 Šéf</span>' : '<span class="text-[9px] bg-slate-200 text-slate-600 font-bold px-1.5 py-0.2 rounded-md">👷 Pracovník</span>'}
+          </div>
+          <span class="font-mono bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200 font-extrabold select-all">${cloudUsers[u].pass}</span>
+        </div>
+      `;
+    }).join('');
 
     const roleSel = document.getElementById('masterAdminRoleUser');
     const resetSel = document.getElementById('masterAdminResetUser');
     const delSel = document.getElementById('masterAdminDeleteUser');
-    const shiftSel = document.getElementById('masterAdminShiftSelect');
+    const bossUserSel = document.getElementById('masterAdminBossUserSelect');
 
-    const optionsHtml = users.map(u => `<option value="${u}">${u}</option>`).join('');
+    const optionsHtml = users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
     roleSel.innerHTML = optionsHtml;
     resetSel.innerHTML = optionsHtml;
     delSel.innerHTML = optionsHtml;
+    bossUserSel.innerHTML = optionsHtml;
 
-    if (cloudShifts.length === 0) {
-      shiftSel.innerHTML = '<option value="">Žádné směny k dispozici</option>';
+    updateBossToggleBtnUI();
+    filterAdminShifts();
+    loadUserRoleSetting();
+  }
+
+  function updateBossToggleBtnUI() {
+    const user = document.getElementById('masterAdminBossUserSelect').value;
+    const btn = document.getElementById('btnToggleBossRole');
+    if (!user) return;
+    const boss = isUserBoss(user);
+    if (boss) {
+      btn.className = "bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-2 rounded-xl text-xs font-black transition";
+      btn.innerText = "✕ Odebrat roli šéfa";
     } else {
-      shiftSel.innerHTML = cloudShifts.map(s => `
-        <option value="${s.id}">[${formatCzechDate(s.date)}] ${s.worker} - ${s.project} (${s.boss || 'Jiří'})</option>
-      `).join('');
+      btn.className = "bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-xl text-xs font-black transition";
+      btn.innerText = "👑 Povýšit na šéfa";
+    }
+  }
+
+  async function toggleBossRoleAction() {
+    const user = document.getElementById('masterAdminBossUserSelect').value;
+    if (!user) return;
+    const currentStatus = isUserBoss(user);
+    const newStatus = !currentStatus;
+
+    if (!newStatus && (user === 'Jiří' || user === 'Petr')) {
+      if (!confirm(`Opravdu chceš odebrat status šéfa pro ${user}?`)) return;
     }
 
-    loadUserRoleSetting();
+    if (cloudUsers[user]) cloudUsers[user].isBoss = newStatus;
+    localStorage.setItem('user_is_boss_' + user, newStatus ? '1' : '0');
+
+    try {
+      await db.from('team_users').update({ is_boss: newStatus }).eq('username', user);
+    } catch(e) {
+      console.warn("Sloupec is_boss ještě není v tabulce team_users.");
+    }
+
+    alert(newStatus ? `Uživatel ${user} je nyní 👑 ŠÉF!` : `Uživateli ${user} byla role šéfa odebrána.`);
+    refreshMasterAdminUI();
+    renderBossButtons();
+    renderQuickBadges();
+    updateAppHeaderRole();
+    renderTeamStatusList();
+  }
+
+  function filterAdminShifts() {
+    const query = (document.getElementById('adminShiftSearchInput').value || '').trim().toLowerCase().replace('#', '');
+    const shiftSel = document.getElementById('masterAdminShiftSelect');
+
+    const matched = cloudShifts.filter(s => {
+      if (!query) return true;
+      const shortId = getShortId(s.id).toLowerCase();
+      const fullId = String(s.id);
+      const worker = (s.worker || '').toLowerCase();
+      const proj = (s.project || '').toLowerCase();
+      const date = (s.date || '').toLowerCase();
+      const boss = (s.boss || '').toLowerCase();
+      return shortId.includes(query) || fullId.includes(query) || worker.includes(query) || proj.includes(query) || date.includes(query) || boss.includes(query);
+    });
+
+    if (matched.length === 0) {
+      shiftSel.innerHTML = '<option value="">Žádná směna neodpovídá hledání</option>';
+      document.getElementById('adminShiftMatchCard').innerHTML = '<div class="text-rose-600 font-bold text-center py-2">Hledanému ID ani heslu neodpovídá žádný záznam.</div>';
+      return;
+    }
+
+    shiftSel.innerHTML = matched.map(s => {
+      const shortId = getShortId(s.id);
+      return `<option value="${s.id}">[#${shortId}] ${formatCzechDate(s.date)} | ${s.worker} | ${s.project} (${s.hours}h | ${s.workAndTravelTotal} Kč)</option>`;
+    }).join('');
+
+    showSelectedAdminShiftDetails();
+  }
+
+  function showSelectedAdminShiftDetails() {
+    const shiftId = Number(document.getElementById('masterAdminShiftSelect').value);
+    const card = document.getElementById('adminShiftMatchCard');
+    if (!shiftId) {
+      card.innerHTML = '<div class="text-slate-400 text-center py-2">Vyber záznam.</div>';
+      return;
+    }
+
+    const item = cloudShifts.find(s => s.id === shiftId);
+    if (!item) {
+      card.innerHTML = '<div class="text-slate-400 text-center py-2">Záznam nenalezen.</div>';
+      return;
+    }
+
+    const shortId = getShortId(item.id);
+    const partnersStr = (item.partners || []).map(p => `${p.name} (${p.hours}h)`).join(', ') || 'žádní';
+
+    card.innerHTML = `
+      <div class="flex justify-between items-start border-b border-rose-200 pb-1.5">
+        <div>
+          <span class="font-mono bg-slate-900 text-amber-300 font-black px-2 py-0.5 rounded text-xs">ID: #${shortId}</span>
+          <span class="font-bold text-slate-800 text-xs ml-1.5">${item.project}</span>
+        </div>
+        <span class="font-bold text-rose-800 text-[11px]">${formatCzechDate(item.date)}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-700">
+        <div><b>Zadal/Řidič:</b> ${item.worker}</div>
+        <div><b>Šéf:</b> ${item.boss || 'Jiří'}</div>
+        <div><b>Čas:</b> ${item.t1 || '--'} - ${item.t2 || '--'} (${item.hours} h)</div>
+        <div><b>Ujeto:</b> ${item.kmTotal} km</div>
+        <div class="col-span-2"><b>Kolegové:</b> ${partnersStr}</div>
+        <div class="col-span-2 bg-white p-1.5 rounded-lg border border-rose-200 flex justify-between font-black text-slate-900">
+          <span>Celkem (práce+cesta):</span>
+          <span class="text-emerald-700">${item.workAndTravelTotal} Kč</span>
+        </div>
+      </div>
+      <button type="button" onclick="confirmDeleteAdminShift(${item.id})" class="w-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-1.5">
+        <span>🗑️</span> Smazat záznam #${shortId}
+      </button>
+    `;
+  }
+
+  async function confirmDeleteAdminShift(shiftId) {
+    const item = cloudShifts.find(s => s.id === shiftId);
+    if (!item) return;
+    const shortId = getShortId(item.id);
+
+    if (!confirm(`OPRAVDU SMAZAT TUTO SMĚNU?\n\nID: #${shortId}\nPracovník: ${item.worker}\nStavba: ${item.project}\nDatum: ${formatCzechDate(item.date)}\nČástka: ${item.workAndTravelTotal} Kč\n\nTuto akci nelze vrátit zpět!`)) return;
+
+    await db.from('team_shifts').delete().eq('id', shiftId);
+    cloudShifts = cloudShifts.filter(s => s.id !== shiftId);
+    alert(`Směna #${shortId} byla trvale smazána ze systému.`);
+    filterAdminShifts();
+    renderAll();
   }
 
   function loadUserRoleSetting() {
     const user = document.getElementById('masterAdminRoleUser').value;
-    const current = localStorage.getItem('user_role_' + user) || (user === 'Jiří' ? 'boss_jiri' : (user === 'Petr' ? 'boss_petr' : 'shared'));
+    const current = localStorage.getItem('user_role_' + user) || (isUserBoss(user) ? 'boss_all' : 'shared');
     document.getElementById('masterAdminRoleSetting').value = current;
   }
 
@@ -911,18 +1072,7 @@
     renderQuickBadges();
     populateUserFilter();
     renderPartnerCheckboxes();
-  }
-
-  async function masterAdminDeleteShiftAction() {
-    const shiftId = Number(document.getElementById('masterAdminShiftSelect').value);
-    if (!shiftId) return alert("Vyber platnou směnu ke smazání.");
-    if (!confirm("Opravdu smazat tuto směnu ze systému?")) return;
-
-    await db.from('team_shifts').delete().eq('id', shiftId);
-    cloudShifts = cloudShifts.filter(s => s.id !== shiftId);
-    alert("Směna byla trvale smazána z databáze.");
-    refreshMasterAdminUI();
-    renderAll();
+    renderBossButtons();
   }
 
   // --- KOMPLETNÍ ÚPRAVA CELÉHO ZÁZNAMU SMĚNY ---
@@ -936,13 +1086,17 @@
 
     setScrollLock(true);
     document.getElementById('editShiftId').value = item.id;
-    document.getElementById('editShiftBoss').value = item.boss || 'Jiří';
     document.getElementById('editShiftDate').value = item.date;
     document.getElementById('editShiftKm').value = item.kmTotal || 0;
     document.getElementById('editShiftT1').value = item.t1 || '';
     document.getElementById('editShiftT2').value = item.t2 || '';
     document.getElementById('editShiftPhotosLink').value = item.photosLink || '';
     document.getElementById('editShiftDesc').value = item.desc || '';
+
+    const bossSel = document.getElementById('editShiftBoss');
+    const bosses = getBossList();
+    bossSel.innerHTML = bosses.map(b => `<option value="${b}">👨‍💼 ${b}</option>`).join('') + `<option value="Sám na sebe">👤 Sám na sebe</option>`;
+    bossSel.value = item.boss || bosses[0] || 'Jiří';
 
     const projSel = document.getElementById('editShiftProject');
     projSel.innerHTML = cloudProjects.map(p => `<option value="${p}">${p}</option>`).join('');
@@ -955,7 +1109,7 @@
     partnerContainer.innerHTML = availablePartners.map(u => `
       <label class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-sky-300 text-xs font-semibold cursor-pointer">
         <input type="checkbox" name="editPartnerCheck" value="${u}" ${existingPartnerNames.includes(u) ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-600">
-        <span>${u}</span>
+        <span>${u}${isUserBoss(u) ? ' 👑' : ''}</span>
       </label>
     `).join('');
 
@@ -1046,7 +1200,7 @@
 
     closeEditShiftModal();
     renderAll();
-    alert("Směna byla kompletně upravena a přepočítána!");
+    alert(`Směna #${getShortId(item.id)} byla upravena a přepočítána!`);
   }
 
   // --- SWIPE GESTA ---
@@ -1086,15 +1240,35 @@
     }
   }, { passive: true });
 
+  function renderBossButtons() {
+    const container = document.getElementById('bossButtonContainer');
+    if (!container) return;
+    const bosses = getBossList();
+    const currentBoss = document.getElementById('selectedBoss').value || bosses[0] || 'Jiří';
+
+    let html = bosses.map(b => {
+      const active = (currentBoss === b);
+      return `
+        <button type="button" id="bossBtn_${b}" onclick="setBoss('${b}')" class="py-2.5 rounded-xl border text-xs font-bold transition ${active ? 'bg-slate-900 text-white shadow-xs border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-300'}">
+          👨‍💼 ${b}
+        </button>
+      `;
+    }).join('');
+
+    const selfActive = (currentBoss === 'Sám na sebe');
+    html += `
+      <button type="button" id="bossBtn_Sam" onclick="setBoss('Sám na sebe')" class="py-2.5 rounded-xl border text-xs font-bold transition ${selfActive ? 'bg-slate-900 text-white shadow-xs border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-300'}">
+        👤 Sám na sebe
+      </button>
+    `;
+
+    container.className = `grid grid-cols-${Math.min(4, bosses.length + 1)} gap-2`;
+    container.innerHTML = html;
+  }
+
   function setBoss(bossName) {
     document.getElementById('selectedBoss').value = bossName;
-    const bJ = document.getElementById('bossJiří');
-    const bP = document.getElementById('bossPetr');
-    const bS = document.getElementById('bossSám');
-    [bJ, bP, bS].forEach(b => b.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300");
-
-    const activeBtn = document.getElementById('boss' + (bossName === 'Sám na sebe' ? 'Sám' : bossName));
-    if (activeBtn) activeBtn.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs";
+    renderBossButtons();
     renderAll();
   }
 
@@ -1269,15 +1443,25 @@
           if (cleanName.toLowerCase() === 'jirka' || cleanName.toLowerCase() === 'jiri' || cleanName.toLowerCase() === 'jiří') {
             cleanName = 'Jiří';
           }
-          cloudUsers[cleanName] = { pass: u.password, rateH: u.rate_h || 300, rateK: u.rate_k || 7, rateD: u.rate_d || 150, rateT: u.rate_t || 100 };
+          const storedBoss = localStorage.getItem('user_is_boss_' + cleanName);
+          const isBossFlag = u.is_boss !== undefined && u.is_boss !== null ? u.is_boss : (storedBoss !== null ? storedBoss === '1' : (cleanName === 'Jiří' || cleanName === 'Petr'));
+
+          cloudUsers[cleanName] = {
+            pass: u.password,
+            rateH: u.rate_h || 300,
+            rateK: u.rate_k || 7,
+            rateD: u.rate_d || 150,
+            rateT: u.rate_t || 100,
+            isBoss: isBossFlag
+          };
         });
       }
 
-      if (!cloudUsers['Petr']) cloudUsers['Petr'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-      if (!cloudUsers['Jiří']) cloudUsers['Jiří'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-      if (!cloudUsers['Jan']) cloudUsers['Jan'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-      if (!cloudUsers['Matěj']) cloudUsers['Matěj'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-      if (!cloudUsers['Martin']) cloudUsers['Martin'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
+      if (!cloudUsers['Petr']) cloudUsers['Petr'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: true };
+      if (!cloudUsers['Jiří']) cloudUsers['Jiří'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: true };
+      if (!cloudUsers['Jan']) cloudUsers['Jan'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
+      if (!cloudUsers['Matěj']) cloudUsers['Matěj'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
+      if (!cloudUsers['Martin']) cloudUsers['Martin'] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
 
       const { data: pData } = await db.from('team_projects').select('*');
       if (pData && pData.length > 0) cloudProjects = pData.map(p => p.name);
@@ -1333,17 +1517,34 @@
     }
   }
 
+  function updateAppHeaderRole() {
+    if (!loggedUser) return;
+    const badge = document.getElementById('badgeCurrentWorkerRole');
+    if (!badge) return;
+    const boss = isUserBoss(loggedUser);
+    if (boss) {
+      badge.className = "text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-400 text-slate-950 shadow-xs border border-amber-300";
+      badge.innerHTML = "👑 ŠÉF";
+    } else {
+      badge.className = "text-[9px] font-black px-1.5 py-0.2 rounded-md bg-slate-800 text-slate-300 border border-slate-700";
+      badge.innerHTML = "👷 PRACOVNÍK";
+    }
+  }
+
   function renderPartnerCheckboxes() {
     const container = document.getElementById('partnerCheckboxes');
     if (!container) return;
     const allUsers = Object.keys(cloudUsers);
     const candidates = allUsers.filter(u => u !== loggedUser);
-    container.innerHTML = candidates.map(u => `
-      <label class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-sky-200 text-xs font-semibold text-slate-700 cursor-pointer shadow-2xs">
-        <input type="checkbox" name="shiftPartner" value="${u}" class="w-3.5 h-3.5 rounded text-sky-600">
-        <span>${u}</span>
-      </label>
-    `).join('');
+    container.innerHTML = candidates.map(u => {
+      const boss = isUserBoss(u);
+      return `
+        <label class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border ${boss ? 'border-amber-300 bg-amber-50/40 text-amber-950 font-bold' : 'border-sky-200 text-slate-700 font-semibold'} text-xs cursor-pointer shadow-2xs">
+          <input type="checkbox" name="shiftPartner" value="${u}" class="w-3.5 h-3.5 rounded text-sky-600">
+          <span>${u}${boss ? ' 👑' : ''}</span>
+        </label>
+      `;
+    }).join('');
   }
 
   function updateLiveCalculations() {
@@ -1411,12 +1612,17 @@
 
     container.innerHTML = users.map(u => {
       const active = cloudActiveShifts[u];
+      const boss = isUserBoss(u);
       if (active) {
         return `
           <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs">
             <div>
-              <span class="font-bold text-xs text-slate-900 block">${u} (${active.boss})</span>
-              <span class="text-[10px] text-slate-500 font-medium">📍 ${active.project} (od ${active.start})</span>
+              <div class="flex items-center gap-1">
+                <span class="font-bold text-xs text-slate-900">${u}</span>
+                ${boss ? '<span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1 rounded">👑 Šéf</span>' : ''}
+                <span class="text-[10px] text-slate-500">(${active.boss})</span>
+              </div>
+              <span class="text-[10px] text-slate-500 font-medium block">📍 ${active.project} (od ${active.start})</span>
             </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
               🟢 Pracuje
@@ -1426,7 +1632,10 @@
       } else {
         return `
           <div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200">
-            <span class="font-bold text-xs text-slate-700">${u}</span>
+            <div class="flex items-center gap-1">
+              <span class="font-bold text-xs text-slate-700">${u}</span>
+              ${boss ? '<span class="text-[9px] bg-amber-50 text-amber-800 font-bold px-1 rounded border border-amber-200">👑</span>' : ''}
+            </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
               ⚪ Volno
             </span>
@@ -1450,11 +1659,11 @@
     const allUsers = Array.from(new Set([...defaultProfiles, ...Object.keys(cloudUsers)]));
 
     container.innerHTML = allUsers.map(u => {
-      const isBoss = (u === 'Jiří' || u === 'Petr');
+      const boss = isUserBoss(u);
       return `
-        <button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-xs flex items-center gap-1">
-          <span>${isBoss ? '👨‍💼' : '👤'}</span>
-          <span>${u}${isBoss ? ' (šéf)' : ''}</span>
+        <button type="button" onclick="selectQuickUser('${u}')" class="${boss ? 'bg-amber-100/80 hover:bg-amber-200 text-amber-950 border-amber-300 font-black' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300/80 font-bold'} active:scale-95 px-3 py-1 rounded-xl text-xs border transition shadow-2xs flex items-center gap-1">
+          <span>${boss ? '👑' : '👷'}</span>
+          <span>${u}${boss ? ' (šéf)' : ''}</span>
         </button>
       `;
     }).join('');
@@ -1506,7 +1715,8 @@
       rate_h: 300,
       rate_k: 7,
       rate_d: 150,
-      rate_t: 100
+      rate_t: 100,
+      is_boss: false
     }]);
 
     loggedUser = u;
@@ -1535,7 +1745,7 @@
     if (cloudUsers[newName]) return alert("Uživatel s tímto jménem již existuje.");
 
     const oldName = loggedUser;
-    const myData = cloudUsers[oldName] || { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
+    const myData = cloudUsers[oldName] || { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
 
     await db.from('team_users').insert([{
       username: newName,
@@ -1543,7 +1753,8 @@
       rate_h: myData.rateH,
       rate_k: myData.rateK,
       rate_d: myData.rateD,
-      rate_t: myData.rateT
+      rate_t: myData.rateT,
+      is_boss: myData.isBoss
     }]);
 
     await db.from('team_users').delete().eq('username', oldName);
@@ -1695,7 +1906,7 @@
       </div>
       <div class="grid grid-cols-3 gap-2">
         <input type="text" placeholder="Kde / co jsi koupil" value="${desc}" class="col-span-2 border border-slate-300 rounded-lg p-1.5 text-xs bg-white mat-item-desc outline-none">
-        <input type="number" placeholder="Kč" value="${cost}" oninput="calcMaterialSum(); updateLiveCalculations();" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
+        <input type="number" placeholder="Kč" value="${cost}" oninput="updateLiveCalculations();" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
       </div>
       <div>
         <label class="text-[10px] text-slate-500 block mb-0.5 font-medium">🧾 Foto účtenek / faktur</label>
@@ -1776,7 +1987,7 @@
     
     const users = Object.keys(cloudUsers);
     filterSelect.innerHTML = `<option value="ALL">Všichni pracovníci</option>` +
-      users.map(u => `<option value="${u}">${u}</option>`).join('');
+      users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
       
     filterSelect.value = savedVal;
   }
@@ -1925,7 +2136,7 @@
     );
   }
 
-  // --- SPOLEČNÉ ULOŽENÍ SMĚNY (VČETNĚ ODKAZU NA FOTKY) ---
+  // --- SPOLEČNÉ ULOŽENÍ SMĚNY ---
   async function saveRecord() {
     const btn = document.getElementById('btnSaveShift');
     btn.disabled = true;
@@ -2059,24 +2270,22 @@
     await fetchAllFromCloud();
     renderAll();
     updateLiveCalculations();
-    alert('Směna úspěšně uložena!');
+    alert(`Směna #${getShortId(recordId)} úspěšně uložena!`);
   }
 
   function canManageShift(shiftItem) {
     const shiftBoss = shiftItem.boss || 'Jiří';
     const isCreator = (shiftItem.worker === loggedUser);
     const isPartner = (shiftItem.partners || []).some(p => p.name === loggedUser);
-    const isBoss = (loggedUser === 'Jiří' && shiftBoss === 'Jiří') || 
-                   (loggedUser === 'Petr' && shiftBoss === 'Petr');
-    return isCreator || isPartner || isBoss;
+    const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
+    return isCreator || isPartner || isShiftBossUser || isUserBoss(loggedUser);
   }
 
   function canManageWorkerPayment(shiftItem, targetWorker) {
     const shiftBoss = shiftItem.boss || 'Jiří';
     const isTarget = (loggedUser === targetWorker);
-    const isBoss = (loggedUser === 'Jiří' && shiftBoss === 'Jiří') || 
-                   (loggedUser === 'Petr' && shiftBoss === 'Petr');
-    return isTarget || isBoss;
+    const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
+    return isTarget || isShiftBossUser || isUserBoss(loggedUser);
   }
 
   async function toggleWorkPaid(id) {
@@ -2144,12 +2353,13 @@
   async function deleteRecord(id) {
     const item = cloudShifts.find(s => s.id === id);
     if (!item) return;
+    const shortId = getShortId(item.id);
 
     if (!canManageShift(item)) {
       return alert("Smazat zakázku může pouze ten, kdo ji založil (" + item.worker + "), nebo příslušný šéf (" + item.boss + ").");
     }
 
-    if (!confirm("Opravdu smazat tento kšeft z databáze?")) return;
+    if (!confirm(`Opravdu smazat kšeft #${shortId} (${item.project}) z databáze?`)) return;
     await db.from('team_shifts').delete().eq('id', id);
     cloudShifts = cloudShifts.filter(s => s.id !== id);
     renderAll();
@@ -2184,7 +2394,7 @@
     return true;
   }
 
-  // --- VÝPIS HISTORIE A KASY S PODPOROU "SÁM NA SEBE" PRO PARŤÁKY ---
+  // --- VÝPIS HISTORIE A KASY ---
   function renderAll() {
     if (!loggedUser) return;
 
@@ -2197,8 +2407,8 @@
     const filterProject = (filterProjectEl && filterProjectEl.value) ? filterProjectEl.value : 'ALL';
     const activeBoss = (activeBossEl && activeBossEl.value) ? activeBossEl.value : 'Jiří';
 
-    const myRole = localStorage.getItem('user_role_' + loggedUser) || 
-                   (loggedUser === 'Jiří' ? 'boss_jiri' : (loggedUser === 'Petr' ? 'boss_petr' : 'shared'));
+    const myIsBoss = isUserBoss(loggedUser);
+    const myRole = localStorage.getItem('user_role_' + loggedUser) || (myIsBoss ? 'boss_all' : 'shared');
 
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
@@ -2211,16 +2421,14 @@
       const isParticipant = isCreator || !!partnerEntry;
 
       let includeInKasa = false;
-      if (myRole === 'boss_jiri') {
-        includeInKasa = (shiftBoss === 'Jiří');
-      } else if (myRole === 'boss_petr') {
-        includeInKasa = (shiftBoss === 'Petr');
+      if (myRole === 'boss_all') {
+        includeInKasa = (shiftBoss === loggedUser) || (shiftBoss === activeBoss);
       } else {
         includeInKasa = isParticipant && (shiftBoss === activeBoss);
       }
 
       if (includeInKasa && isDateInPeriod(s.date, selectedPeriod)) {
-        if (myRole === 'boss_jiri' || myRole === 'boss_petr') {
+        if (myRole === 'boss_all') {
           let shiftWork = s.wageWorkOnly + (s.extraPauchal || 0);
           (s.partners || []).forEach(p => { shiftWork += (p.wageWorkOnly || 0); });
 
@@ -2274,10 +2482,6 @@
         if (!isCreator && !isPartner) return false;
       } else if (myRole === 'shared') {
         if (shiftBoss !== activeBoss) return false;
-      } else if (myRole === 'boss_jiri') {
-        if (shiftBoss !== 'Jiří') return false;
-      } else if (myRole === 'boss_petr') {
-        if (shiftBoss !== 'Petr') return false;
       }
 
       const matchUser = (filterUser === 'ALL' || s.worker === filterUser || (s.partners || []).some(p => p.name === filterUser));
@@ -2294,16 +2498,18 @@
 
     filtered.forEach(r => {
       const canManage = canManageShift(r);
+      const shortId = getShortId(r.id);
       const div = document.createElement('div');
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
       
       div.innerHTML = `
-        <!-- HLAVIČKA ZÁZNAMU -->
+        <!-- HLAVIČKA ZÁZNAMU S KRÁTKÝM ID -->
         <div class="flex flex-wrap sm:flex-nowrap justify-between items-start gap-1.5 border-b border-slate-100 pb-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span class="font-mono bg-slate-900 text-amber-300 font-extrabold px-1.5 py-0.5 rounded-md text-[11px] shadow-2xs">#${shortId}</span>
             <span class="font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-lg text-[11px] truncate max-w-[140px] sm:max-w-[200px]">${r.project}</span>
             <span class="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-lg text-[10px]">Založil:\u00A0${r.worker}</span>
-            <span class="text-slate-500 font-semibold text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">režim:\u00A0${r.boss || 'Jiří'}</span>
+            <span class="text-slate-500 font-semibold text-[10px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">šéf:\u00A0${r.boss || 'Jiří'}</span>
             <span class="text-slate-600 font-bold text-[11px] whitespace-nowrap bg-slate-100 px-2 py-0.5 rounded-lg">${formatCzechDate(r.date)}</span>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0 self-start">
@@ -2416,11 +2622,12 @@
 
   function exportToCSV() {
     if (cloudShifts.length === 0) return alert('Žádná data.');
-    let csv = "Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Partaci;Material (Kc);Stav Prace;Stav Km;Odkaz Fotky;GPS\n";
+    let csv = "ID;Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Partaci;Material (Kc);Stav Prace;Stav Km;Odkaz Fotky;GPS\n";
     cloudShifts.forEach(s => {
+      const shortId = getShortId(s.id);
       const matSum = (s.matPurchases || []).reduce((a,b)=>a+b.cost, 0);
       const partStr = (s.partners || []).map(p => `${p.name} (${p.hours}h/${p.wageWorkOnly}Kc)`).join(' | ');
-      csv += `"${formatCzechDate(s.date)}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${partStr}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.photosLink || ''}";"${s.gps || ''}"\n`;
+      csv += `"#${shortId}";"${formatCzechDate(s.date)}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${partStr}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.photosLink || ''}";"${s.gps || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "vyuctovani.csv"; link.click();
@@ -2441,18 +2648,21 @@
     document.getElementById('labelCurrentWorker').innerText = loggedUser;
     document.getElementById('dashWorkerName').innerText = loggedUser;
 
+    updateAppHeaderRole();
     loadUserRates();
     applyExtrasVisibility();
     applyAutoGps();
     populateProjects();
     populateUserFilter();
     renderPartnerCheckboxes();
+    renderBossButtons();
     initStopsDefault();
     initMaterialDefault();
     checkLiveShift();
     
-    if (loggedUser === 'Petr') setBoss('Petr');
-    else if (loggedUser === 'Jiří') setBoss('Jiří');
+    if (isUserBoss(loggedUser)) {
+      setBoss(loggedUser);
+    }
 
     renderAll();
     updateLiveCalculations();
