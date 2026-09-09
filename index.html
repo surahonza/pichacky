@@ -503,7 +503,7 @@
         <div class="space-y-1.5 pt-2 border-t">
           <span class="text-xs font-bold text-rose-700 block uppercase">6. Smazat uživatele z databáze:</span>
           <div class="flex gap-1.5">
-            <select id="masterAdminDeleteUser" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
+            <select id="masterAdminDeleteUser" class="flex-1 border border-rose-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
           </div>
         </div>
@@ -511,7 +511,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) - VČETNĚ PROVIZE ZA HODINU PRO ŠÉFY -->
+  <!-- BOČNÍ PANEL 1: NASTAVENÍ (⚙️ VLEVO) -->
   <div id="settingsBackdrop" onclick="toggleSettingsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="settingsMenu" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 shadow-2xl p-4 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
     <div class="space-y-4">
@@ -930,7 +930,7 @@
     }, 600);
   }
 
-  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE (V NASTAVENÍ ŠÉFA) ---
+  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE ---
   function renderBossMarkupSettings() {
     const section = document.getElementById('bossMarkupSettingsSection');
     const container = document.getElementById('bossMarkupInputsList');
@@ -1476,7 +1476,7 @@
     renderAll();
   }
 
-  // MAPA (Pro výběr i pro prohlížení)
+  // MAPA
   function openMapModal(readOnly = false, lat = null, lon = null, label = null) {
     isMapReadOnly = readOnly;
     setScrollLock(true);
@@ -2711,7 +2711,6 @@
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
 
-    // Proměnné pro šéfovské vyúčtování (marže a dluhy zaměstnancům)
     let bossTotalClientBill = 0;
     let bossTotalDebtWorkers = 0;
     const isViewerBoss = isUserBoss(loggedUser);
@@ -2730,8 +2729,6 @@
       const isCreator = (s.worker === loggedUser);
       const partnerEntry = (s.partners || []).find(p => p.name === loggedUser);
       const isParticipant = isCreator || !!partnerEntry;
-
-      // Pokud je uživatel šéf, spočítáme jeho provize a dluhy ze směn, kde figuruje jako šéf (nebo "Sám na sebe", kde si vzal někoho na pomoc)
       const isMyBossShift = (shiftBoss === loggedUser) || (shiftBoss === 'Sám na sebe' && isCreator);
 
       if (isDateInPeriod(s.date, selectedPeriod)) {
@@ -2771,7 +2768,6 @@
           if (isCreator) {
             const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
             
-            // Pokud normální pracovník dělal "Sám na sebe" a vzal si parťáka, spočítáme kolik dluží parťákovi
             if (shiftBoss === 'Sám na sebe' && (s.partners || []).length > 0) {
               (s.partners || []).forEach(p => {
                 if (!p.isWorkPaid) bossTotalDebtWorkers += (p.wageWorkOnly || 0);
@@ -2830,6 +2826,10 @@
     filtered.forEach(r => {
       const canManage = canManageShift(r);
       const shortId = getShortId(r.id);
+      const shiftBoss = r.boss || 'Jiří';
+      const isMyBossShift = (shiftBoss === loggedUser) || (shiftBoss === 'Sám na sebe' && r.worker === loggedUser);
+      const showBossFinancialDetails = (isViewerBoss || isMyBossShift) && r.partners && r.partners.length > 0;
+
       const div = document.createElement('div');
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
       
@@ -2880,21 +2880,40 @@
           ` : ''}
         </div>
 
-        <!-- PARŤÁCI NA ZAKÁZCE -->
+        <!-- PARŤÁCI NA ZAKÁZCE + ŠÉFOVSKÝ ROZPAD (DLUH PARŤÁKOVI VS FAKTURA INVESTOROVI) -->
         ${r.partners && r.partners.length > 0 ? `
           <div class="space-y-1.5 pt-0.5">
             <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
-            ${r.partners.map((p, pIdx) => `
-              <div class="p-2 rounded-xl border bg-sky-50/50 border-sky-200 flex justify-between items-center text-[11px]">
-                <div>
-                  <span class="font-bold text-slate-800">${p.name}</span>
-                  <span class="text-[10px] text-slate-500 ml-1">(${p.hours} h × ${p.rateH} Kč) = <b class="text-slate-900">${p.wageWorkOnly} Kč</b></span>
+            ${r.partners.map((p, pIdx) => {
+              const markup = getWorkerMarkup(isUserBoss(loggedUser) ? loggedUser : (shiftBoss === 'Sám na sebe' ? r.worker : shiftBoss), p.name);
+              const clientBillForPartner = (p.wageWorkOnly || 0) + Math.round(p.hours * markup);
+              return `
+                <div class="p-2.5 rounded-xl border bg-sky-50/50 border-sky-200 space-y-1.5 text-[11px]">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <span class="font-bold text-slate-800">${p.name}</span>
+                      <span class="text-[10px] text-slate-500 ml-1">(${p.hours} h × ${p.rateH} Kč)</span>
+                    </div>
+                    <button type="button" onclick="togglePartnerWorkPaid(${r.id}, ${pIdx})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${p.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
+                      ${p.isWorkPaid ? '✓ Proplaceno' : '○ Čeká na výplatu'}
+                    </button>
+                  </div>
+                  
+                  ${showBossFinancialDetails ? `
+                    <div class="bg-white p-2 rounded-lg border border-sky-200 grid grid-cols-2 gap-1 text-[10px]">
+                      <div>
+                        <span class="text-slate-400 font-semibold block">Dluh parťákovi:</span>
+                        <b class="text-rose-700">${p.wageWorkOnly} Kč</b>
+                      </div>
+                      <div>
+                        <span class="text-slate-400 font-semibold block">Od investora (+${markup} Kč/h):</span>
+                        <b class="text-sky-800">${clientBillForPartner} Kč</b>
+                      </div>
+                    </div>
+                  ` : ''}
                 </div>
-                <button type="button" onclick="togglePartnerWorkPaid(${r.id}, ${pIdx})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${p.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
-                  ${p.isWorkPaid ? '✓ Proplaceno' : '○ Čeká na výplatu'}
-                </button>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         ` : ''}
 
