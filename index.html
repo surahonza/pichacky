@@ -101,13 +101,13 @@
   <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden space-y-3">
 
-    <!-- HORNÍ LIŠTA S TLAČÍTKEM REFRESH -->
+    <!-- HORNÍ LIŠTA S REFRESHEM (EKVIVALENT F5) -->
     <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
           ⚙️
         </button>
-        <button type="button" onclick="manualReloadApp()" id="btnAppRefresh" title="Znovu načíst data" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-400 text-sm flex items-center justify-center w-10 h-10 border border-slate-700 transition">
+        <button type="button" onclick="manualReloadApp()" id="btnAppRefresh" title="Znovu načíst aplikaci (F5)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-400 text-sm flex items-center justify-center w-10 h-10 border border-slate-700 transition">
           🔄
         </button>
       </div>
@@ -916,18 +916,13 @@
     }
   }
 
-  // --- MANUAL RELOAD (PRO IPAD/IPHONE) ---
-  async function manualReloadApp() {
+  // --- KOMPLETNÍ RESTART APLIKACE (F5 EKVIIVALENT) ---
+  function manualReloadApp() {
     const btn = document.getElementById('btnAppRefresh');
     if (btn) btn.classList.add('animate-spin');
-    await fetchAllFromCloud();
-    renderAll();
-    renderTeamStatusList();
-    checkLiveShift();
-    updateLiveCalculations();
     setTimeout(() => {
-      if (btn) btn.classList.remove('animate-spin');
-    }, 600);
+      location.reload();
+    }, 250);
   }
 
   // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE ---
@@ -2695,7 +2690,7 @@
     return true;
   }
 
-  // --- VÝPIS HISTORIE A KASY S VÝPOČTEM ŠÉFOVSKÉ MARŽE ---
+  // --- VÝPIS HISTORIE A KASY S VÝPOČTEM ŠÉFOVSKÉ MARŽE (VČETNĚ ŘIDIČE/CESTY) ---
   function renderAll() {
     if (!loggedUser) return;
 
@@ -2729,6 +2724,7 @@
       const isCreator = (s.worker === loggedUser);
       const partnerEntry = (s.partners || []).find(p => p.name === loggedUser);
       const isParticipant = isCreator || !!partnerEntry;
+      const activeBossName = isUserBoss(loggedUser) ? loggedUser : (shiftBoss === 'Sám na sebe' ? s.worker : shiftBoss);
       const isMyBossShift = (shiftBoss === loggedUser) || (shiftBoss === 'Sám na sebe' && isCreator);
 
       if (isDateInPeriod(s.date, selectedPeriod)) {
@@ -2736,8 +2732,14 @@
           let shiftWork = s.wageWorkOnly + (s.extraPauchal || 0);
           let clientWorkForShift = s.wageWorkOnly + (s.extraPauchal || 0);
 
+          // Pokud hlavní pracovník (řidič) na šéfovské zakázce není sám šéf, aplikujeme marži i na něj
+          if (!isUserBoss(s.worker)) {
+            const driverMarkup = getWorkerMarkup(activeBossName, s.worker);
+            clientWorkForShift += Math.round(s.hours * driverMarkup);
+          }
+
           (s.partners || []).forEach(p => {
-            const markupPerHour = getWorkerMarkup(loggedUser, p.name);
+            const markupPerHour = getWorkerMarkup(activeBossName, p.name);
             const workerBaseWage = p.wageWorkOnly || 0;
             const workerClientAdd = Math.round(p.hours * markupPerHour);
 
@@ -2773,7 +2775,13 @@
                 if (!p.isWorkPaid) bossTotalDebtWorkers += (p.wageWorkOnly || 0);
               });
               bossSummaryBox.classList.remove('hidden');
-              bossTotalClientBill += shiftWorkTotal + s.wageTravelOnly + s.matCost;
+              
+              let selfClientWork = shiftWorkTotal;
+              (s.partners || []).forEach(p => {
+                const markup = getWorkerMarkup(s.worker, p.name);
+                selfClientWork += (p.wageWorkOnly || 0) + Math.round(p.hours * markup);
+              });
+              bossTotalClientBill += selfClientWork + s.wageTravelOnly + s.matCost;
             }
 
             totalWorkForChart += shiftWorkTotal;
@@ -2827,8 +2835,9 @@
       const canManage = canManageShift(r);
       const shortId = getShortId(r.id);
       const shiftBoss = r.boss || 'Jiří';
+      const activeBossName = isUserBoss(loggedUser) ? loggedUser : (shiftBoss === 'Sám na sebe' ? r.worker : shiftBoss);
       const isMyBossShift = (shiftBoss === loggedUser) || (shiftBoss === 'Sám na sebe' && r.worker === loggedUser);
-      const showBossFinancialDetails = (isViewerBoss || isMyBossShift) && r.partners && r.partners.length > 0;
+      const showBossFinancialDetails = (isViewerBoss || isMyBossShift);
 
       const div = document.createElement('div');
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
@@ -2851,7 +2860,7 @@
           </div>
         </div>
 
-        <!-- HLAVNÍ PRACOVNÍK -->
+        <!-- HLAVNÍ PRACOVNÍK (VČETNĚ MARŽI PRO ŠÉFA, POKUD ŘÍDIL/PRACOVAL ZAMĚSTNANEC) -->
         <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
           <div class="flex justify-between items-center text-slate-800 font-bold text-[11px] border-b border-slate-200 pb-1">
             <span>👤 ${r.worker} (hlavní / řidič)</span>
@@ -2872,6 +2881,24 @@
             </button>
           </div>
 
+          ${showBossFinancialDetails && !isUserBoss(r.worker) ? (() => {
+            const driverMarkup = getWorkerMarkup(activeBossName, r.worker);
+            const driverClientAdd = Math.round(r.hours * driverMarkup);
+            const driverTotalClientBill = r.wageWorkOnly + r.wageTravelOnly + driverClientAdd;
+            return `
+              <div class="bg-white p-2 rounded-lg border border-slate-200 grid grid-cols-2 gap-1 text-[10px] mt-1.5">
+                <div>
+                  <span class="text-slate-400 font-semibold block">Dluh řidiči (mzda+cesta):</span>
+                  <b class="text-rose-700">${r.wageWorkOnly + r.wageTravelOnly} Kč</b>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-semibold block">Od investora (vč. provize +${driverMarkup} Kč/h):</span>
+                  <b class="text-sky-800">${driverTotalClientBill} Kč</b>
+                </div>
+              </div>
+            `;
+          })() : ''}
+
           ${r.stops && r.stops.length > 0 ? `
             <div class="bg-white p-1.5 rounded-lg border border-slate-200 text-[10px] space-y-0.5 text-slate-600">
               <span class="font-bold block text-slate-700 mb-0.5">Trasa:</span>
@@ -2880,12 +2907,12 @@
           ` : ''}
         </div>
 
-        <!-- PARŤÁCI NA ZAKÁZCE + ŠÉFOVSKÝ ROZPAD (DLUH PARŤÁKOVI VS FAKTURA INVESTOROVI) -->
+        <!-- PARŤÁCI NA ZAKÁZCE + ŠÉFOVSKÝ ROZPAD -->
         ${r.partners && r.partners.length > 0 ? `
           <div class="space-y-1.5 pt-0.5">
             <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
             ${r.partners.map((p, pIdx) => {
-              const markup = getWorkerMarkup(isUserBoss(loggedUser) ? loggedUser : (shiftBoss === 'Sám na sebe' ? r.worker : shiftBoss), p.name);
+              const markup = getWorkerMarkup(activeBossName, p.name);
               const clientBillForPartner = (p.wageWorkOnly || 0) + Math.round(p.hours * markup);
               return `
                 <div class="p-2.5 rounded-xl border bg-sky-50/50 border-sky-200 space-y-1.5 text-[11px]">
