@@ -38,7 +38,7 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY & PŮVODNÍ MAPA -->
+  <!-- KNIHOVNY & LEAFLET MAPA -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -171,9 +171,28 @@
 
     <!-- FORMULÁŘ ZÁPISU SMĚNY -->
     <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3.5">
+      
+      <!-- VÝBĚR ŠÉFA (JIŘÍ / PETR) -->
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 block mb-1">PRO KTERÉHO ŠÉFA SE PRACUJE</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="bossJiří" onclick="setBoss('Jiří')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs">👨‍💼 Jiří</button>
+          <button type="button" id="bossPetr" onclick="setBoss('Petr')" class="py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300">👨‍💼 Petr</button>
+        </div>
+        <input type="hidden" id="selectedBoss" value="Jiří">
+      </div>
+
       <div>
         <label class="text-[11px] font-bold text-slate-500 block mb-1">ZAKÁZKA / STAVBA</label>
         <select id="workProject" onchange="updateLiveCalculations()" class="w-full border border-slate-300 rounded-xl p-2.5 font-bold text-sm bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500 outline-none transition"></select>
+      </div>
+
+      <!-- VÝBĚR PARŤÁKŮ NA STAVBĚ -->
+      <div class="bg-sky-50/70 p-3 rounded-xl border border-sky-200 space-y-1.5">
+        <span class="text-[11px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kdo byl se mnou v práci (společná píchačka):</span>
+        <div id="partnerCheckboxes" class="flex flex-wrap gap-2 pt-1">
+          <!-- Generováno dynamicky -->
+        </div>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-3.5">
@@ -632,7 +651,6 @@
   let startY = 0;
   let lastTapTime = 0;
 
-  // Proměnné pro interaktivní mapu
   let mapObj = null;
   let mapMarker = null;
   let selectedMapLat = 49.7477;
@@ -661,6 +679,7 @@
       document.getElementById('editUsernameInput').value = loggedUser || '';
       document.getElementById('oldPassInput').value = '';
       document.getElementById('newPassInput').value = '';
+      populateAdminResetUsers();
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('-translate-x-full'), 10);
     } else {
@@ -683,7 +702,7 @@
     }
   }
 
-  // --- SWIPE GESTO Z OKRAJE (BEZPEČNÉ PRO PROHLÍŽEČ) ---
+  // --- SWIPE GESTO PO CELÉ OBRAZOVCE PRO OTEVŘENÍ/ZAVŘENÍ MENU ---
   let globalSwipeStartX = 0;
   let globalSwipeStartY = 0;
 
@@ -703,107 +722,84 @@
 
     if (isMapOpen || isLightboxOpen) return;
 
-    if (isSettingsOpen && diffX < -40 && diffY < 120) {
+    if (isSettingsOpen && diffX < -50 && diffY < 120) {
       toggleSettingsMenu(false);
       return;
     }
-    if (isStatsOpen && diffX > 40 && diffY < 120) {
+    if (isStatsOpen && diffX > 50 && diffY < 120) {
       toggleStatsMenu(false);
       return;
     }
 
-    if (!isSettingsOpen && !isStatsOpen && diffY < 120) {
-      // Reaguje pouze na dotyk začínající do 35px od levého či pravého okraje obrazovky
-      if (globalSwipeStartX < 35 && diffX > 50) {
-        toggleSettingsMenu(true);
-      } else if (globalSwipeStartX > window.innerWidth - 35 && diffX < -50) {
-        toggleStatsMenu(true);
+    // Volné swipování kdekoliv pro otevření menu
+    if (!isSettingsOpen && !isStatsOpen && diffY < 100 && Math.abs(diffX) > 80) {
+      if (diffX > 0) {
+        toggleSettingsMenu(true); // Švih doprava -> Nastavení
+      } else {
+        toggleStatsMenu(true);  // Švih doleva -> Tým/Kasa
       }
     }
   }, { passive: true });
+
+  // VÝBĚR ŠÉFA
+  function setBoss(bossName) {
+    document.getElementById('selectedBoss').value = bossName;
+    const bJ = document.getElementById('bossJiří');
+    const bP = document.getElementById('bossPetr');
+    if (bossName === 'Jiří') {
+      bJ.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs";
+      bP.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300";
+    } else {
+      bP.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-900 text-white shadow-xs";
+      bJ.className = "py-2.5 rounded-xl border text-xs font-bold transition bg-slate-100 text-slate-700 border-slate-300";
+    }
+    renderAll();
+  }
 
   // INTERAKTIVNÍ MAPA
   function openMapModal() {
     setScrollLock(true);
     document.getElementById('mapModal').classList.remove('hidden');
-    
     setTimeout(() => {
       if (!mapObj) {
         mapObj = L.map('mapContainer').setView([selectedMapLat, selectedMapLon], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap'
-        }).addTo(mapObj);
-
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapObj);
         mapMarker = L.marker([selectedMapLat, selectedMapLon], {draggable: true}).addTo(mapObj);
-        
-        mapMarker.on('dragend', function(e) {
-          const pos = mapMarker.getLatLng();
-          selectedMapLat = pos.lat;
-          selectedMapLon = pos.lng;
-          fetchAddressFromCoords(selectedMapLat, selectedMapLon);
-        });
-
-        mapObj.on('click', function(e) {
-          selectedMapLat = e.latlng.lat;
-          selectedMapLon = e.latlng.lng;
-          mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
-          fetchAddressFromCoords(selectedMapLat, selectedMapLon);
-        });
-      } else {
-        mapObj.invalidateSize();
-      }
+        mapMarker.on('dragend', function() { const pos = mapMarker.getLatLng(); selectedMapLat = pos.lat; selectedMapLon = pos.lng; fetchAddressFromCoords(selectedMapLat, selectedMapLon); });
+        mapObj.on('click', function(e) { selectedMapLat = e.latlng.lat; selectedMapLon = e.latlng.lng; mapMarker.setLatLng([selectedMapLat, selectedMapLon]); fetchAddressFromCoords(selectedMapLat, selectedMapLon); });
+      } else { mapObj.invalidateSize(); }
     }, 200);
   }
 
-  function closeMapModal() {
-    document.getElementById('mapModal').classList.add('hidden');
-    setScrollLock(false);
-  }
+  function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); setScrollLock(false); }
 
   async function searchLocationOnMap() {
-    const query = document.getElementById('mapSearchInput').value.trim();
-    if (!query) return;
+    const query = document.getElementById('mapSearchInput').value.trim(); if (!query) return;
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
       const data = await res.json();
       if (data && data.length > 0) {
-        selectedMapLat = parseFloat(data[0].lat);
-        selectedMapLon = parseFloat(data[0].lon);
-        selectedMapText = data[0].display_name;
-        mapObj.setView([selectedMapLat, selectedMapLon], 15);
-        mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
+        selectedMapLat = parseFloat(data[0].lat); selectedMapLon = parseFloat(data[0].lon); selectedMapText = data[0].display_name;
+        mapObj.setView([selectedMapLat, selectedMapLon], 15); mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
         document.getElementById('mapSelectedText').innerText = selectedMapText;
-      } else {
-        alert("Místo nebylo nalezeno.");
-      }
-    } catch(err) {
-      alert("Chyba při vyhledávání.");
-    }
+      } else { alert("Místo nebylo nalezeno."); }
+    } catch(err) { alert("Chyba při vyhledávání."); }
   }
 
   async function fetchAddressFromCoords(lat, lon) {
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
       const data = await res.json();
-      if (data && data.display_name) {
-        selectedMapText = data.display_name;
-      } else {
-        selectedMapText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-      }
-    } catch(err) {
-      selectedMapText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    }
+      selectedMapText = (data && data.display_name) ? data.display_name : `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    } catch(err) { selectedMapText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`; }
     document.getElementById('mapSelectedText').innerText = selectedMapText;
   }
 
   function useCurrentGpsPosition() {
     if (!navigator.geolocation) return alert("GPS není podporována.");
     navigator.geolocation.getCurrentPosition((p) => {
-      selectedMapLat = p.coords.latitude;
-      selectedMapLon = p.coords.longitude;
-      mapObj.setView([selectedMapLat, selectedMapLon], 16);
-      mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
+      selectedMapLat = p.coords.latitude; selectedMapLon = p.coords.longitude;
+      mapObj.setView([selectedMapLat, selectedMapLon], 16); mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
       fetchAddressFromCoords(selectedMapLat, selectedMapLon);
     }, () => { alert("Nepodařilo se zjistit polohu."); });
   }
@@ -817,13 +813,9 @@
 
   function openGalleryLightbox(imagesArray, startIndex = 0, title = "Fotografie") {
     if (!imagesArray || imagesArray.length === 0) return;
-    currentGalleryImages = imagesArray;
-    currentGalleryIndex = startIndex;
-    resetImageTransform();
-    setScrollLock(true);
-    document.getElementById('lightboxTitle').innerText = title;
-    document.getElementById('photoLightbox').classList.remove('hidden');
-    renderGalleryView();
+    currentGalleryImages = imagesArray; currentGalleryIndex = startIndex; resetImageTransform();
+    setScrollLock(true); document.getElementById('lightboxTitle').innerText = title;
+    document.getElementById('photoLightbox').classList.remove('hidden'); renderGalleryView();
   }
 
   function resetImageTransform() { currentZoom = 1; panX = 0; panY = 0; applyTransform(); }
@@ -834,25 +826,13 @@
   }
 
   function renderGalleryView() {
-    const total = currentGalleryImages.length;
-    const currentSrc = currentGalleryImages[currentGalleryIndex];
-    const img = document.getElementById('lightboxImage');
-    const dlBtn = document.getElementById('lightboxDownloadBtn');
-    const counter = document.getElementById('lightboxCounter');
-    const prevBtn = document.getElementById('lightboxPrevBtn');
-    const nextBtn = document.getElementById('lightboxNextBtn');
-    const thumbsContainer = document.getElementById('lightboxThumbnails');
+    const total = currentGalleryImages.length, currentSrc = currentGalleryImages[currentGalleryIndex];
+    const img = document.getElementById('lightboxImage'), dlBtn = document.getElementById('lightboxDownloadBtn'), counter = document.getElementById('lightboxCounter');
+    const prevBtn = document.getElementById('lightboxPrevBtn'), nextBtn = document.getElementById('lightboxNextBtn'), thumbsContainer = document.getElementById('lightboxThumbnails');
 
-    img.src = currentSrc;
-    resetImageTransform();
-    dlBtn.href = currentSrc;
-    counter.innerText = `Fotka ${currentGalleryIndex + 1} z ${total}`;
-
-    if (total <= 1) {
-      prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); thumbsContainer.classList.add('hidden');
-    } else {
-      prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); thumbsContainer.classList.remove('hidden');
-    }
+    img.src = currentSrc; resetImageTransform(); dlBtn.href = currentSrc; counter.innerText = `Fotka ${currentGalleryIndex + 1} z ${total}`;
+    if (total <= 1) { prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); thumbsContainer.classList.add('hidden'); }
+    else { prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); thumbsContainer.classList.remove('hidden'); }
 
     thumbsContainer.innerHTML = currentGalleryImages.map((src, idx) => `
       <img src="${src}" onclick="jumpToGalleryPhoto(${idx})" class="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border-2 cursor-pointer transition flex-shrink-0 ${idx === currentGalleryIndex ? 'border-sky-400 scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'}">
@@ -860,18 +840,15 @@
   }
 
   function navigateGallery(direction) {
-    const total = currentGalleryImages.length;
-    if (total <= 1) return;
-    currentGalleryIndex = (currentGalleryIndex + direction + total) % total;
-    renderGalleryView();
+    const total = currentGalleryImages.length; if (total <= 1) return;
+    currentGalleryIndex = (currentGalleryIndex + direction + total) % total; renderGalleryView();
   }
 
   function jumpToGalleryPhoto(index) { currentGalleryIndex = index; renderGalleryView(); }
   function closeLightbox() { document.getElementById('photoLightbox').classList.add('hidden'); resetImageTransform(); setScrollLock(false); }
   function zoomPhotoStep(step) {
     currentZoom = Math.max(1, Math.min(3.5, currentZoom + step));
-    if (currentZoom === 1) { panX = 0; panY = 0; }
-    applyTransform(true);
+    if (currentZoom === 1) { panX = 0; panY = 0; } applyTransform(true);
   }
 
   const touchArea = document.getElementById('lightboxTouchArea');
@@ -885,110 +862,74 @@
 
   touchArea.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
-      const now = Date.now();
-      const touch = e.touches[0];
+      const now = Date.now(), touch = e.touches[0];
       if (now - lastTapTime < 300) {
         e.preventDefault();
         if (currentZoom > 1.2) { resetImageTransform(); applyTransform(true); }
         else { currentZoom = 2.5; panX = 0; panY = 0; applyTransform(true); }
         lastTapTime = 0; return;
       }
-      lastTapTime = now;
-      isDragging = true; startX = touch.clientX - panX; startY = touch.clientY - panY;
+      lastTapTime = now; isDragging = true; startX = touch.clientX - panX; startY = touch.clientY - panY;
     }
   }, { passive: false });
 
   touchArea.addEventListener('touchmove', e => {
     if (!isDragging || e.touches.length !== 1) return;
     const touch = e.touches[0];
-    if (currentZoom > 1) {
-      e.preventDefault();
-      panX = touch.clientX - startX; panY = touch.clientY - startY;
-      applyTransform(false);
-    }
+    if (currentZoom > 1) { e.preventDefault(); panX = touch.clientX - startX; panY = touch.clientY - startY; applyTransform(false); }
   }, { passive: false });
 
   touchArea.addEventListener('touchend', e => {
-    if (!isDragging) return;
-    isDragging = false;
+    if (!isDragging) return; isDragging = false;
     if (currentZoom <= 1.05) {
-      const touch = e.changedTouches[0];
-      const diffX = touch.clientX - startX;
-      if (diffX < -45) navigateGallery(1);
-      if (diffX > 45) navigateGallery(-1);
+      const touch = e.changedTouches[0], diffX = touch.clientX - startX;
+      if (diffX < -45) navigateGallery(1); if (diffX > 45) navigateGallery(-1);
       resetImageTransform();
     }
   }, { passive: true });
 
   function toggleAuthResetMode(show) {
-    const formContainer = document.getElementById('loginFormContainer');
-    const resetContainer = document.getElementById('authResetContainer');
-    if (show) {
-      formContainer.classList.add('hidden');
-      resetContainer.classList.remove('hidden');
-      populateAuthResetUsers();
-    } else {
-      resetContainer.classList.add('hidden');
-      formContainer.classList.remove('hidden');
-    }
+    const formContainer = document.getElementById('loginFormContainer'), resetContainer = document.getElementById('authResetContainer');
+    if (show) { formContainer.classList.add('hidden'); resetContainer.classList.remove('hidden'); populateAuthResetUsers(); }
+    else { resetContainer.classList.add('hidden'); formContainer.classList.remove('hidden'); }
   }
 
   function populateAuthResetUsers() {
-    const select = document.getElementById('authResetUserSelect');
-    if (!select) return;
-    const users = Object.keys(cloudUsers);
-    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
+    const select = document.getElementById('authResetUserSelect'); if (!select) return;
+    const users = Object.keys(cloudUsers); select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
   }
 
   async function executeAuthReset() {
-    const targetUser = document.getElementById('authResetUserSelect').value;
-    const newPass = document.getElementById('authResetNewPass').value.trim();
-    const masterPass = document.getElementById('authResetMasterPass').value.trim();
-
-    if (!masterPass) return alert("Zadej správcovské heslo.");
-    if (masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
+    const targetUser = document.getElementById('authResetUserSelect').value, newPass = document.getElementById('authResetNewPass').value.trim(), masterPass = document.getElementById('authResetMasterPass').value.trim();
+    if (!masterPass || masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
     if (!newPass) return alert("Zadej nové heslo.");
-
     await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
     if (cloudUsers[targetUser]) cloudUsers[targetUser].pass = newPass;
-
-    document.getElementById('authResetNewPass').value = '';
-    document.getElementById('authResetMasterPass').value = '';
-    alert(`Heslo pro uživatele "${targetUser}" bylo úspěšně resetováno! Nyní se můžeš přihlásit.`);
-    toggleAuthResetMode(false);
+    document.getElementById('authResetNewPass').value = ''; document.getElementById('authResetMasterPass').value = '';
+    alert(`Heslo pro "${targetUser}" resetováno!`); toggleAuthResetMode(false);
   }
 
   function toggleAutoGps() {
-    const check = document.getElementById('prefAutoGps').checked;
-    localStorage.setItem('pref_auto_gps', check ? '1' : '0');
+    const check = document.getElementById('prefAutoGps').checked; localStorage.setItem('pref_auto_gps', check ? '1' : '0');
     if (check) getGPS(true);
   }
 
   function applyAutoGps() {
     const isAuto = localStorage.getItem('pref_auto_gps') === '1';
-    document.getElementById('prefAutoGps').checked = isAuto;
-    if (isAuto) getGPS(true);
+    document.getElementById('prefAutoGps').checked = isAuto; if (isAuto) getGPS(true);
   }
 
   function toggleExtrasVisibility() {
-    const check = document.getElementById('prefShowExtras').checked;
-    localStorage.setItem('pref_show_extras', check ? '1' : '0');
+    const check = document.getElementById('prefShowExtras').checked; localStorage.setItem('pref_show_extras', check ? '1' : '0');
     applyExtrasVisibility();
   }
 
   function applyExtrasVisibility() {
     const isVisible = localStorage.getItem('pref_show_extras') !== '0';
     document.getElementById('prefShowExtras').checked = isVisible;
-    const box = document.getElementById('extrasBox');
-    const liveCard = document.getElementById('liveExtrasCard');
-    const liveGrid = document.getElementById('livePreviewGrid');
-
-    if (isVisible) {
-      box.classList.remove('hidden'); liveCard.classList.remove('hidden'); liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs";
-    } else {
-      box.classList.add('hidden'); liveCard.classList.add('hidden'); liveGrid.className = "grid grid-cols-3 gap-2 text-xs";
-      document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false;
-    }
+    const box = document.getElementById('extrasBox'), liveCard = document.getElementById('liveExtrasCard'), liveGrid = document.getElementById('livePreviewGrid');
+    if (isVisible) { box.classList.remove('hidden'); liveCard.classList.remove('hidden'); liveGrid.className = "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"; }
+    else { box.classList.add('hidden'); liveCard.classList.add('hidden'); liveGrid.className = "grid grid-cols-3 gap-2 text-xs"; document.getElementById('checkDiet').checked = false; document.getElementById('checkTools').checked = false; }
     updateLiveCalculations();
   }
 
@@ -997,9 +938,7 @@
       const { data: uData } = await db.from('team_users').select('*');
       if (uData) {
         cloudUsers = {};
-        uData.forEach(u => {
-          cloudUsers[u.username] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t };
-        });
+        uData.forEach(u => { cloudUsers[u.username] = { pass: u.password, rateH: u.rate_h, rateK: u.rate_k, rateD: u.rate_d, rateT: u.rate_t }; });
       }
 
       const { data: pData } = await db.from('team_projects').select('*');
@@ -1008,59 +947,47 @@
       const { data: aData } = await db.from('active_shifts').select('*');
       if (aData) {
         cloudActiveShifts = {};
-        aData.forEach(a => { cloudActiveShifts[a.worker] = { start: a.start_time, project: a.project, date: a.date }; });
+        aData.forEach(a => { cloudActiveShifts[a.worker] = { start: a.start_time, project: a.project, date: a.date, boss: a.boss || 'Jiří' }; });
       }
 
       const { data: sData } = await db.from('team_shifts').select('*').order('date', { ascending: false });
       if (sData) {
         cloudShifts = sData.map(s => {
           let workPhotos = [];
-          if (s.work_photo) {
-            try { workPhotos = JSON.parse(s.work_photo); if (!Array.isArray(workPhotos)) workPhotos = [s.work_photo]; }
-            catch(e) { workPhotos = [s.work_photo]; }
-          }
+          if (s.work_photo) { try { workPhotos = JSON.parse(s.work_photo); if (!Array.isArray(workPhotos)) workPhotos = [s.work_photo]; } catch(e) { workPhotos = [s.work_photo]; } }
 
           let matPurchases = [];
-          if (s.mat_desc && s.mat_desc.startsWith('[')) {
-            try { matPurchases = JSON.parse(s.mat_desc); } catch(e) { matPurchases = []; }
-          }
+          if (s.mat_desc && s.mat_desc.startsWith('[')) { try { matPurchases = JSON.parse(s.mat_desc); } catch(e) { matPurchases = []; } }
           if (!matPurchases.length && (s.mat_cost > 0 || s.mat_desc)) {
             let photos = [];
-            if (s.mat_photo) {
-              try { photos = JSON.parse(s.mat_photo); if (!Array.isArray(photos)) photos = [s.mat_photo]; }
-              catch(e) { photos = [s.mat_photo]; }
-            }
+            if (s.mat_photo) { try { photos = JSON.parse(s.mat_photo); if (!Array.isArray(photos)) photos = [s.mat_photo]; } catch(e) { photos = [s.mat_photo]; } }
             matPurchases = [{ desc: s.mat_desc || 'Nákup', cost: s.mat_cost || 0, photos, isPaid: s.is_mat_paid }];
           }
 
           return {
-            id: s.id,
-            worker: s.worker,
-            project: s.project,
-            date: s.date,
-            t1: s.t1,
-            t2: s.t2,
-            hours: Number(s.hours),
-            rateH: s.rate_h,
-            rateK: s.rate_k,
-            wageWorkOnly: s.wage_work_only,
-            kmTotal: s.km_total,
-            wageTravelOnly: s.wage_travel_only,
-            stops: s.stops || [],
-            extraPauchal: s.extra_pauchal || 0,
-            workAndTravelTotal: s.work_and_travel_total,
-            desc: s.desc_text,
-            workPhotos,
-            matPurchases,
-            matCost: s.mat_cost,
-            isWorkPaid: s.is_work_paid,
-            isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
-            isMatPaid: s.is_mat_paid,
-            gps: s.gps
+            id: s.id, worker: s.worker, project: s.project, date: s.date, t1: s.t1, t2: s.t2,
+            hours: Number(s.hours), rateH: s.rate_h, rateK: s.rate_k, wageWorkOnly: s.wage_work_only,
+            kmTotal: s.km_total, wageTravelOnly: s.wage_travel_only, stops: s.stops || [],
+            extraPauchal: s.extra_pauchal || 0, workAndTravelTotal: s.work_and_travel_total,
+            desc: s.desc_text, workPhotos, matPurchases, matCost: s.mat_cost,
+            isWorkPaid: s.is_work_paid, isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
+            isMatPaid: s.is_mat_paid, gps: s.gps, boss: s.boss || 'Jiří'
           };
         });
       }
     } catch (err) { console.error("Chyba:", err); }
+  }
+
+  function renderPartnerCheckboxes() {
+    const container = document.getElementById('partnerCheckboxes');
+    if (!container) return;
+    const others = Object.keys(cloudUsers).filter(u => u !== loggedUser);
+    container.innerHTML = others.map(u => `
+      <label class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-sky-200 text-xs font-semibold text-slate-700 cursor-pointer shadow-2xs">
+        <input type="checkbox" name="shiftPartner" value="${u}" class="w-3.5 h-3.5 rounded text-sky-600">
+        <span>${u}</span>
+      </label>
+    `).join('');
   }
 
   function updateLiveCalculations() {
@@ -1070,32 +997,18 @@
     const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD;
     const rateT = Number(document.getElementById('rateTools').value) || uData.rateT;
 
-    const t1 = document.getElementById('timeStart').value;
-    const t2 = document.getElementById('timeEnd').value;
-    let hours = 0;
-    if (t1 && t2) {
-      const [h1, m1] = t1.split(':').map(Number);
-      const [h2, m2] = t2.split(':').map(Number);
-      hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
-    }
+    const t1 = document.getElementById('timeStart').value, t2 = document.getElementById('timeEnd').value;
+    let hours = 0; if (t1 && t2) { const [h1, m1] = t1.split(':').map(Number), [h2, m2] = t2.split(':').map(Number); hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60); }
     const wageWork = Math.round(hours * rateH);
 
     let kmTotal = 0;
     if (activeKmMode === 'quick') kmTotal = Number(document.getElementById('kmDirect').value) || 0;
     else if (activeKmMode === 'stops') kmTotal = calcStopsSum();
-    else if (activeKmMode === 'odo') {
-      const km1 = Number(document.getElementById('kmStart').value) || 0;
-      const km2 = Number(document.getElementById('kmEnd').value) || 0;
-      kmTotal = (km2 > km1) ? (km2 - km1) : 0;
-    }
+    else if (activeKmMode === 'odo') { const km1 = Number(document.getElementById('kmStart').value) || 0, km2 = Number(document.getElementById('kmEnd').value) || 0; kmTotal = (km2 > km1) ? (km2 - km1) : 0; }
     const wageTravel = Math.round(kmTotal * rateK);
 
-    const hasDiet = document.getElementById('checkDiet').checked;
-    const hasTools = document.getElementById('checkTools').checked;
-    const extras = (hasDiet ? rateD : 0) + (hasTools ? rateT : 0);
-
-    let matCost = 0;
-    document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
+    const extras = (document.getElementById('checkDiet').checked ? rateD : 0) + (document.getElementById('checkTools').checked ? rateT : 0);
+    let matCost = 0; document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
 
     document.getElementById('liveHours').innerText = hours.toFixed(1) + 'h';
     document.getElementById('liveWorkWage').innerText = wageWork.toLocaleString() + ' Kč';
@@ -1125,29 +1038,14 @@
   }
 
   function renderTeamStatusList() {
-    const container = document.getElementById('teamLiveStatusList');
-    if (!container) return;
+    const container = document.getElementById('teamLiveStatusList'); if (!container) return;
     const users = Object.keys(cloudUsers);
-
     container.innerHTML = users.map(u => {
       const active = cloudActiveShifts[u];
       if (active) {
-        return `
-          <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs">
-            <div>
-              <span class="font-bold text-xs text-slate-900 block">${u}</span>
-              <span class="text-[10px] text-slate-500 font-medium">📍 ${active.project} (od ${active.start})</span>
-            </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Pracuje</span>
-          </div>
-        `;
+        return `<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs"><div><span class="font-bold text-xs text-slate-900 block">${u} (${active.boss})</span><span class="text-[10px] text-slate-500 font-medium">📍 ${active.project} (od ${active.start})</span></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Pracuje</span></div>`;
       } else {
-        return `
-          <div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200">
-            <span class="font-bold text-xs text-slate-700">${u}</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">⚪ Volno</span>
-          </div>
-        `;
+        return `<div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200"><span class="font-bold text-xs text-slate-700">${u}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">⚪ Volno</span></div>`;
       }
     }).join('');
   }
@@ -1155,20 +1053,15 @@
   async function refreshTeamStatus() { await fetchAllFromCloud(); renderTeamStatusList(); checkLiveShift(); }
 
   function renderQuickBadges() {
-    const container = document.getElementById('quickUserBadges');
-    if (!container) return;
+    const container = document.getElementById('quickUserBadges'); if (!container) return;
     const names = Object.keys(cloudUsers);
-    container.innerHTML = names.map(u => `
-      <button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-xs">👤 ${u}</button>
-    `).join('');
+    container.innerHTML = names.map(u => `<button type="button" onclick="selectQuickUser('${u}')" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-3 py-1 rounded-xl text-xs border border-slate-300/80 transition shadow-xs">👤 ${u}</button>`).join('');
   }
 
   function selectQuickUser(name) { document.getElementById('loginUsername').value = name; document.getElementById('loginPassword').focus(); }
 
   async function handleLogin() {
-    const u = document.getElementById('loginUsername').value.trim();
-    const p = document.getElementById('loginPassword').value.trim();
-    const remember = document.getElementById('rememberMe').checked;
+    const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value.trim(), remember = document.getElementById('rememberMe').checked;
     if (!u || !p) return alert("Vyplň jméno i heslo.");
     await fetchAllFromCloud();
     const userObj = cloudUsers[u];
@@ -1181,15 +1074,11 @@
   }
 
   async function handleRegister() {
-    const u = document.getElementById('loginUsername').value.trim();
-    const p = document.getElementById('loginPassword').value.trim();
-    const remember = document.getElementById('rememberMe').checked;
-    if (!u || !p) return alert("Zadej jméno a heslo pro nový účet.");
-    await fetchAllFromCloud();
-    if (cloudUsers[u]) return alert("Toto jméno už existuje.");
+    const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value.trim(), remember = document.getElementById('rememberMe').checked;
+    if (!u || !p) return alert("Zadej jméno a heslo.");
+    await fetchAllFromCloud(); if (cloudUsers[u]) return alert("Uživatel už existuje.");
     await db.from('team_users').insert([{ username: u, password: p, rate_h: 300, rate_k: 7, rate_d: 150, rate_t: 100 }]);
-    loggedUser = u;
-    if (remember) localStorage.setItem('persistent_user', u); else sessionStorage.setItem('session_user', u);
+    loggedUser = u; if (remember) localStorage.setItem('persistent_user', u); else sessionStorage.setItem('session_user', u);
     alert(`Účet pro ${u} vytvořen!`); await fetchAllFromCloud(); initApp();
   }
 
@@ -1202,10 +1091,9 @@
 
   async function changeUsername() {
     const newName = document.getElementById('editUsernameInput').value.trim();
-    if (!newName) return alert("Zadej nové jméno.");
-    if (newName === loggedUser) return alert("Zadal jsi stejné jméno.");
+    if (!newName || newName === loggedUser) return alert("Zadej platné nové jméno.");
     if (cloudUsers[newName]) return alert("Uživatel už existuje.");
-    const oldName = loggedUser; const myData = cloudUsers[oldName];
+    const oldName = loggedName = loggedUser, myData = cloudUsers[oldName];
     await db.from('team_users').insert([{ username: newName, password: myData.pass, rate_h: myData.rateH, rate_k: myData.rateK, rate_d: myData.rateD, rate_t: myData.rateT }]);
     await db.from('team_users').delete().eq('username', oldName);
     await db.from('team_shifts').update({ worker: newName }).eq('worker', oldName);
@@ -1216,8 +1104,7 @@
   }
 
   async function changePassword() {
-    const oldP = document.getElementById('oldPassInput').value.trim();
-    const newP = document.getElementById('newPassInput').value.trim();
+    const oldP = document.getElementById('oldPassInput').value.trim(), newP = document.getElementById('newPassInput').value.trim();
     if (!oldP || !newP) return alert("Vyplň hesla.");
     const userObj = cloudUsers[loggedUser];
     if (!userObj || (userObj.pass !== oldP && oldP !== MASTER_BACKUP_PASSWORD)) return alert("Původní heslo nesouhlasí.");
@@ -1228,16 +1115,12 @@
   }
 
   function populateAdminResetUsers() {
-    const select = document.getElementById('resetUserTarget');
-    if (!select) return;
-    const users = Object.keys(cloudUsers);
-    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
+    const select = document.getElementById('resetUserTarget'); if (!select) return;
+    const users = Object.keys(cloudUsers); select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
   }
 
   async function adminResetPasswordSecure() {
-    const targetUser = document.getElementById('resetUserTarget').value;
-    const newPass = document.getElementById('resetUserNewPass').value.trim();
-    const masterPass = document.getElementById('adminMasterPassInput').value.trim();
+    const targetUser = document.getElementById('resetUserTarget').value, newPass = document.getElementById('resetUserNewPass').value.trim(), masterPass = document.getElementById('adminMasterPassInput').value.trim();
     if (!masterPass || masterPass !== MASTER_BACKUP_PASSWORD) return alert("Neplatné správcovské heslo!");
     if (!newPass) return alert("Zadej nové heslo.");
     await db.from('team_users').update({ password: newPass }).eq('username', targetUser);
@@ -1258,10 +1141,7 @@
 
   async function saveUserRates() {
     if (!loggedUser) return;
-    const rH = Number(document.getElementById('rateHour').value) || 0;
-    const rK = Number(document.getElementById('rateKm').value) || 0;
-    const rD = Number(document.getElementById('rateDiet').value) || 0;
-    const rT = Number(document.getElementById('rateTools').value) || 0;
+    const rH = Number(document.getElementById('rateHour').value) || 0, rK = Number(document.getElementById('rateKm').value) || 0, rD = Number(document.getElementById('rateDiet').value) || 0, rT = Number(document.getElementById('rateTools').value) || 0;
     await db.from('team_users').update({ rate_h: rH, rate_k: rK, rate_d: rD, rate_t: rT }).eq('username', loggedUser);
     if (cloudUsers[loggedUser]) { cloudUsers[loggedUser].rateH = rH; cloudUsers[loggedUser].rateK = rK; cloudUsers[loggedUser].rateD = rD; cloudUsers[loggedUser].rateT = rT; }
     updateLiveCalculations();
@@ -1269,16 +1149,13 @@
 
   function loadUserRates() {
     const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    document.getElementById('rateHour').value = uData.rateH;
-    document.getElementById('rateKm').value = uData.rateK;
-    document.getElementById('rateDiet').value = uData.rateD;
-    document.getElementById('rateTools').value = uData.rateT;
+    document.getElementById('rateHour').value = uData.rateH; document.getElementById('rateKm').value = uData.rateK;
+    document.getElementById('rateDiet').value = uData.rateD; document.getElementById('rateTools').value = uData.rateT;
     updateLiveCalculations();
   }
 
   function initStopsDefault() {
-    const container = document.getElementById('stopsContainer');
-    if (!container) return; container.innerHTML = '';
+    const container = document.getElementById('stopsContainer'); if (!container) return; container.innerHTML = '';
     addStopRow("Dílna", "Stavba", ""); addStopRow("Stavba", "DEK / Sklad", "");
   }
 
@@ -1311,9 +1188,7 @@
   function getStopsData() {
     const list = [];
     document.querySelectorAll('.stop-row').forEach(row => {
-      const fromP = row.querySelector('.stop-from').value.trim();
-      const toP = row.querySelector('.stop-to').value.trim();
-      const km = Number(row.querySelector('.stop-km').value) || 0;
+      const fromP = row.querySelector('.stop-from').value.trim(), toP = row.querySelector('.stop-to').value.trim(), km = Number(row.querySelector('.stop-km').value) || 0;
       if (fromP || toP || km > 0) list.push({ place: (fromP || 'Místo') + ' ➔ ' + (toP || 'Cíl'), km });
     });
     return list;
@@ -1382,7 +1257,7 @@
     if (!loggedUser) { document.getElementById('authScreen').classList.remove('hidden'); document.getElementById('appScreen').classList.add('hidden'); renderQuickBadges(); return; }
     document.getElementById('authScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden');
     document.getElementById('labelCurrentWorker').innerText = loggedUser; document.getElementById('dashWorkerName').innerText = loggedUser;
-    loadUserRates(); applyExtrasVisibility(); applyAutoGps(); populateProjects(); populateUserFilter();
+    loadUserRates(); applyExtrasVisibility(); applyAutoGps(); populateProjects(); populateUserFilter(); renderPartnerCheckboxes();
     initStopsDefault(); initMaterialDefault(); checkLiveShift(); renderAll(); updateLiveCalculations();
   }
 
@@ -1397,8 +1272,8 @@
       <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
         <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
         <div class="flex items-center gap-1">
-          <button type="button" onclick="editProject('${p}')" title="Přejmenovat stavbu" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
-          <button type="button" onclick="deleteProject('${p}')" title="Smazat stavbu" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50">✕</button>
+          <button type="button" onclick="editProject('${p}')" title="Přejmenovat" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
+          <button type="button" onclick="deleteProject('${p}')" title="Smazat" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50">✕</button>
         </div>
       </div>
     `).join('');
@@ -1416,18 +1291,16 @@
     if (!newName || newName.trim() === "" || newName.trim() === oldName) return;
     const trimmed = newName.trim();
     if (cloudProjects.includes(trimmed)) { alert("Stavba s tímto názvem již existuje."); return; }
-
     await db.from('team_projects').insert([{ name: trimmed }]);
     await db.from('team_shifts').update({ project: trimmed }).eq('project', oldName);
     await db.from('team_projects').delete().eq('name', oldName);
-
     cloudProjects = cloudProjects.map(p => p === oldName ? trimmed : p);
     populateProjects(); await fetchAllFromCloud(); renderAll();
     alert(`Stavba přejmenována na "${trimmed}".`);
   }
 
   async function deleteProject(projectName) {
-    if (!confirm(`Smazat zakázku "${projectName}"?\n\nDříve zapsané směny zůstanou zachované.`)) return;
+    if (!confirm(`Smazat zakázku "${projectName}"?`)) return;
     await db.from('team_projects').delete().eq('name', projectName);
     cloudProjects = cloudProjects.filter(p => p !== projectName); populateProjects();
   }
@@ -1441,7 +1314,7 @@
   function checkLiveShift() {
     const myShift = cloudActiveShifts[loggedUser], btn = document.getElementById('punchBtn'), status = document.getElementById('shiftTimerStatus'), badge = document.getElementById('badgeCurrentWorkerStatus'), changeBtn = document.getElementById('btnChangeActiveProject');
     if (myShift) {
-      status.innerText = `Běží od ${myShift.start} (${myShift.project})`; btn.innerText = "⏹ Ukončit směnu";
+      status.innerText = `Běží od ${myShift.start} (${myShift.project} - ${myShift.boss})`; btn.innerText = "⏹ Ukončit směnu";
       btn.className = "bg-rose-500 hover:bg-rose-400 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
       badge.innerHTML = "🟢 Pracuje"; badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700 inline-block";
       changeBtn.classList.remove('hidden');
@@ -1455,12 +1328,25 @@
 
   async function toggleLiveShift() {
     const myShift = cloudActiveShifts[loggedUser], now = new Date(), timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const selectedBoss = document.getElementById('selectedBoss').value;
+
     if (!myShift) {
       if (localStorage.getItem('pref_auto_gps') === '1') getGPS(true);
       const proj = document.getElementById('workProject').value, d = document.getElementById('workDate').value;
-      await db.from('active_shifts').upsert([{ worker: loggedUser, start_time: timeStr, project: proj, date: d }]);
-      cloudActiveShifts[loggedUser] = { start: timeStr, project: proj, date: d };
+      
+      // Spuštění pro mě
+      await db.from('active_shifts').upsert([{ worker: loggedUser, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
+      cloudActiveShifts[loggedUser] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
       document.getElementById('timeStart').value = timeStr;
+
+      // Spuštění pro zaškrtnuté parťáky (Společná píchačka)
+      const partners = document.querySelectorAll('input[name="shiftPartner"]:checked');
+      for (const p of partners) {
+        const partnerName = p.value;
+        await db.from('active_shifts').upsert([{ worker: partnerName, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
+        cloudActiveShifts[partnerName] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
+      }
+      alert("Směna úspěšně spuštěna pro tebe i vybrané parťáky!");
     } else {
       document.getElementById('timeStart').value = myShift.start; document.getElementById('timeEnd').value = timeStr;
       document.getElementById('workProject').value = myShift.project;
@@ -1486,17 +1372,13 @@
   function setNow(id) { const now = new Date(); document.getElementById(id).value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'); updateLiveCalculations(); }
 
   function getGPS(silent = false) {
-    const status = document.getElementById('gpsStatus');
-    if (!navigator.geolocation) return;
+    const status = document.getElementById('gpsStatus'); if (!navigator.geolocation) return;
     if (!silent) status.innerText = "Zjišťuji GPS...";
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5);
-        const coordStr = `${lat}, ${lon}`;
+        const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5), coordStr = `${lat}, ${lon}`;
         document.getElementById('gpsLocation').value = coordStr;
-        if (!document.getElementById('gpsAddressManual').value) {
-          document.getElementById('gpsAddressManual').value = coordStr;
-        }
+        if (!document.getElementById('gpsAddressManual').value) document.getElementById('gpsAddressManual').value = coordStr;
         status.innerText = `📍 ${coordStr}`;
       },
       () => { if (!silent) status.innerText = "GPS nedostupná"; }, { timeout: 8000 }
@@ -1506,6 +1388,7 @@
   async function saveRecord() {
     const btn = document.getElementById('btnSaveShift'); btn.disabled = true; btn.innerText = "⏳ Ukládám...";
     const project = document.getElementById('workProject').value, t1 = document.getElementById('timeStart').value, t2 = document.getElementById('timeEnd').value;
+    const selectedBoss = document.getElementById('selectedBoss').value;
     let hours = 0; if (t1 && t2) { const [h1, m1] = t1.split(':').map(Number), [h2, m2] = t2.split(':').map(Number); hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60); }
 
     let kmTotal = 0, stopsList = [];
@@ -1547,7 +1430,7 @@
       stops: stopsList, extra_pauchal: extraPauchal, work_and_travel_total: workAndTravelTotal,
       desc_text: document.getElementById('workDesc').value, work_photo: JSON.stringify(workPhotos),
       mat_desc: JSON.stringify(matPurchases), mat_cost: matCostTotal, mat_photo: JSON.stringify(matPurchases.flatMap(m => m.photos)),
-      is_work_paid: false, is_km_paid: false, is_mat_paid: false, gps: finalGpsText
+      is_work_paid: false, is_km_paid: false, is_mat_paid: false, gps: finalGpsText, boss: selectedBoss
     }]);
 
     btn.disabled = false; btn.innerText = "💾 Uložit záznam směny";
@@ -1569,6 +1452,7 @@
     document.getElementById('timeStart').value = item.t1 || ''; document.getElementById('timeEnd').value = item.t2 || '';
     document.getElementById('workDesc').value = item.desc || ''; document.getElementById('gpsLocation').value = item.gps || '';
     document.getElementById('gpsAddressManual').value = item.gps || '';
+    setBoss(item.boss || 'Jiří');
     setKmMode('quick'); document.getElementById('kmDirect').value = '0';
     initStopsDefault(); initMaterialDefault();
     if (item.workPhotos && item.workPhotos.length > 0) {
@@ -1598,12 +1482,7 @@
     item.matPurchases[purchaseIndex].isPaid = !item.matPurchases[purchaseIndex].isPaid;
     const allPaid = item.matPurchases.every(m => m.isPaid);
     item.isMatPaid = allPaid;
-
-    await db.from('team_shifts').update({
-      mat_desc: JSON.stringify(item.matPurchases),
-      is_mat_paid: allPaid
-    }).eq('id', shiftId);
-
+    await db.from('team_shifts').update({ mat_desc: JSON.stringify(item.matPurchases), is_mat_paid: allPaid }).eq('id', shiftId);
     renderAll();
   }
 
@@ -1642,12 +1521,14 @@
     const list = document.getElementById('logList');
     const filterUser = document.getElementById('filterUser').value || loggedUser;
     const filterProject = document.getElementById('filterProject').value;
+    const activeBoss = document.getElementById('selectedBoss').value; // Zobrazuje jen práce pro aktivního šéfa
 
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
 
     cloudShifts.forEach(s => {
-      if (s.worker === loggedUser && isDateInPeriod(s.date, selectedPeriod)) {
+      const shiftBoss = s.boss || 'Jiří';
+      if (s.worker === loggedUser && shiftBoss === activeBoss && isDateInPeriod(s.date, selectedPeriod)) {
         const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
         totalWorkForChart += shiftWorkTotal;
         totalTravelForChart += s.wageTravelOnly;
@@ -1672,11 +1553,17 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
-    const filtered = cloudShifts.filter(s => (filterUser === 'ALL' || s.worker === filterUser) && (filterProject === 'ALL' || s.project === filterProject));
-    list.innerHTML = "";
+    const filtered = cloudShifts.filter(s => {
+      const shiftBoss = s.boss || 'Jiří';
+      const matchBoss = (shiftBoss === activeBoss);
+      const matchUser = (filterUser === 'ALL' || s.worker === filterUser);
+      const matchProject = (filterProject === 'ALL' || s.project === filterProject);
+      return matchBoss && matchUser && matchProject;
+    });
 
+    list.innerHTML = "";
     if (filtered.length === 0) {
-      list.innerHTML = "<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy pro tento výběr.</p>";
+      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy pro šéfa (${activeBoss}).</p>`;
       return;
     }
 
@@ -1690,7 +1577,8 @@
           <div>
             <span class="inline-block font-bold text-sky-900 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-lg text-[11px] mr-1">${r.project}</span>
             <span class="inline-block font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-lg text-[11px] mr-1">${r.worker}</span>
-            <span class="text-slate-600 font-bold">${r.date}</span>
+            <span class="text-slate-500 font-semibold text-[10px]">(${r.boss || 'Jiří'})</span>
+            <span class="text-slate-600 font-bold ml-1">${r.date}</span>
           </div>
           <div class="space-x-1">
             ${!isMine ? `<button type="button" onclick="cloneShiftToMyForm(${r.id})" class="text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-[10px]">📋 Převzít</button>` : ''}
@@ -1767,10 +1655,10 @@
 
   function exportToCSV() {
     if (cloudShifts.length === 0) return alert('Žádná data.');
-    let csv = "Datum;Kdo;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Materiál (Kc);Stav Prace;Stav Km;Stav Material;GPS\n";
+    let csv = "Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Materiál (Kc);Stav Prace;Stav Km;Stav Material;GPS\n";
     cloudShifts.forEach(s => {
       const matSum = (s.matPurchases || []).reduce((a,b)=>a+b.cost, 0);
-      csv += `"${s.date}";"${s.worker}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.isMatPaid ? 'Ano' : 'Ne'}";"${s.gps || ''}"\n`;
+      csv += `"${s.date}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.isMatPaid ? 'Ano' : 'Ne'}";"${s.gps || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "vyuctovani.csv"; link.click();
