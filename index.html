@@ -338,7 +338,7 @@
     </div>
   </div>
 
-  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY (z-[75] aby bylo VŽDY PŘED bočním panelem z-50!) -->
+  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY (z-[75]) -->
   <div id="editShiftModal" class="fixed inset-0 bg-black/85 z-[75] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
@@ -414,7 +414,7 @@
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
         <div>
           <h3 class="font-black text-sm sm:text-base">🔒 Hlavní Správcovské Rozhraní</h3>
-          <p class="text-[10px] text-amber-400">Správa přístupů, šéfů, hesel a bezpečné mazání směn</p>
+          <p class="text-[10px] text-amber-400">Přístupy, šéfové, oprávnění viditelnosti a mazání směn</p>
         </div>
         <button type="button" onclick="closeMasterAdminModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
@@ -429,7 +429,7 @@
         <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA -->
         <div class="space-y-2 pt-2 border-t">
           <span class="text-xs font-bold text-amber-700 block uppercase">2. 👑 Povýšení na Šéfa / Správa rolí:</span>
-          <p class="text-[10px] text-slate-500">Šéfové mohou schvalovat výplaty, vidí práce týmu a vystupují jako vedoucí staveb:</p>
+          <p class="text-[10px] text-slate-500">Šéfové schvalují výplaty a vystupují jako volitelní šéfové zakázek:</p>
           <div class="flex gap-1.5 items-center">
             <select id="masterAdminBossUserSelect" onchange="updateBossToggleBtnUI()" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" id="btnToggleBossRole" onclick="toggleBossRoleAction()" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-xl text-xs font-black transition">
@@ -438,10 +438,40 @@
           </div>
         </div>
 
-        <!-- 3. BEZPEČNÉ MAZÁNÍ SMĚN S VYHLEDÁVÁNÍM PODLE ID -->
+        <!-- 3. MATICE VIDITELNOSTI PRACÍ -->
+        <div class="space-y-2 pt-2 border-t">
+          <span class="text-xs font-bold text-indigo-700 block uppercase">3. 👁️ Kdo smí vidět jaké práce (Matice oprávnění):</span>
+          <p class="text-[10px] text-slate-500">Vyber uživatele a přesně zaškrtni, které šéfy a které kolegy smí vidět v přehledu a kase:</p>
+          
+          <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-2xl space-y-3">
+            <div>
+              <label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">Nastavuji viditelnost pro uživatele:</label>
+              <select id="permTargetUserSelect" onchange="loadPermissionsUIForSelectedUser()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-bold outline-none"></select>
+            </div>
+
+            <!-- Šéfové, jejichž práce smí vidět -->
+            <div class="space-y-1 bg-white p-2 rounded-xl border border-slate-200">
+              <span class="text-[10px] font-bold text-slate-700 block uppercase">Smí vidět práce dělané pro šéfy:</span>
+              <div id="permBossCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
+            </div>
+
+            <!-- Kolegové, jejichž cizí práce smí vidět -->
+            <div class="space-y-1 bg-white p-2 rounded-xl border border-slate-200">
+              <span class="text-[10px] font-bold text-slate-700 block uppercase">Smí vidět práce ostatních kolegů:</span>
+              <div id="permWorkersCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
+              <span class="text-[9px] text-slate-400 block pt-0.5">* Své vlastní práce a směny, kde byl zapsán jako parťák, vidí vždy.</span>
+            </div>
+
+            <button type="button" onclick="saveSelectedUserPermissions()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 rounded-xl text-xs shadow transition">
+              💾 Uložit pravidla viditelnosti
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. BEZPEČNÉ MAZÁNÍ SMĚN S VYHLEDÁVÁNÍM PODLE ID -->
         <div class="space-y-2 pt-2 border-t">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-rose-700 block uppercase">3. 🗑️ Bezpečné Mazání záznamů:</span>
+            <span class="text-xs font-bold text-rose-700 block uppercase">4. 🗑️ Bezpečné Mazání záznamů:</span>
             <span class="text-[10px] text-slate-400">Hledej např. #1024</span>
           </div>
           
@@ -454,22 +484,6 @@
           </div>
 
           <select id="masterAdminShiftSelect" onchange="showSelectedAdminShiftDetails()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
-        </div>
-
-        <!-- 4. NASTAVENÍ VIDITELNOSTI PRACÍ PRO PRACOVNÍKY -->
-        <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-slate-700 block uppercase">4. Režim viditelnosti prací pro kolegy:</span>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <select id="masterAdminRoleUser" onchange="loadUserRoleSetting()" class="border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
-            <select id="masterAdminRoleSetting" class="border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none">
-              <option value="self">Pouze své vlastní práce</option>
-              <option value="shared">Sdílené dle šéfa (práce daného šéfa pro tým)</option>
-              <option value="boss_all">Šéf - Všechny práce v systému</option>
-            </select>
-          </div>
-          <button type="button" onclick="saveUserRoleSetting()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs transition">
-            Uložit pravidlo viditelnosti
-          </button>
         </div>
 
         <!-- 5. RESET HESLA -->
@@ -799,6 +813,28 @@
     return Array.from(new Set(list));
   }
 
+  // Vrací pravidla viditelnosti daného uživatele
+  function getUserPermissions(username) {
+    const defaultBosses = isUserBoss(username) ? [username] : getBossList();
+    const defaultWorkers = isUserBoss(username) ? Object.keys(cloudUsers) : [username];
+
+    const u = cloudUsers[username];
+    if (u && u.perms) {
+      return {
+        allowedBosses: Array.isArray(u.perms.allowedBosses) ? u.perms.allowedBosses : defaultBosses,
+        allowedWorkers: Array.isArray(u.perms.allowedWorkers) ? u.perms.allowedWorkers : defaultWorkers
+      };
+    }
+    const local = localStorage.getItem('user_perms_' + username);
+    if (local) {
+      try { return JSON.parse(local); } catch(e) {}
+    }
+    return {
+      allowedBosses: defaultBosses,
+      allowedWorkers: defaultWorkers
+    };
+  }
+
   function formatCzechDate(dateStr) {
     if (!dateStr) return "";
     const parts = dateStr.split('-');
@@ -889,20 +925,20 @@
       `;
     }).join('');
 
-    const roleSel = document.getElementById('masterAdminRoleUser');
     const resetSel = document.getElementById('masterAdminResetUser');
     const delSel = document.getElementById('masterAdminDeleteUser');
     const bossUserSel = document.getElementById('masterAdminBossUserSelect');
+    const permTargetSel = document.getElementById('permTargetUserSelect');
 
     const optionsHtml = users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
-    roleSel.innerHTML = optionsHtml;
     resetSel.innerHTML = optionsHtml;
     delSel.innerHTML = optionsHtml;
     bossUserSel.innerHTML = optionsHtml;
+    permTargetSel.innerHTML = optionsHtml;
 
     updateBossToggleBtnUI();
+    loadPermissionsUIForSelectedUser();
     filterAdminShifts();
-    loadUserRoleSetting();
   }
 
   function updateBossToggleBtnUI() {
@@ -944,6 +980,75 @@
     renderQuickBadges();
     updateAppHeaderRole();
     renderTeamStatusList();
+    renderAll();
+  }
+
+  // Načtení zaškrtávátek pro správu viditelnosti
+  function loadPermissionsUIForSelectedUser() {
+    const targetUser = document.getElementById('permTargetUserSelect').value;
+    if (!targetUser) return;
+
+    const perms = getUserPermissions(targetUser);
+    const bosses = getBossList();
+    const allUsers = Object.keys(cloudUsers);
+
+    // 1. Šéfové (Jiří, Petr...)
+    const bossCont = document.getElementById('permBossCheckboxes');
+    bossCont.innerHTML = bosses.map(b => `
+      <label class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer">
+        <input type="checkbox" name="permBossCheck" value="${b}" ${perms.allowedBosses.includes(b) ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600">
+        <span>👨‍💼 ${b}</span>
+      </label>
+    `).join('') + `
+      <label class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer">
+        <input type="checkbox" name="permBossCheck" value="Sám na sebe" ${perms.allowedBosses.includes('Sám na sebe') ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600">
+        <span>👤 Sám na sebe</span>
+      </label>
+    `;
+
+    // 2. Ostatní kolegové
+    const workersCont = document.getElementById('permWorkersCheckboxes');
+    const otherUsers = allUsers.filter(u => u !== targetUser);
+    if (otherUsers.length === 0) {
+      workersCont.innerHTML = '<span class="text-[10px] text-slate-400">Žádní další uživatelé.</span>';
+    } else {
+      workersCont.innerHTML = otherUsers.map(u => `
+        <label class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs font-semibold cursor-pointer">
+          <input type="checkbox" name="permWorkerCheck" value="${u}" ${perms.allowedWorkers.includes(u) ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600">
+          <span>${u}${isUserBoss(u) ? ' 👑' : ''}</span>
+        </label>
+      `).join('');
+    }
+  }
+
+  async function saveSelectedUserPermissions() {
+    const targetUser = document.getElementById('permTargetUserSelect').value;
+    if (!targetUser) return;
+
+    const checkedBosses = Array.from(document.querySelectorAll('input[name="permBossCheck"]:checked')).map(cb => cb.value);
+    const checkedWorkers = Array.from(document.querySelectorAll('input[name="permWorkerCheck"]:checked')).map(cb => cb.value);
+
+    // Vždy vidí sebe
+    if (!checkedWorkers.includes(targetUser)) checkedWorkers.push(targetUser);
+
+    const permObj = {
+      allowedBosses: checkedBosses,
+      allowedWorkers: checkedWorkers
+    };
+
+    if (cloudUsers[targetUser]) {
+      cloudUsers[targetUser].perms = permObj;
+    }
+    localStorage.setItem('user_perms_' + targetUser, JSON.stringify(permObj));
+
+    try {
+      await db.from('team_users').update({ permissions_json: JSON.stringify(permObj) }).eq('username', targetUser);
+    } catch(e) {
+      console.warn("Chyba při ukládání permissions_json do cloudu:", e);
+    }
+
+    alert(`Pravidla viditelnosti pro "${targetUser}" byla uložena!`);
+    renderAll();
   }
 
   function filterAdminShifts() {
@@ -1028,20 +1133,6 @@
     cloudShifts = cloudShifts.filter(s => s.id !== shiftId);
     alert(`Směna #${shortId} byla trvale smazána ze systému.`);
     filterAdminShifts();
-    renderAll();
-  }
-
-  function loadUserRoleSetting() {
-    const user = document.getElementById('masterAdminRoleUser').value;
-    const current = localStorage.getItem('user_role_' + user) || (isUserBoss(user) ? 'boss_all' : 'shared');
-    document.getElementById('masterAdminRoleSetting').value = current;
-  }
-
-  function saveUserRoleSetting() {
-    const user = document.getElementById('masterAdminRoleUser').value;
-    const role = document.getElementById('masterAdminRoleSetting').value;
-    localStorage.setItem('user_role_' + user, role);
-    alert(`Pravidlo pro uživatele "${user}" uloženo!`);
     renderAll();
   }
 
@@ -1446,13 +1537,19 @@
           const storedBoss = localStorage.getItem('user_is_boss_' + cleanName);
           const isBossFlag = u.is_boss !== undefined && u.is_boss !== null ? u.is_boss : (storedBoss !== null ? storedBoss === '1' : (cleanName === 'Jiří' || cleanName === 'Petr'));
 
+          let userPerms = null;
+          if (u.permissions_json) {
+            try { userPerms = JSON.parse(u.permissions_json); } catch(e) {}
+          }
+
           cloudUsers[cleanName] = {
             pass: u.password,
             rateH: u.rate_h || 300,
             rateK: u.rate_k || 7,
             rateD: u.rate_d || 150,
             rateT: u.rate_t || 100,
-            isBoss: isBossFlag
+            isBoss: isBossFlag,
+            perms: userPerms
           };
         });
       }
@@ -2394,6 +2491,28 @@
     return true;
   }
 
+  // --- LOGIKA VIDITELNOSTI (MATICE OPRÁVNĚNÍ) ---
+  function isShiftVisibleForUser(s, username) {
+    const isCreator = (s.worker === username);
+    const isPartner = (s.partners || []).some(p => p.name === username);
+
+    // Vlastní směnu nebo směnu, kde jsem dělal jako parťák, vidím vždy
+    if (isCreator || isPartner) return true;
+
+    const shiftBoss = s.boss || 'Jiří';
+    const perms = getUserPermissions(username);
+
+    // 1. Zkontroluj, zda uživatel smí vidět tohoto šéfa
+    const bossAllowed = perms.allowedBosses.includes(shiftBoss);
+    if (!bossAllowed) return false;
+
+    // 2. Zkontroluj, zda uživatel smí vidět daného pracovníka
+    const workerAllowed = perms.allowedWorkers.includes(s.worker);
+    if (!workerAllowed) return false;
+
+    return true;
+  }
+
   // --- VÝPIS HISTORIE A KASY ---
   function renderAll() {
     if (!loggedUser) return;
@@ -2407,28 +2526,19 @@
     const filterProject = (filterProjectEl && filterProjectEl.value) ? filterProjectEl.value : 'ALL';
     const activeBoss = (activeBossEl && activeBossEl.value) ? activeBossEl.value : 'Jiří';
 
-    const myIsBoss = isUserBoss(loggedUser);
-    const myRole = localStorage.getItem('user_role_' + loggedUser) || (myIsBoss ? 'boss_all' : 'shared');
-
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
 
-    // 1. Výpočet Kasy
+    // 1. Výpočet Kasy - počítá pouze ze směn, které uživatel smí vidět
     cloudShifts.forEach(s => {
-      const shiftBoss = s.boss || 'Jiří';
+      if (!isShiftVisibleForUser(s, loggedUser)) return;
+
       const isCreator = (s.worker === loggedUser);
       const partnerEntry = (s.partners || []).find(p => p.name === loggedUser);
-      const isParticipant = isCreator || !!partnerEntry;
+      const isBossViewer = isUserBoss(loggedUser);
 
-      let includeInKasa = false;
-      if (myRole === 'boss_all') {
-        includeInKasa = (shiftBoss === loggedUser) || (shiftBoss === activeBoss);
-      } else {
-        includeInKasa = isParticipant && (shiftBoss === activeBoss);
-      }
-
-      if (includeInKasa && isDateInPeriod(s.date, selectedPeriod)) {
-        if (myRole === 'boss_all') {
+      if (isDateInPeriod(s.date, selectedPeriod)) {
+        if (isBossViewer) {
           let shiftWork = s.wageWorkOnly + (s.extraPauchal || 0);
           (s.partners || []).forEach(p => { shiftWork += (p.wageWorkOnly || 0); });
 
@@ -2470,19 +2580,9 @@
 
     updateEarningsChart(totalWorkForChart, totalTravelForChart, totalMatForChart);
 
-    // 2. Filtrování v seznamu
+    // 2. Filtrování záznamů v seznamu podle oprávnění
     const filtered = cloudShifts.filter(s => {
-      const shiftBoss = s.boss || 'Jiří';
-      const isCreator = (s.worker === loggedUser);
-      const isPartner = (s.partners || []).some(p => p.name === loggedUser);
-
-      if (shiftBoss === 'Sám na sebe' && !isCreator && !isPartner) return false;
-
-      if (myRole === 'self') {
-        if (!isCreator && !isPartner) return false;
-      } else if (myRole === 'shared') {
-        if (shiftBoss !== activeBoss) return false;
-      }
+      if (!isShiftVisibleForUser(s, loggedUser)) return false;
 
       const matchUser = (filterUser === 'ALL' || s.worker === filterUser || (s.partners || []).some(p => p.name === filterUser));
       const matchProject = (filterProject === 'ALL' || s.project === filterProject);
@@ -2492,7 +2592,7 @@
 
     list.innerHTML = "";
     if (filtered.length === 0) {
-      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy k zobrazení.</p>`;
+      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy k zobrazení podle tvých oprávnění.</p>`;
       return;
     }
 
@@ -2624,6 +2724,7 @@
     if (cloudShifts.length === 0) return alert('Žádná data.');
     let csv = "ID;Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Partaci;Material (Kc);Stav Prace;Stav Km;Odkaz Fotky;GPS\n";
     cloudShifts.forEach(s => {
+      if (!isShiftVisibleForUser(s, loggedUser)) return;
       const shortId = getShortId(s.id);
       const matSum = (s.matPurchases || []).reduce((a,b)=>a+b.cost, 0);
       const partStr = (s.partners || []).map(p => `${p.name} (${p.hours}h/${p.wageWorkOnly}Kc)`).join(' | ');
