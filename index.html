@@ -120,7 +120,7 @@
         <span id="badgeCurrentWorkerStatus" class="text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700 mt-0.5">⚪ Volno</span>
       </div>
       
-      <button type="button" onclick="toggleStatsMenu(true)" title="Tým, Kasa a Záznamy" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
+      <button type="button" onclick="toggleStatsMenu(true)" title="Tým, Kasa, Rozpad zakázky a Záznamy" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
         ☰
       </button>
     </div>
@@ -141,12 +141,12 @@
       </button>
     </div>
 
-    <!-- TLAČÍTKO PRO OTEVŘENÍ KASY A ZÁZNAMŮ -->
+    <!-- TLAČÍTKO PRO OTEVŘENÍ KASY A ROZPADU STAVBY -->
     <div>
       <button type="button" onclick="toggleStatsMenu(true)" class="w-full bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-slate-800 font-bold py-2.5 px-3 rounded-xl shadow-sm text-xs sm:text-sm flex items-center justify-center gap-2 transition">
-        <span>👥 Stav týmu</span>
+        <span>🏗️ Rozpad zakázky</span>
         <span class="text-slate-300">•</span>
-        <span>💰 Kasa & Grafy</span>
+        <span>💰 Kasa</span>
         <span class="text-slate-300">•</span>
         <span>📋 Záznamy (☰)</span>
       </button>
@@ -608,16 +608,36 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO) -->
+  <!-- BOČNÍ PANEL 2: TÝM, KASA, ROZPAD STAVBY & ZÁZNAMY (☰ VPRAVO) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
     <div class="flex justify-between items-center border-b pb-3">
       <div>
-        <span class="font-black text-slate-900 text-base block">👥 Tým, Kasa a Grafy</span>
+        <span class="font-black text-slate-900 text-base block">👥 Tým, Kasa a Rozpad</span>
         <span class="text-[10px] text-slate-400">Přejeď prstem vpravo pro zavření</span>
       </div>
       <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
+    </div>
+
+    <!-- NOVINKA: MANAŽER STAVBY / ROZPAD PODLE LIDÍ -->
+    <div class="space-y-3 bg-gradient-to-br from-sky-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-sky-800/60">
+      <div class="flex justify-between items-center border-b border-sky-700/60 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="text-base">🏗️</span>
+          <div>
+            <span class="text-xs font-black uppercase tracking-wide text-sky-200 block">Vyúčtování a rozpad stavby</span>
+            <span class="text-[10px] text-sky-300">Kompletní kalkulace práce, km a marže</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-[10px] font-bold text-sky-200 block uppercase">Zvol zakázku / stavbu:</label>
+        <select id="projectManagerSelect" onchange="renderProjectManagerBreakdown()" class="w-full border border-sky-500/40 rounded-xl p-2 text-xs bg-slate-800 text-white font-bold outline-none"></select>
+      </div>
+
+      <div id="projectManagerBreakdownContainer" class="space-y-2 pt-1 text-xs"></div>
     </div>
 
     <!-- 1. STAV TÝMU -->
@@ -898,6 +918,8 @@
     const backdrop = document.getElementById('statsBackdrop');
     if (open) {
       setScrollLock(true);
+      populateProjectManagerDropdown();
+      renderProjectManagerBreakdown();
       renderTeamStatusList();
       backdrop.classList.remove('hidden');
       setTimeout(() => menu.classList.remove('translate-x-full'), 10);
@@ -915,7 +937,187 @@
     }, 250);
   }
 
-  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE (PRO KAŽDÉHO) ---
+  // --- NOVINKA: ROZPAD ZAKÁZKY PODLE LIDÍ (HODINY, KM, DLUHY, FAKTURA) ---
+  function populateProjectManagerDropdown() {
+    const sel = document.getElementById('projectManagerSelect');
+    if (!sel) return;
+    const current = sel.value;
+    
+    // Unikátní projekty zapsané ve směnách i v seznamu
+    const allProjs = Array.from(new Set([...cloudProjects, ...cloudShifts.map(s => s.project)])).filter(Boolean);
+    
+    sel.innerHTML = allProjs.map(p => `<option value="${p}">${p}</option>`).join('');
+    if (current && allProjs.includes(current)) {
+      sel.value = current;
+    } else if (allProjs.length > 0) {
+      sel.value = allProjs[0];
+    }
+  }
+
+  function renderProjectManagerBreakdown() {
+    const sel = document.getElementById('projectManagerSelect');
+    const container = document.getElementById('projectManagerBreakdownContainer');
+    if (!sel || !container) return;
+
+    const selectedProj = sel.value;
+    if (!selectedProj) {
+      container.innerHTML = '<span class="text-sky-300 text-xs">Žádná vybraná stavba.</span>';
+      return;
+    }
+
+    // Vyfiltrovat všechny směny pro tuto stavbu (dle oprávnění uživatele)
+    const projShifts = cloudShifts.filter(s => s.project === selectedProj && isShiftVisibleForUser(s, loggedUser));
+
+    if (projShifts.length === 0) {
+      container.innerHTML = `<div class="bg-slate-800/80 p-3 rounded-xl border border-sky-600/40 text-center text-sky-300 text-xs">Na této stavbě zatím nejsou žádné zapsané směny.</div>`;
+      return;
+    }
+
+    // Agregace podle jednotlivých pracantů
+    const workerStats = {};
+    let totalMaterialCost = 0;
+
+    projShifts.forEach(s => {
+      totalMaterialCost += (s.matCost || 0);
+
+      // 1. Hlavní pracovník (řidič)
+      if (!workerStats[s.worker]) {
+        workerStats[s.worker] = {
+          name: s.worker,
+          hours: 0,
+          kmTotal: 0,
+          travelWage: 0,
+          baseWage: 0,
+          extraPauchal: 0,
+          clientBill: 0,
+          isDriverCount: 0
+        };
+      }
+
+      const driverStats = workerStats[s.worker];
+      driverStats.hours += s.hours;
+      driverStats.kmTotal += s.kmTotal;
+      driverStats.travelWage += s.wageTravelOnly;
+      driverStats.baseWage += s.wageWorkOnly;
+      driverStats.extraPauchal += (s.extraPauchal || 0);
+      if (s.kmTotal > 0) driverStats.isDriverCount++;
+
+      // Klientská cena:
+      const activeBossName = (s.boss === 'Sám na sebe') ? s.worker : (s.boss || 'Jiří');
+      const isDriverSelfOrBoss = (s.boss === 'Sám na sebe' && s.worker === loggedUser) || isUserBoss(s.worker);
+      const driverMarkup = isDriverSelfOrBoss ? 0 : getWorkerMarkup(activeBossName, s.worker);
+      
+      driverStats.clientBill += s.wageWorkOnly + (s.extraPauchal || 0) + s.wageTravelOnly + Math.round(s.hours * driverMarkup);
+
+      // 2. Parťáci na dané směně
+      (s.partners || []).forEach(p => {
+        if (!workerStats[p.name]) {
+          workerStats[p.name] = {
+            name: p.name,
+            hours: 0,
+            kmTotal: 0,
+            travelWage: 0,
+            baseWage: 0,
+            extraPauchal: 0,
+            clientBill: 0,
+            isDriverCount: 0
+          };
+        }
+
+        const pStats = workerStats[p.name];
+        pStats.hours += p.hours;
+        pStats.baseWage += (p.wageWorkOnly || 0);
+
+        const pMarkup = getWorkerMarkup(activeLeaderNameForShift(s), p.name);
+        pStats.clientBill += (p.wageWorkOnly || 0) + Math.round(p.hours * pMarkup);
+      });
+    });
+
+    function activeLeaderNameForShift(shift) {
+      if (shift.boss === 'Sám na sebe') return shift.worker;
+      return shift.boss || 'Jiří';
+    }
+
+    const workersArray = Object.values(workerStats);
+    let sumAllHours = 0;
+    let sumAllKm = 0;
+    let sumAllBasePay = 0;
+    let sumAllClientBill = 0;
+
+    workersArray.forEach(w => {
+      sumAllHours += w.hours;
+      sumAllKm += w.kmTotal;
+      sumAllBasePay += w.baseWage + w.travelWage + w.extraPauchal;
+      sumAllClientBill += w.clientBill;
+    });
+
+    const grandTotalInvestor = sumAllClientBill + totalMaterialCost;
+    const bossTotalProfit = grandTotalInvestor - sumAllBasePay - totalMaterialCost;
+
+    container.innerHTML = `
+      <!-- SOUHRNNÉ KARTY STAVBY -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-center">
+        <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
+          <span class="text-[9px] text-sky-300 uppercase block font-semibold">Celkem odpracováno</span>
+          <b class="text-sm text-white">${sumAllHours.toFixed(1)} h</b>
+        </div>
+        <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
+          <span class="text-[9px] text-sky-300 uppercase block font-semibold">Najeto na stavbu</span>
+          <b class="text-sm text-white">${sumAllKm} km</b>
+        </div>
+        <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
+          <span class="text-[9px] text-rose-300 uppercase block font-semibold">Vyplatit lidem</span>
+          <b class="text-sm text-rose-400">${sumAllBasePay.toLocaleString()} Kč</b>
+        </div>
+        <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
+          <span class="text-[9px] text-emerald-300 uppercase block font-semibold">Faktura investor</span>
+          <b class="text-sm text-emerald-400">${grandTotalInvestor.toLocaleString()} Kč</b>
+        </div>
+      </div>
+
+      <!-- ROZPAD PODLE JEDNOTLIVÝCH LIDÍ -->
+      <div class="space-y-1.5 pt-1">
+        <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">Rozpis podle pracantů na stavbě:</span>
+        ${workersArray.map(w => {
+          const totalPayToWorker = w.baseWage + w.travelWage + w.extraPauchal;
+          return `
+            <div class="bg-slate-800/95 p-2.5 rounded-xl border border-sky-400/30 space-y-1.5">
+              <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+                <span class="font-black text-white text-xs flex items-center gap-1">
+                  <span>👤</span> <span>${w.name}</span>
+                  ${isUserBoss(w.name) ? '<span class="text-[9px] bg-amber-400 text-slate-950 px-1 rounded font-black">Šéf</span>' : ''}
+                </span>
+                <span class="text-[10px] text-sky-300 font-bold">
+                  ⏱ ${w.hours.toFixed(1)} hod ${w.kmTotal > 0 ? `| 🚗 ${w.kmTotal} km` : ''}
+                </span>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700">
+                  <span class="text-slate-400 text-[9px] block">Vyplatit pracovníkovi:</span>
+                  <b class="text-rose-400 text-xs">${totalPayToWorker.toLocaleString()} Kč</b>
+                  ${w.kmTotal > 0 ? `<span class="text-[9px] text-slate-400 block">(z toho cesťák: ${w.travelWage} Kč)</span>` : ''}
+                </div>
+                <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700">
+                  <span class="text-slate-400 text-[9px] block">Účtovat investorovi (vč. marže):</span>
+                  <b class="text-emerald-400 text-xs">${w.clientBill.toLocaleString()} Kč</b>
+                  <span class="text-[9px] text-sky-300 block">(zisk: +${(w.clientBill - totalPayToWorker).toLocaleString()} Kč)</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- MATERIÁL A FINÁLNÍ ZISK -->
+      <div class="bg-sky-950/90 p-2.5 rounded-xl border border-sky-600/50 flex justify-between items-center text-[11px] mt-2">
+        <span>🛒 <b>Materiál na stavbě:</b> ${totalMaterialCost.toLocaleString()} Kč</span>
+        <span class="text-amber-300 font-bold">Čistá marže šéfa: <b>+${bossTotalProfit.toLocaleString()} Kč</b></span>
+      </div>
+    `;
+  }
+
+  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE ---
   function renderBossMarkupSettings() {
     const section = document.getElementById('bossMarkupSettingsSection');
     const container = document.getElementById('bossMarkupInputsList');
@@ -959,6 +1161,7 @@
     } catch(e) {}
 
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   function getWorkerMarkup(bossName, workerName) {
@@ -1209,6 +1412,7 @@
     alert(`Směna #${shortId} byla trvale smazána ze systému.`);
     filterAdminShifts();
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   // SPOLEHLIVÁ ZMĚNA HESLA
@@ -1279,6 +1483,8 @@
         </div>
       </div>
     `).join('');
+
+    populateProjectManagerDropdown();
   }
 
   function populateUserFilter() {
@@ -1417,6 +1623,7 @@
 
     closeEditShiftModal();
     renderAll();
+    renderProjectManagerBreakdown();
     alert(`Směna #${getShortId(item.id)} byla upravena a přepočítána!`);
   }
 
@@ -1937,6 +2144,7 @@
   async function refreshTeamStatus() {
     await fetchAllFromCloud();
     renderTeamStatusList();
+    renderProjectManagerBreakdown();
     checkLiveShift();
   }
 
@@ -2089,6 +2297,7 @@
       cloudUsers[loggedUser].rateT = rT;
     }
     updateLiveCalculations();
+    renderProjectManagerBreakdown();
   }
 
   function loadUserRates() {
@@ -2274,6 +2483,7 @@
     populateProjects();
     await fetchAllFromCloud();
     renderAll();
+    renderProjectManagerBreakdown();
     alert(`Stavba přejmenována na "${trimmed}".`);
   }
 
@@ -2525,6 +2735,7 @@
 
     await fetchAllFromCloud();
     renderAll();
+    renderProjectManagerBreakdown();
     updateLiveCalculations();
     alert(`Směna #${getShortId(recordId)} úspěšně uložena!`);
   }
@@ -2621,6 +2832,7 @@
     await db.from('team_shifts').delete().eq('id', id);
     cloudShifts = cloudShifts.filter(s => s.id !== id);
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   function setPeriod(p) {
@@ -2771,7 +2983,6 @@
             if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
             if (!s.isMatPaid) unpaidMatCost += s.matCost;
           } else if (partnerEntry) {
-            // Parťák (např. Matěj): jeho hodiny a odměna se mu načtou do kasy!
             totalWorkForChart += (partnerEntry.wageWorkOnly || 0);
             if (!partnerEntry.isWorkPaid) {
               unpaidWorkWage += (partnerEntry.wageWorkOnly || 0);
