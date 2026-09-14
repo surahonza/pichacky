@@ -101,7 +101,7 @@
   <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden space-y-3">
 
-    <!-- HORNÍ LIŠTA (SYMETRICKÁ BEZ OTAZNÍKU) -->
+    <!-- HORNÍ LIŠTA (SYMETRICKÁ) -->
     <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
@@ -411,13 +411,13 @@
     </div>
   </div>
 
-  <!-- SPOLEČNÝ ADMIN PANEL (Z-60) - VČETNĚ ZMĚNY ŠÉFA ZAKÁZKY -->
+  <!-- SPOLEČNÝ ADMIN PANEL (Z-60) -->
   <div id="masterAdminModal" class="fixed inset-0 bg-black/85 z-[60] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-xl mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
         <div>
           <h3 class="font-black text-sm sm:text-base">🔒 Hlavní Správcovské Rozhraní</h3>
-          <p class="text-[10px] text-amber-400">Přístupy, šéfové, změna šéfa kšeftu a mazání směn</p>
+          <p class="text-[10px] text-amber-400">Přístupy, šéfové, oprávnění viditelnosti a správa kšeftů</p>
         </div>
         <button type="button" onclick="closeMasterAdminModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
@@ -432,6 +432,7 @@
         <!-- 2. PŘIDĚLENÍ / ODEBRÁNÍ STATUTU ŠÉFA -->
         <div class="space-y-2 pt-2 border-t">
           <span class="text-xs font-bold text-amber-700 block uppercase">2. 👑 Povýšení na Šéfa / Správa rolí:</span>
+          <p class="text-[10px] text-slate-500">Šéfové schvalují výplaty a vystupují jako volitelní šéfové zakázek:</p>
           <div class="flex gap-1.5 items-center">
             <select id="masterAdminBossUserSelect" onchange="updateBossToggleBtnUI()" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" id="btnToggleBossRole" onclick="toggleBossRoleAction()" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-xl text-xs font-black transition">
@@ -442,20 +443,26 @@
 
         <!-- 3. MATICE VIDITELNOSTI PRACÍ -->
         <div class="space-y-2 pt-2 border-t">
-          <span class="text-xs font-bold text-indigo-700 block uppercase">3. 👁️ Kdo smí vidět jaké práce:</span>
+          <span class="text-xs font-bold text-indigo-700 block uppercase">3. 👁️ Kdo smí vidět jaké práce (Matice oprávnění):</span>
+          <p class="text-[10px] text-slate-500">Vyber uživatele a přesně zaškrtni, které šéfy a které kolegy smí vidět v přehledu a kase:</p>
+          
           <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-2xl space-y-3">
             <div>
               <label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">Nastavuji viditelnost pro uživatele:</label>
               <select id="permTargetUserSelect" onchange="loadPermissionsUIForSelectedUser()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-bold outline-none"></select>
             </div>
+
             <div class="space-y-1 bg-white p-2 rounded-xl border border-slate-200">
               <span class="text-[10px] font-bold text-slate-700 block uppercase">Smí vidět práce dělané pro šéfy:</span>
               <div id="permBossCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
             </div>
+
             <div class="space-y-1 bg-white p-2 rounded-xl border border-slate-200">
               <span class="text-[10px] font-bold text-slate-700 block uppercase">Smí vidět práce ostatních kolegů:</span>
               <div id="permWorkersCheckboxes" class="flex flex-wrap gap-2 pt-1"></div>
+              <span class="text-[9px] text-slate-400 block pt-0.5">* Své vlastní práce a směny, kde byl zapsán jako parťák, vidí vždy.</span>
             </div>
+
             <button type="button" onclick="saveSelectedUserPermissions()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 rounded-xl text-xs shadow transition">
               💾 Uložit pravidla viditelnosti
             </button>
@@ -469,17 +476,21 @@
           <div id="masterAdminProjectAccessList" class="space-y-2 max-h-56 overflow-y-auto p-1"></div>
         </div>
 
-        <!-- 5. BEZPEČNÉ MAZÁNÍ SMĚN -->
+        <!-- 5. BEZPEČNÉ MAZÁNÍ SMĚN S VYHLEDÁVÁNÍM PODLE ID -->
         <div class="space-y-2 pt-2 border-t">
           <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-rose-700 block uppercase">5. 🗑️ Bezpečné Mazání záznamů:</span>
+            <span class="text-[10px] text-slate-400">Hledej např. #1024</span>
           </div>
+          
           <div class="flex gap-1.5">
-            <input type="text" id="adminShiftSearchInput" oninput="filterAdminShifts()" placeholder="Zadej ID (např. 4821), jméno nebo stavbu..." class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 outline-none font-semibold">
+            <input type="text" id="adminShiftSearchInput" oninput="filterAdminShifts()" placeholder="Zadej krátké ID (např. 4821), jméno nebo stavbu..." class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 outline-none font-semibold focus:bg-white focus:ring-2 focus:ring-rose-400">
           </div>
+
           <div id="adminShiftMatchCard" class="bg-rose-50/70 border border-rose-200 rounded-2xl p-3 text-xs space-y-2">
-            <div class="text-slate-500 text-center py-2">Vyber směnu ze seznamu níže.</div>
+            <div class="text-slate-500 text-center py-2">Vyber směnu ze seznamu níže nebo zadej ID pro náhled.</div>
           </div>
+
           <select id="masterAdminShiftSelect" onchange="showSelectedAdminShiftDetails()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
         </div>
 
@@ -501,36 +512,6 @@
             <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- INTERAKTIVNÍ PRŮVODCE APLIKACÍ (❓) -->
-  <div id="guideModal" class="fixed inset-0 bg-black/85 z-[80] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
-    <div class="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-          <span class="text-xl text-amber-400">❓</span>
-          <div>
-            <h3 class="font-black text-sm sm:text-base">Průvodce aplikací</h3>
-            <span id="guideStepCounter" class="text-[10px] text-slate-400">Krok 1 z 5</span>
-          </div>
-        </div>
-        <button type="button" onclick="closeGuideModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
-      </div>
-
-      <div class="p-5 overflow-y-auto space-y-4">
-        <div id="guideStepContent" class="space-y-2.5 text-xs text-slate-700"></div>
-      </div>
-
-      <div class="p-3 bg-slate-50 border-t flex justify-between items-center">
-        <button type="button" id="btnGuidePrev" onclick="navigateGuide(-1)" class="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition">
-          ‹ Předchozí
-        </button>
-        <div class="flex gap-1" id="guideDots"></div>
-        <button type="button" id="btnGuideNext" onclick="navigateGuide(1)" class="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition">
-          Další ›
-        </button>
       </div>
     </div>
   </div>
@@ -667,7 +648,7 @@
       <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
     </div>
 
-    <!-- MANAŽER STAVBY / ROZPAD PODLE LIDÍ -->
+    <!-- MANАŽER STAVBY / ROZPAD PODLE LIDÍ -->
     <div class="space-y-3 bg-gradient-to-br from-sky-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-sky-800/60">
       <div class="flex justify-between items-center border-b border-sky-700/60 pb-2">
         <div class="flex items-center gap-1.5">
@@ -728,6 +709,7 @@
         </div>
       </div>
 
+      <!-- SPECIÁLNÍ KASA PRO ŠÉFA -->
       <div id="bossFinancialSummaryBox" class="hidden bg-amber-50 border border-amber-300 p-3 rounded-xl space-y-2 text-xs">
         <span class="font-bold text-amber-950 block uppercase text-[10px] tracking-wider">👑 Vyúčtování zakázek (Investor vs. Kolegové):</span>
         <div class="grid grid-cols-2 gap-2 text-center">
@@ -742,6 +724,7 @@
         </div>
       </div>
 
+      <!-- GRAF -->
       <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
         <div class="flex justify-between items-center text-[11px] font-bold text-slate-700">
           <span>📊 Přehled výdělků v grafu:</span>
@@ -779,7 +762,7 @@
       </div>
     </div>
 
-    <!-- 3. ZÁZNAMY -->
+    <!-- 3. ZÁZNAMY (VČETNĚ ČASU, KM A ŠÉFA V KOMPAKTNÍM STAVU) -->
     <div class="space-y-3 pt-1">
       <div class="flex items-center justify-between">
         <span class="text-sm font-black text-slate-900 uppercase tracking-wider">📋 Záznamy prací</span>
@@ -1109,7 +1092,7 @@
     const sel = document.getElementById('newProjectBossSelect');
     if (!sel) return;
     const bosses = getBossList();
-    sel.innerHTML = bosses.map(b => `<option value="${b}">👨‍💼 Šéf ${b}</option>`).join('') + `<option value="Sám na sebe">👤 Sám na sebe (${loggedUser})</option>`;
+    sel.innerHTML = bosses.map(b => `<option value="${b}">👨‍💼 Šéf ${b}</option>`).join('') + `<option value="Sám na sebe">👤 Sám na sebe (${loggedUser})</option>` + `<option value="Jiří a Petr">👨‍💼 Jiří a Petr (Napůl)</option>`;
   }
 
   function renderNewProjectWorkerVisibilityOptions() {
@@ -1178,7 +1161,7 @@
     const createdBy = projObj.created_by || '';
     const visibleUsers = Array.isArray(projObj.visible_to_users) ? projObj.visible_to_users : [];
 
-    if (username === createdBy || username === boss || visibleUsers.includes(username)) return true;
+    if (username === createdBy || boss.includes(username) || visibleUsers.includes(username)) return true;
     if (visibleUsers.length === 0) return true;
     return false;
   }
@@ -1237,9 +1220,9 @@
   function canManageWorkerPayment(shiftItem, targetWorker) {
     const shiftBoss = shiftItem.boss || 'Jiří';
     const isTarget = (loggedUser === targetWorker);
-    const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
+    const isShiftBossUser = (shiftBoss.includes(loggedUser)) && isUserBoss(loggedUser);
     const isSelfModeBoss = (shiftBoss === 'Sám na sebe' && shiftItem.worker === loggedUser);
-    return isTarget || isShiftBossUser || isSelfModeBoss;
+    return isTarget || isShiftBossUser || isSelfModeBoss || isUserBoss(loggedUser);
   }
 
   async function toggleWorkerProjectPayments(projectName, workerName, type) {
@@ -1287,7 +1270,7 @@
     renderProjectManagerBreakdown();
   }
 
-  // --- MANAŽER STAVBY / ROZPAD PODLE LIDÍ + ROZPIS DNŮ A ÚKONŮ ---
+  // --- MANАŽER STAVBY / ROZPAD PODLE LIDÍ + ROZPIS DNŮ A ÚKONŮ ---
   function populateProjectManagerDropdown() {
     const sel = document.getElementById('projectManagerSelect');
     if (!sel) return;
@@ -1325,7 +1308,9 @@
     let totalMaterialCost = 0;
     let allMaterialsPaid = true;
 
-    const isCurrentUserBossOfProject = isUserBoss(loggedUser) || projShifts.some(s => s.boss === 'Sám na sebe' && s.worker === loggedUser);
+    const projObj = cloudProjectsData.find(p => p.name === selectedProj);
+    const projBoss = projObj ? (projObj.boss || 'Jiří') : 'Jiří';
+    const isCurrentUserBossOfProject = isUserBoss(loggedUser) || projBoss.includes(loggedUser) || projShifts.some(s => s.boss === 'Sám na sebe' && s.worker === loggedUser);
 
     projShifts.forEach(s => {
       totalMaterialCost += (s.matCost || 0);
@@ -1357,7 +1342,7 @@
       if (!s.isKmPaid) driverStats.unpaidTravelWage += s.wageTravelOnly;
 
       const activeBossName = (s.boss === 'Sám na sebe') ? s.worker : (s.boss || 'Jiří');
-      const isDriverSelfOrBoss = (s.boss === 'Sám na sebe' && s.worker === loggedUser) || isUserBoss(s.worker);
+      const isDriverSelfOrBoss = (s.boss === 'Sám na sebe' && s.worker === loggedUser) || isUserBoss(loggedUser);
       const driverMarkup = isDriverSelfOrBoss ? 0 : getWorkerMarkup(activeBossName, s.worker);
       
       driverStats.clientBill += s.wageWorkOnly + (s.extraPauchal || 0) + s.wageTravelOnly + Math.round(s.hours * driverMarkup);
@@ -1433,7 +1418,6 @@
         </div>
       ` : ''}
 
-      <!-- ROZPAD PODLE LIDÍ -->
       <div class="space-y-2 pt-2">
         <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">Rozpis podle pracantů na stavbě:</span>
         ${workersArray.map(w => {
@@ -1496,7 +1480,6 @@
         }).join('')}
       </div>
 
-      <!-- MATERIÁL -->
       ${totalMaterialCost > 0 ? `
         <div class="bg-sky-950/90 p-2.5 rounded-xl border border-sky-600/50 flex flex-wrap justify-between items-center gap-2 text-[11px] mt-2">
           <div>
@@ -1515,7 +1498,7 @@
         </div>
       `}
 
-      <!-- ROZPAD PRACOVNÍCH DNŮ A ÚKONŮ NA TÉTO STAVBĚ (VČETNĚ PENĚZ ZA HODINY A KM) -->
+      <!-- ROZPAD PRACOVNÍCH DNŮ A ÚKONŮ NA TÉTO STAVBĚ (VČETNĚ DETILŮ ODKAZUJÍCÍCH NA ZÁZNAMY) -->
       <div class="pt-3 border-t border-sky-700/60 space-y-1.5">
         <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">📅 Pracovní dny a úkony na této stavbě:</span>
         <div class="space-y-1.5">
@@ -1618,7 +1601,7 @@
     return 50;
   }
 
-  // --- ADMIN MENU: SPRÁVA KŠEFTŮ A ZMĚNA ŠÉFA KŠEFTU ---
+  // --- ADMIN MENU: SPRÁVA KŠEFTŮ & ZMĚNA ŠÉFA KŠEFTU ---
   function renderAdminProjectAccessList() {
     const container = document.getElementById('masterAdminProjectAccessList');
     if (!container) return;
