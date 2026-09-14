@@ -13,7 +13,6 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230f172a'/%3E%3Ccircle cx='256' cy='256' r='180' fill='%231e293b' stroke='%2338bdf8' stroke-width='10'/%3E%3Cpath d='M160 300 C160 210, 352 210, 352 300 Z' fill='%23f59e0b'/%3E%3Crect x='130' y='295' width='252' height='26' rx='12' fill='%23d97706'/%3E%3Crect x='240' y='180' width='32' height='55' rx='8' fill='%23d97706'/%3E%3Ccircle cx='256' cy='360' r='38' fill='%230284c7'/%3E%3Cpath d='M256 340 L256 362 L272 362' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 
-  <!-- DYNAMICKÝ PWA MANIFEST -->
   <script>
     const manifestJson = {
       name: "Pracovní Deník & Píchačky",
@@ -36,7 +35,6 @@
     document.head.appendChild(link);
   </script>
 
-  <!-- KNIHOVNY -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -313,7 +311,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA (z-[75]) -->
+  <!-- INTERAKTIVNÍ MAPA -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-[75] hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -343,7 +341,7 @@
     </div>
   </div>
 
-  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY (z-[75]) -->
+  <!-- MODÁLNÍ OKNO PRO ÚPRAVU CELÉHO ZÁZNAMU SMĚNY -->
   <div id="editShiftModal" class="fixed inset-0 bg-black/85 z-[75] hidden flex flex-col justify-center p-3 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
@@ -417,7 +415,7 @@
       <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
         <div>
           <h3 class="font-black text-sm sm:text-base">🔒 Hlavní Správcovské Rozhraní</h3>
-          <p class="text-[10px] text-amber-400">Přístupy, šéfové, oprávnění viditelnosti a mazání směn</p>
+          <p class="text-[10px] text-amber-400">Přístupy, šéfové, oprávnění viditelnosti a správa kšeftů</p>
         </div>
         <button type="button" onclick="closeMasterAdminModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
@@ -469,10 +467,17 @@
           </div>
         </div>
 
-        <!-- 4. BEZPEČNÉ MAZÁNÍ SMĚN S VYHLEDÁVÁNÍM PODLE ID -->
+        <!-- 4. NOVINKA: PŘEHLED VŠECH KŠEFTŮ A NASTAVENÍ KDO KTERÝ KŠEFT UVIDÍ -->
+        <div class="space-y-2 pt-2 border-t">
+          <span class="text-xs font-bold text-purple-800 block uppercase">4. 🏢 Správa kšeftů & individuální viditelnost:</span>
+          <p class="text-[10px] text-slate-500">Zde vidíš, kdo jaký kšeft sehnal/založil, a můžeš nastavit přesně, komu se má zobrazovat:</p>
+          <div id="masterAdminCustomProjectAccessList" class="space-y-2 max-h-56 overflow-y-auto p-1"></div>
+        </div>
+
+        <!-- 5. BEZPEČNÉ MAZÁNÍ SMĚN S VYHLEDÁVÁNÍM PODLE ID -->
         <div class="space-y-2 pt-2 border-t">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-rose-700 block uppercase">4. 🗑️ Bezpečné Mazání záznamů:</span>
+            <span class="text-xs font-bold text-rose-700 block uppercase">5. 🗑️ Bezpečné Mazání záznamů:</span>
             <span class="text-[10px] text-slate-400">Hledej např. #1024</span>
           </div>
           
@@ -487,9 +492,9 @@
           <select id="masterAdminShiftSelect" onchange="showSelectedAdminShiftDetails()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
         </div>
 
-        <!-- 5. RESET HESLA -->
+        <!-- 6. RESET HESLA -->
         <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-slate-700 block uppercase">5. Změnit heslo uživateli:</span>
+          <span class="text-xs font-bold text-slate-700 block uppercase">6. Změnit heslo uživateli:</span>
           <div class="flex gap-1.5">
             <select id="masterAdminResetUser" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <input type="password" id="masterAdminNewPass" placeholder="Nové heslo" class="flex-1 border border-slate-300 rounded-xl p-2 text-xs bg-white outline-none">
@@ -497,9 +502,9 @@
           </div>
         </div>
 
-        <!-- 6. MAZÁNÍ ÚČTŮ -->
+        <!-- 7. MAZÁNÍ ÚČTŮ -->
         <div class="space-y-1.5 pt-2 border-t">
-          <span class="text-xs font-bold text-rose-700 block uppercase">6. Smazat uživatele z databáze:</span>
+          <span class="text-xs font-bold text-rose-700 block uppercase">7. Smazat uživatele z databáze:</span>
           <div class="flex gap-1.5">
             <select id="masterAdminDeleteUser" class="flex-1 border border-rose-300 rounded-xl p-2 text-xs bg-white font-semibold outline-none"></select>
             <button type="button" onclick="masterAdminDeleteAccount()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Smazat účet</button>
@@ -570,7 +575,7 @@
         </div>
       </div>
 
-      <!-- SEKCE PROVIZÍ: DOSTUPNÁ PRO KAŽDÉHO (KDYŽ DĚLÁ KŠEFT NA SEBE) -->
+      <!-- SEKCE PROVIZÍ -->
       <div id="bossMarkupSettingsSection" class="border-t pt-3 space-y-2">
         <span class="text-[11px] font-bold text-amber-700 uppercase block tracking-wider">👑 Moje provize z kolegů (když dělám na sebe)</span>
         <p class="text-[10px] text-slate-500">Zadej kolik Kč/h si připočítáš k hodinovce investora za práci daného kolegy:</p>
@@ -608,7 +613,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO) -->
+  <!-- BOČNÍ PANEL 2: TÝM, KASA, ROZPAD STAVBY & ZÁZNAMY (☰ VPRAVO) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
@@ -620,14 +625,14 @@
       <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
     </div>
 
-    <!-- MANAŽER STAVBY / ROZPAD PODLE LIDÍ (S TLAČÍTKY NA PROPLACENÍ) -->
+    <!-- MANAŽER STAVBY / ROZPAD PODLE LIDÍ -->
     <div class="space-y-3 bg-gradient-to-br from-sky-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-sky-800/60">
       <div class="flex justify-between items-center border-b border-sky-700/60 pb-2">
         <div class="flex items-center gap-1.5">
           <span class="text-base">🏗️</span>
           <div>
             <span class="text-xs font-black uppercase tracking-wide text-sky-200 block">Vyúčtování a rozpad stavby</span>
-            <span class="text-[10px] text-sky-300">Kompletní kalkulace práce, km a marže</span>
+            <span class="text-[10px] text-sky-300">Kalkulace práce, km a marže</span>
           </div>
         </div>
       </div>
@@ -681,7 +686,7 @@
         </div>
       </div>
 
-      <!-- SPECIÁLNÍ KASA PRO ŠÉFA / PRO PRÁCI NA SEBE -->
+      <!-- SPECIÁLNÍ KASA PRO ŠÉFA -->
       <div id="bossFinancialSummaryBox" class="hidden bg-amber-50 border border-amber-300 p-3 rounded-xl space-y-2 text-xs">
         <span class="font-bold text-amber-950 block uppercase text-[10px] tracking-wider">👑 Vyúčtování zakázek (Investor vs. Kolegové):</span>
         <div class="grid grid-cols-2 gap-2 text-center">
@@ -937,12 +942,12 @@
     }, 250);
   }
 
-  // --- HROMADNÉ I INDIVIDUÁLNÍ PROPLACENÍ Z MANAŽERA STAVBY ---
+  // --- HROMADNÉ I INDIVIDUÁLNÍ PROPLACENÍ ZE STAVBY ---
   async function payWholeProjectForAll(projectName) {
     const projShifts = cloudShifts.filter(s => s.project === projectName && isShiftVisibleForUser(s, loggedUser));
     if (projShifts.length === 0) return;
 
-    if (!confirm(`Opravdu označit JAKO ZAPLACENÉ všechny směny a všechny lidi na stavbě "${projectName}"?`)) return;
+    if (!confirm(`Opravdu označit JAKO ZAPLACENÉ všechny směny, parťáky i kilometry na stavbě "${projectName}"?`)) return;
 
     for (const s of projShifts) {
       s.isWorkPaid = true;
@@ -958,14 +963,49 @@
 
     renderAll();
     renderProjectManagerBreakdown();
-    alert(`Celá zakázka "${projectName}" byla proplacena všem pracovníkům!`);
+    alert(`Celá zakázka "${projectName}" byla proplacena všem!`);
+  }
+
+  async function toggleProjectMaterialPaid(projectName) {
+    const projShifts = cloudShifts.filter(s => s.project === projectName && isShiftVisibleForUser(s, loggedUser));
+    if (projShifts.length === 0) return;
+
+    let hasUnpaidMat = false;
+    projShifts.forEach(s => {
+      if (!s.isMatPaid && (s.matCost > 0 || (s.matPurchases || []).length > 0)) hasUnpaidMat = true;
+    });
+
+    const targetState = hasUnpaidMat;
+
+    for (const s of projShifts) {
+      if (s.matCost > 0 || (s.matPurchases || []).length > 0) {
+        s.isMatPaid = targetState;
+        (s.matPurchases || []).forEach(m => m.isPaid = targetState);
+
+        await db.from('team_shifts').update({
+          is_mat_paid: targetState,
+          mat_desc: JSON.stringify(s.matPurchases || [])
+        }).eq('id', s.id);
+      }
+    }
+
+    renderAll();
+    renderProjectManagerBreakdown();
+  }
+
+  // Kdo může odškrtávat: Šéf zakázky, nebo sám sobě
+  function canManageWorkerPayment(shiftItem, targetWorker) {
+    const shiftBoss = shiftItem.boss || 'Jiří';
+    const isTarget = (loggedUser === targetWorker);
+    const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
+    const isSelfModeBoss = (shiftBoss === 'Sám na sebe' && shiftItem.worker === loggedUser);
+    return isTarget || isShiftBossUser || isSelfModeBoss;
   }
 
   async function toggleWorkerProjectPayments(projectName, workerName, type) {
     const projShifts = cloudShifts.filter(s => s.project === projectName && isShiftVisibleForUser(s, loggedUser));
     if (projShifts.length === 0) return;
 
-    // Zjistíme, zda má pracovník nějakou nezaplacenou část
     let hasUnpaid = false;
     projShifts.forEach(s => {
       if (s.worker === workerName) {
@@ -977,9 +1017,11 @@
       });
     });
 
-    const targetState = hasUnpaid; // Pokud něco dluží, proplatíme (true). Pokud už měl vše, odškrtneme (false).
+    const targetState = hasUnpaid;
 
     for (const s of projShifts) {
+      if (!canManageWorkerPayment(s, workerName)) continue;
+
       let needsUpdate = false;
       if (s.worker === workerName) {
         if (type === 'work' || type === 'all') { s.isWorkPaid = targetState; needsUpdate = true; }
@@ -1041,11 +1083,17 @@
 
     const workerStats = {};
     let totalMaterialCost = 0;
+    let allMaterialsPaid = true;
+
+    // Zjistíme, zda je aktuální uživatel šéfem této zakázky
+    const isCurrentUserBossOfProject = isUserBoss(loggedUser) || projShifts.some(s => s.boss === 'Sám na sebe' && s.worker === loggedUser);
 
     projShifts.forEach(s => {
       totalMaterialCost += (s.matCost || 0);
+      if (!s.isMatPaid && (s.matCost > 0 || (s.matPurchases || []).length > 0)) {
+        allMaterialsPaid = false;
+      }
 
-      // 1. Hlavní pracovník (řidič)
       if (!workerStats[s.worker]) {
         workerStats[s.worker] = {
           name: s.worker,
@@ -1075,7 +1123,6 @@
       
       driverStats.clientBill += s.wageWorkOnly + (s.extraPauchal || 0) + s.wageTravelOnly + Math.round(s.hours * driverMarkup);
 
-      // 2. Parťáci na dané směně
       (s.partners || []).forEach(p => {
         if (!workerStats[p.name]) {
           workerStats[p.name] = {
@@ -1096,15 +1143,10 @@
         pStats.baseWage += (p.wageWorkOnly || 0);
         if (!p.isWorkPaid) pStats.unpaidWorkWage += (p.wageWorkOnly || 0);
 
-        const pMarkup = getWorkerMarkup(activeLeaderNameForShift(s), p.name);
+        const pMarkup = getWorkerMarkup((s.boss === 'Sám na sebe' ? s.worker : (s.boss || 'Jiří')), p.name);
         pStats.clientBill += (p.wageWorkOnly || 0) + Math.round(p.hours * pMarkup);
       });
     });
-
-    function activeLeaderNameForShift(shift) {
-      if (shift.boss === 'Sám na sebe') return shift.worker;
-      return shift.boss || 'Jiří';
-    }
 
     const workersArray = Object.values(workerStats);
     let sumAllHours = 0;
@@ -1125,7 +1167,6 @@
     const bossTotalProfit = grandTotalInvestor - sumAllBasePay - totalMaterialCost;
 
     container.innerHTML = `
-      <!-- SOUHRNNÉ KARTY STAVBY -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-center">
         <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
           <span class="text-[9px] text-sky-300 uppercase block font-semibold">Celkem odpracováno</span>
@@ -1145,14 +1186,15 @@
         </div>
       </div>
 
-      <!-- TLAČÍTKO PRO VYPLACENÍ VŠECH NA JEDNO KLIKNUTÍ -->
-      <div class="pt-1">
-        <button type="button" onclick="payWholeProjectForAll('${selectedProj.replace(/'/g, "\\'")}')" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black py-2.5 px-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5">
-          <span>✓</span> Vyplatit celou zakázku všem najednou
-        </button>
-      </div>
+      <!-- TLAČÍTKO PRO VYPLACENÍ VŠECH (POUZE PRO ŠÉFA) -->
+      ${isCurrentUserBossOfProject ? `
+        <div class="pt-1">
+          <button type="button" onclick="payWholeProjectForAll('${selectedProj.replace(/'/g, "\\'")}')" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black py-2.5 px-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5">
+            <span>✓</span> Vyplatit celou zakázku všem najednou
+          </button>
+        </div>
+      ` : ''}
 
-      <!-- ROZPAD PODLE JEDNOTLIVÝCH LIDÍ S TLAČÍTKY NA PROPLACENÍ -->
       <div class="space-y-2 pt-2">
         <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">Rozpis podle pracantů na stavbě:</span>
         ${workersArray.map(w => {
@@ -1160,6 +1202,7 @@
           const isWorkDonePaid = (w.unpaidWorkWage === 0);
           const isKmDonePaid = (w.unpaidTravelWage === 0);
           const isFullyPaid = (isWorkDonePaid && isKmDonePaid);
+          const canManageThisPerson = isCurrentUserBossOfProject || (w.name === loggedUser);
 
           return `
             <div class="bg-slate-800/95 p-2.5 rounded-xl border border-sky-400/30 space-y-2">
@@ -1186,37 +1229,52 @@
                 </div>
               </div>
 
-              <!-- TLAČÍTKA PRO INDIVIDUÁLNÍ ZAPLACENÍ -->
-              <div class="flex flex-wrap gap-1.5 pt-0.5 border-t border-slate-700/60 items-center justify-between">
-                <div class="flex gap-1">
-                  <!-- Jen práce -->
-                  <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'work')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isWorkDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
-                    ${isWorkDonePaid ? '✓ Práce zaplacena' : '⏱ Zaplatit práci'}
-                  </button>
-                  
-                  <!-- Jen km (pokud řídil) -->
-                  ${w.kmTotal > 0 ? `
-                    <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'km')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isKmDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
-                      ${isKmDonePaid ? '✓ Km zaplaceny' : '🚗 Zaplatit km'}
+              ${canManageThisPerson ? `
+                <div class="flex flex-wrap gap-1.5 pt-0.5 border-t border-slate-700/60 items-center justify-between">
+                  <div class="flex gap-1">
+                    <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'work')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isWorkDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
+                      ${isWorkDonePaid ? '✓ Práce zaplacena' : '⏱ Zaplatit práci'}
                     </button>
-                  ` : ''}
-                </div>
+                    
+                    ${w.kmTotal > 0 ? `
+                      <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'km')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isKmDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
+                        ${isKmDonePaid ? '✓ Km zaplaceny' : '🚗 Zaplatit km'}
+                      </button>
+                    ` : ''}
+                  </div>
 
-                <!-- Celá výplata člověku (práce + km) -->
-                <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'all')" class="px-2.5 py-1 rounded-lg text-[10px] font-black transition ${isFullyPaid ? 'bg-emerald-500 text-slate-950 shadow-xs' : 'bg-amber-600 hover:bg-amber-500 text-white'}">
-                  ${isFullyPaid ? '✓ Vše vyplaceno' : '💰 Vyplatit celek'}
-                </button>
-              </div>
+                  <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'all')" class="px-2.5 py-1 rounded-lg text-[10px] font-black transition ${isFullyPaid ? 'bg-emerald-500 text-slate-950 shadow-xs' : 'bg-amber-600 hover:bg-amber-500 text-white'}">
+                    ${isFullyPaid ? '✓ Vše vyplaceno' : '💰 Vyplatit celek'}
+                  </button>
+                </div>
+              ` : `
+                <div class="pt-0.5 border-t border-slate-700/60 text-[10px] text-slate-400 text-right font-medium">
+                  ${isFullyPaid ? '✓ Vyplaceno' : '○ Čeká na výplatu od šéfa'}
+                </div>
+              `}
             </div>
           `;
         }).join('')}
       </div>
 
-      <!-- MATERIÁL A FINÁLNÍ ZISK -->
-      <div class="bg-sky-950/90 p-2.5 rounded-xl border border-sky-600/50 flex justify-between items-center text-[11px] mt-2">
-        <span>🛒 <b>Materiál na stavbě:</b> ${totalMaterialCost.toLocaleString()} Kč</span>
-        <span class="text-amber-300 font-bold">Čistá marže šéfa: <b>+${bossTotalProfit.toLocaleString()} Kč</b></span>
-      </div>
+      <!-- MATERIÁL (Tlačítko jen když byl koupen) -->
+      ${totalMaterialCost > 0 ? `
+        <div class="bg-sky-950/90 p-2.5 rounded-xl border border-sky-600/50 flex flex-wrap justify-between items-center gap-2 text-[11px] mt-2">
+          <div>
+            <span>🛒 <b>Materiál celkem:</b> ${totalMaterialCost.toLocaleString()} Kč</span>
+            <span class="text-[10px] text-amber-300 block font-semibold">Čistá marže šéfa: +${bossTotalProfit.toLocaleString()} Kč</span>
+          </div>
+          ${isCurrentUserBossOfProject ? `
+            <button type="button" onclick="toggleProjectMaterialPaid('${selectedProj.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-black transition shadow-xs ${allMaterialsPaid ? 'bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}">
+              ${allMaterialsPaid ? '✓ Materiál proplacen' : '🛒 Zaplatit materiál'}
+            </button>
+          ` : ''}
+        </div>
+      ` : `
+        <div class="bg-sky-950/90 p-2 rounded-xl border border-sky-600/50 text-right text-[11px] mt-2">
+          <span class="text-amber-300 font-bold">Čistá marže šéfa: <b>+${bossTotalProfit.toLocaleString()} Kč</b></span>
+        </div>
+      `}
     `;
   }
 
@@ -1275,6 +1333,66 @@
     return 50;
   }
 
+  // --- ADMIN MENU: INDIVIDUÁLNÍ NASTAVENÍ VIDITELNOSTI KŠEFTŮ ---
+  function renderAdminProjectAccessList() {
+    const container = document.getElementById('masterAdminCustomProjectAccessList');
+    if (!container) return;
+
+    if (cloudShifts.length === 0) {
+      container.innerHTML = '<span class="text-[10px] text-slate-400">Žádné směny v systému.</span>';
+      return;
+    }
+
+    const allUsers = Object.keys(cloudUsers);
+
+    container.innerHTML = cloudShifts.map(s => {
+      const shortId = getShortId(s.id);
+      const visibleUsers = Array.isArray(s.visibleToUsers) ? s.visibleToUsers : [];
+
+      return `
+        <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs space-y-1.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-mono bg-slate-900 text-amber-300 font-black px-1.5 py-0.5 rounded text-[10px]">#${shortId}</span>
+              <span class="font-black text-slate-800 ml-1">${s.project}</span>
+            </div>
+            <span class="text-[10px] font-bold text-sky-800 bg-sky-100 px-1.5 py-0.5 rounded">Sehnal/Založil: ${s.worker}</span>
+          </div>
+          <div class="text-[10px] text-slate-500">Režim: <b>${s.boss || 'Jiří'}</b> | Datum: ${formatCzechDate(s.date)}</div>
+
+          <div class="pt-1 border-t border-slate-200">
+            <span class="text-[9px] font-bold text-slate-600 block uppercase">Kdo smí tento kšeft vidět:</span>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              ${allUsers.map(u => {
+                const isAuto = (u === s.worker || (s.partners || []).some(p => p.name === u));
+                const isChecked = isAuto || visibleUsers.includes(u);
+                return `
+                  <label class="flex items-center gap-1 bg-white border border-slate-300 px-1.5 py-0.5 rounded text-[10px] cursor-pointer">
+                    <input type="checkbox" onchange="toggleProjectShiftVisibility(${s.id}, '${u}', this.checked)" ${isChecked ? 'checked' : ''} ${isAuto ? 'disabled' : ''} class="w-3 h-3 text-purple-600">
+                    <span class="${isAuto ? 'font-bold text-slate-800' : 'text-slate-600'}">${u}</span>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function toggleProjectShiftVisibility(shiftId, username, isChecked) {
+    const shift = cloudShifts.find(s => s.id === shiftId);
+    if (!shift) return;
+
+    let list = Array.isArray(shift.visibleToUsers) ? [...shift.visibleToUsers] : [];
+    if (isChecked && !list.includes(username)) list.push(username);
+    if (!isChecked) list = list.filter(u => u !== username);
+
+    shift.visibleToUsers = list;
+    await db.from('team_shifts').update({ visible_to_users: JSON.stringify(list) }).eq('id', shiftId);
+    renderAll();
+  }
+
   // --- MASTER ADMIN ROZHRANÍ ---
   function openMasterAdminModal() {
     const entered = prompt("Zadej správcovské heslo (Master PIN):");
@@ -1323,6 +1441,7 @@
 
     updateBossToggleBtnUI();
     loadPermissionsUIForSelectedUser();
+    renderAdminProjectAccessList();
     filterAdminShifts();
   }
 
@@ -1367,6 +1486,7 @@
     updateAppHeaderRole();
     renderTeamStatusList();
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   function loadPermissionsUIForSelectedUser() {
@@ -1518,7 +1638,6 @@
     renderProjectManagerBreakdown();
   }
 
-  // SPOLEHLIVÁ ZMĚNA HESLA
   async function masterAdminChangePass() {
     const target = document.getElementById('masterAdminResetUser').value;
     const newPass = document.getElementById('masterAdminNewPass').value.trim();
@@ -2098,6 +2217,11 @@
             try { partnersData = JSON.parse(s.partners_json); } catch(e) { partnersData = []; }
           }
 
+          let visibleUsers = [];
+          if (s.visible_to_users) {
+            try { visibleUsers = JSON.parse(s.visible_to_users); } catch(e) {}
+          }
+
           return {
             id: s.id, worker: s.worker, project: s.project, date: s.date, t1: s.t1, t2: s.t2,
             hours: Number(s.hours) || 0, rateH: s.rate_h || 300, rateK: s.rate_k || 7, wageWorkOnly: s.wage_work_only || 0,
@@ -2107,7 +2231,8 @@
             isWorkPaid: s.is_work_paid, isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
             isMatPaid: s.is_mat_paid, gps: s.gps, boss: s.boss || 'Jiří',
             partners: partnersData,
-            photosLink: s.photos_link || ''
+            photosLink: s.photos_link || '',
+            visibleToUsers: visibleUsers
           };
         });
       }
@@ -2808,7 +2933,8 @@
       gps: finalGpsText,
       boss: selectedBoss,
       partners_json: JSON.stringify(partnersList),
-      photos_link: photosLink
+      photos_link: photosLink,
+      visible_to_users: JSON.stringify([])
     };
 
     const { error } = await db.from('team_shifts').insert([payload]);
@@ -2850,14 +2976,6 @@
     const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
     const isSelfModeBoss = (shiftBoss === 'Sám na sebe' && isCreator);
     return isCreator || isPartner || isShiftBossUser || isSelfModeBoss || isUserBoss(loggedUser);
-  }
-
-  function canManageWorkerPayment(shiftItem, targetWorker) {
-    const shiftBoss = shiftItem.boss || 'Jiří';
-    const isTarget = (loggedUser === targetWorker);
-    const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
-    const isSelfModeBoss = (shiftBoss === 'Sám na sebe' && shiftItem.worker === loggedUser);
-    return isTarget || isShiftBossUser || isSelfModeBoss || isUserBoss(loggedUser);
   }
 
   async function toggleWorkPaid(id) {
@@ -2971,11 +3089,17 @@
     return true;
   }
 
+  // --- LOGIKA VIDITELNOSTI (VČETNĚ INDIVIDUÁLNÍHO POVOLENÍ KŠEFTU) ---
   function isShiftVisibleForUser(s, username) {
     const isCreator = (s.worker === username);
     const isPartner = (s.partners || []).some(p => p.name === username);
 
     if (isCreator || isPartner) return true;
+
+    // Individuální povolení kšeftu adminem:
+    if (Array.isArray(s.visibleToUsers) && s.visibleToUsers.includes(username)) {
+      return true;
+    }
 
     const shiftBoss = s.boss || 'Jiří';
     const perms = getUserPermissions(username);
@@ -3064,7 +3188,6 @@
           if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
           if (!s.isMatPaid) unpaidMatCost += s.matCost;
         } else {
-          // Běžný pracovník (např. Jan nebo Matěj)
           if (isCreator) {
             const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
             
@@ -3090,7 +3213,6 @@
             if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
             if (!s.isMatPaid) unpaidMatCost += s.matCost;
           } else if (partnerEntry) {
-            // Parťák (např. Matěj): hodiny a odměna se mu načtou do kasy!
             totalWorkForChart += (partnerEntry.wageWorkOnly || 0);
             if (!partnerEntry.isWorkPaid) {
               unpaidWorkWage += (partnerEntry.wageWorkOnly || 0);
@@ -3156,7 +3278,6 @@
       div.className = "p-3 rounded-2xl border text-xs space-y-2.5 bg-white border-slate-200 shadow-xs";
       
       div.innerHTML = `
-        <!-- HLAVIČKA ZÁZNAMU S KRÁTKÝM ID -->
         <div class="flex flex-wrap sm:flex-nowrap justify-between items-start gap-1.5 border-b border-slate-100 pb-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <span class="font-mono bg-slate-900 text-amber-300 font-extrabold px-1.5 py-0.5 rounded-md text-[11px] shadow-2xs">#${shortId}</span>
@@ -3173,7 +3294,6 @@
           </div>
         </div>
 
-        <!-- HLAVNÍ PRACOVNÍK -->
         <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
           <div class="flex justify-between items-center text-slate-800 font-bold text-[11px] border-b border-slate-200 pb-1">
             <span>👤 ${r.worker} (hlavní / řidič)</span>
@@ -3220,7 +3340,6 @@
           ` : ''}
         </div>
 
-        <!-- PARŤÁCI NA ZAKÁZCE - SE VŠEMI VÝSLEDKY TUČNĚ -->
         ${r.partners && r.partners.length > 0 ? `
           <div class="space-y-1.5 pt-0.5">
             <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
@@ -3259,7 +3378,6 @@
 
         ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl border border-slate-100">${r.desc}</div>` : ''}
         
-        <!-- TLAČÍTKO PRO OTEVŘENÍ ODKAZU NA GOOGLE FOTKY -->
         ${r.photosLink ? `
           <div class="pt-0.5">
             <a href="${r.photosLink}" target="_blank" rel="noopener noreferrer" class="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-xs transition text-xs">
@@ -3278,7 +3396,6 @@
           </div>
         ` : ''}
 
-        <!-- NÁKUPY MATERIÁLU -->
         ${r.matPurchases && r.matPurchases.length > 0 && r.matCost > 0 ? `
           <div class="p-2.5 rounded-xl border bg-amber-50/60 border-amber-200 space-y-2">
             <div class="flex justify-between items-center text-amber-950 font-bold text-xs border-b border-amber-200/50 pb-1">
@@ -3304,7 +3421,6 @@
           </div>
         ` : ''}
 
-        <!-- POLOHA A TLAČÍTKO PRO ZOBRAZENÍ NA MAPĚ -->
         ${r.gps ? `
           <div class="flex items-center justify-between bg-sky-50/60 p-2 rounded-xl border border-sky-100">
             <div class="text-sky-800 text-[10px] truncate max-w-[200px] sm:max-w-xs">
