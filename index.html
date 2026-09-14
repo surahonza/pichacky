@@ -101,7 +101,7 @@
   <!-- 2. HLAVNÍ APLIKACE -->
   <div id="appScreen" class="hidden space-y-3">
 
-    <!-- HORNÍ LIŠTA S REFRESHEM -->
+    <!-- HORNÍ LIŠTA -->
     <div class="bg-slate-900 text-white p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleSettingsMenu(true)" title="Nastavení" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-base flex items-center justify-center w-10 h-10 border border-slate-700 transition">
@@ -608,7 +608,7 @@
     </div>
   </div>
 
-  <!-- BOČNÍ PANEL 2: TÝM, KASA, ROZPAD STAVBY & ZÁZNAMY (☰ VPRAVO) -->
+  <!-- BOČNÍ PANEL 2: TÝM, KASA, GRAF & ZÁZNAMY (☰ VPRAVO) -->
   <div id="statsBackdrop" onclick="toggleStatsMenu(false)" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-xs"></div>
   <div id="statsMenu" class="fixed top-0 right-0 h-full w-[92%] sm:w-[500px] md:w-[540px] bg-white z-50 shadow-2xl p-4 sm:p-5 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out space-y-5">
     
@@ -620,7 +620,7 @@
       <button type="button" onclick="toggleStatsMenu(false)" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
     </div>
 
-    <!-- NOVINKA: MANAŽER STAVBY / ROZPAD PODLE LIDÍ -->
+    <!-- MANAŽER STAVBY / ROZPAD PODLE LIDÍ (S TLAČÍTKY NA PROPLACENÍ) -->
     <div class="space-y-3 bg-gradient-to-br from-sky-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-sky-800/60">
       <div class="flex justify-between items-center border-b border-sky-700/60 pb-2">
         <div class="flex items-center gap-1.5">
@@ -937,13 +937,80 @@
     }, 250);
   }
 
-  // --- NOVINKA: ROZPAD ZAKÁZKY PODLE LIDÍ (HODINY, KM, DLUHY, FAKTURA) ---
+  // --- HROMADNÉ I INDIVIDUÁLNÍ PROPLACENÍ Z MANAŽERA STAVBY ---
+  async function payWholeProjectForAll(projectName) {
+    const projShifts = cloudShifts.filter(s => s.project === projectName && isShiftVisibleForUser(s, loggedUser));
+    if (projShifts.length === 0) return;
+
+    if (!confirm(`Opravdu označit JAKO ZAPLACENÉ všechny směny a všechny lidi na stavbě "${projectName}"?`)) return;
+
+    for (const s of projShifts) {
+      s.isWorkPaid = true;
+      s.isKmPaid = true;
+      (s.partners || []).forEach(p => { p.isWorkPaid = true; });
+
+      await db.from('team_shifts').update({
+        is_work_paid: true,
+        is_km_paid: true,
+        partners_json: JSON.stringify(s.partners)
+      }).eq('id', s.id);
+    }
+
+    renderAll();
+    renderProjectManagerBreakdown();
+    alert(`Celá zakázka "${projectName}" byla proplacena všem pracovníkům!`);
+  }
+
+  async function toggleWorkerProjectPayments(projectName, workerName, type) {
+    const projShifts = cloudShifts.filter(s => s.project === projectName && isShiftVisibleForUser(s, loggedUser));
+    if (projShifts.length === 0) return;
+
+    // Zjistíme, zda má pracovník nějakou nezaplacenou část
+    let hasUnpaid = false;
+    projShifts.forEach(s => {
+      if (s.worker === workerName) {
+        if ((type === 'work' || type === 'all') && !s.isWorkPaid) hasUnpaid = true;
+        if ((type === 'km' || type === 'all') && !s.isKmPaid && s.kmTotal > 0) hasUnpaid = true;
+      }
+      (s.partners || []).forEach(p => {
+        if (p.name === workerName && (type === 'work' || type === 'all') && !p.isWorkPaid) hasUnpaid = true;
+      });
+    });
+
+    const targetState = hasUnpaid; // Pokud něco dluží, proplatíme (true). Pokud už měl vše, odškrtneme (false).
+
+    for (const s of projShifts) {
+      let needsUpdate = false;
+      if (s.worker === workerName) {
+        if (type === 'work' || type === 'all') { s.isWorkPaid = targetState; needsUpdate = true; }
+        if (type === 'km' || type === 'all') { s.isKmPaid = targetState; needsUpdate = true; }
+      }
+      (s.partners || []).forEach(p => {
+        if (p.name === workerName && (type === 'work' || type === 'all')) {
+          p.isWorkPaid = targetState;
+          needsUpdate = true;
+        }
+      });
+
+      if (needsUpdate) {
+        await db.from('team_shifts').update({
+          is_work_paid: s.isWorkPaid,
+          is_km_paid: s.isKmPaid,
+          partners_json: JSON.stringify(s.partners)
+        }).eq('id', s.id);
+      }
+    }
+
+    renderAll();
+    renderProjectManagerBreakdown();
+  }
+
+  // --- MANAŽER STAVBY / ROZPAD PODLE LIDÍ ---
   function populateProjectManagerDropdown() {
     const sel = document.getElementById('projectManagerSelect');
     if (!sel) return;
     const current = sel.value;
     
-    // Unikátní projekty zapsané ve směnách i v seznamu
     const allProjs = Array.from(new Set([...cloudProjects, ...cloudShifts.map(s => s.project)])).filter(Boolean);
     
     sel.innerHTML = allProjs.map(p => `<option value="${p}">${p}</option>`).join('');
@@ -965,7 +1032,6 @@
       return;
     }
 
-    // Vyfiltrovat všechny směny pro tuto stavbu (dle oprávnění uživatele)
     const projShifts = cloudShifts.filter(s => s.project === selectedProj && isShiftVisibleForUser(s, loggedUser));
 
     if (projShifts.length === 0) {
@@ -973,7 +1039,6 @@
       return;
     }
 
-    // Agregace podle jednotlivých pracantů
     const workerStats = {};
     let totalMaterialCost = 0;
 
@@ -990,7 +1055,8 @@
           baseWage: 0,
           extraPauchal: 0,
           clientBill: 0,
-          isDriverCount: 0
+          unpaidWorkWage: 0,
+          unpaidTravelWage: 0
         };
       }
 
@@ -1000,9 +1066,9 @@
       driverStats.travelWage += s.wageTravelOnly;
       driverStats.baseWage += s.wageWorkOnly;
       driverStats.extraPauchal += (s.extraPauchal || 0);
-      if (s.kmTotal > 0) driverStats.isDriverCount++;
+      if (!s.isWorkPaid) driverStats.unpaidWorkWage += (s.wageWorkOnly + (s.extraPauchal || 0));
+      if (!s.isKmPaid) driverStats.unpaidTravelWage += s.wageTravelOnly;
 
-      // Klientská cena:
       const activeBossName = (s.boss === 'Sám na sebe') ? s.worker : (s.boss || 'Jiří');
       const isDriverSelfOrBoss = (s.boss === 'Sám na sebe' && s.worker === loggedUser) || isUserBoss(s.worker);
       const driverMarkup = isDriverSelfOrBoss ? 0 : getWorkerMarkup(activeBossName, s.worker);
@@ -1020,13 +1086,15 @@
             baseWage: 0,
             extraPauchal: 0,
             clientBill: 0,
-            isDriverCount: 0
+            unpaidWorkWage: 0,
+            unpaidTravelWage: 0
           };
         }
 
         const pStats = workerStats[p.name];
         pStats.hours += p.hours;
         pStats.baseWage += (p.wageWorkOnly || 0);
+        if (!p.isWorkPaid) pStats.unpaidWorkWage += (p.wageWorkOnly || 0);
 
         const pMarkup = getWorkerMarkup(activeLeaderNameForShift(s), p.name);
         pStats.clientBill += (p.wageWorkOnly || 0) + Math.round(p.hours * pMarkup);
@@ -1043,12 +1111,14 @@
     let sumAllKm = 0;
     let sumAllBasePay = 0;
     let sumAllClientBill = 0;
+    let sumTotalDebtRemaining = 0;
 
     workersArray.forEach(w => {
       sumAllHours += w.hours;
       sumAllKm += w.kmTotal;
       sumAllBasePay += w.baseWage + w.travelWage + w.extraPauchal;
       sumAllClientBill += w.clientBill;
+      sumTotalDebtRemaining += w.unpaidWorkWage + w.unpaidTravelWage;
     });
 
     const grandTotalInvestor = sumAllClientBill + totalMaterialCost;
@@ -1066,8 +1136,8 @@
           <b class="text-sm text-white">${sumAllKm} km</b>
         </div>
         <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
-          <span class="text-[9px] text-rose-300 uppercase block font-semibold">Vyplatit lidem</span>
-          <b class="text-sm text-rose-400">${sumAllBasePay.toLocaleString()} Kč</b>
+          <span class="text-[9px] text-rose-300 uppercase block font-semibold">Zbývá doplatit</span>
+          <b class="text-sm text-rose-400">${sumTotalDebtRemaining.toLocaleString()} Kč</b>
         </div>
         <div class="bg-slate-800/90 p-2 rounded-xl border border-sky-500/30">
           <span class="text-[9px] text-emerald-300 uppercase block font-semibold">Faktura investor</span>
@@ -1075,13 +1145,24 @@
         </div>
       </div>
 
-      <!-- ROZPAD PODLE JEDNOTLIVÝCH LIDÍ -->
-      <div class="space-y-1.5 pt-1">
+      <!-- TLAČÍTKO PRO VYPLACENÍ VŠECH NA JEDNO KLIKNUTÍ -->
+      <div class="pt-1">
+        <button type="button" onclick="payWholeProjectForAll('${selectedProj.replace(/'/g, "\\'")}')" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black py-2.5 px-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5">
+          <span>✓</span> Vyplatit celou zakázku všem najednou
+        </button>
+      </div>
+
+      <!-- ROZPAD PODLE JEDNOTLIVÝCH LIDÍ S TLAČÍTKY NA PROPLACENÍ -->
+      <div class="space-y-2 pt-2">
         <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">Rozpis podle pracantů na stavbě:</span>
         ${workersArray.map(w => {
           const totalPayToWorker = w.baseWage + w.travelWage + w.extraPauchal;
+          const isWorkDonePaid = (w.unpaidWorkWage === 0);
+          const isKmDonePaid = (w.unpaidTravelWage === 0);
+          const isFullyPaid = (isWorkDonePaid && isKmDonePaid);
+
           return `
-            <div class="bg-slate-800/95 p-2.5 rounded-xl border border-sky-400/30 space-y-1.5">
+            <div class="bg-slate-800/95 p-2.5 rounded-xl border border-sky-400/30 space-y-2">
               <div class="flex justify-between items-center border-b border-slate-700 pb-1">
                 <span class="font-black text-white text-xs flex items-center gap-1">
                   <span>👤</span> <span>${w.name}</span>
@@ -1094,15 +1175,37 @@
               
               <div class="grid grid-cols-2 gap-2 text-[11px]">
                 <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700">
-                  <span class="text-slate-400 text-[9px] block">Vyplatit pracovníkovi:</span>
+                  <span class="text-slate-400 text-[9px] block">Celková odměna:</span>
                   <b class="text-rose-400 text-xs">${totalPayToWorker.toLocaleString()} Kč</b>
                   ${w.kmTotal > 0 ? `<span class="text-[9px] text-slate-400 block">(z toho cesťák: ${w.travelWage} Kč)</span>` : ''}
                 </div>
                 <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700">
-                  <span class="text-slate-400 text-[9px] block">Účtovat investorovi (vč. marže):</span>
+                  <span class="text-slate-400 text-[9px] block">Účtovat investorovi:</span>
                   <b class="text-emerald-400 text-xs">${w.clientBill.toLocaleString()} Kč</b>
                   <span class="text-[9px] text-sky-300 block">(zisk: +${(w.clientBill - totalPayToWorker).toLocaleString()} Kč)</span>
                 </div>
+              </div>
+
+              <!-- TLAČÍTKA PRO INDIVIDUÁLNÍ ZAPLACENÍ -->
+              <div class="flex flex-wrap gap-1.5 pt-0.5 border-t border-slate-700/60 items-center justify-between">
+                <div class="flex gap-1">
+                  <!-- Jen práce -->
+                  <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'work')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isWorkDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
+                    ${isWorkDonePaid ? '✓ Práce zaplacena' : '⏱ Zaplatit práci'}
+                  </button>
+                  
+                  <!-- Jen km (pokud řídil) -->
+                  ${w.kmTotal > 0 ? `
+                    <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'km')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isKmDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
+                      ${isKmDonePaid ? '✓ Km zaplaceny' : '🚗 Zaplatit km'}
+                    </button>
+                  ` : ''}
+                </div>
+
+                <!-- Celá výplata člověku (práce + km) -->
+                <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'all')" class="px-2.5 py-1 rounded-lg text-[10px] font-black transition ${isFullyPaid ? 'bg-emerald-500 text-slate-950 shadow-xs' : 'bg-amber-600 hover:bg-amber-500 text-white'}">
+                  ${isFullyPaid ? '✓ Vše vyplaceno' : '💰 Vyplatit celek'}
+                </button>
               </div>
             </div>
           `;
@@ -2769,6 +2872,7 @@
     await db.from('team_shifts').update({ is_work_paid: nextState }).eq('id', id);
     item.isWorkPaid = nextState;
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   async function toggleKmPaid(id) {
@@ -2783,6 +2887,7 @@
     await db.from('team_shifts').update({ is_km_paid: nextState }).eq('id', id);
     item.isKmPaid = nextState;
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   async function togglePartnerWorkPaid(shiftId, partnerIndex) {
@@ -2797,6 +2902,7 @@
     partner.isWorkPaid = !partner.isWorkPaid;
     await db.from('team_shifts').update({ partners_json: JSON.stringify(item.partners) }).eq('id', shiftId);
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   async function toggleSingleMaterialPaid(shiftId, purchaseIndex) {
@@ -2817,6 +2923,7 @@
     }).eq('id', shiftId);
 
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   async function deleteRecord(id) {
@@ -2983,6 +3090,7 @@
             if (!s.isKmPaid) { unpaidTravelWage += s.wageTravelOnly; unpaidTravelKm += s.kmTotal; }
             if (!s.isMatPaid) unpaidMatCost += s.matCost;
           } else if (partnerEntry) {
+            // Parťák (např. Matěj): hodiny a odměna se mu načtou do kasy!
             totalWorkForChart += (partnerEntry.wageWorkOnly || 0);
             if (!partnerEntry.isWorkPaid) {
               unpaidWorkWage += (partnerEntry.wageWorkOnly || 0);
@@ -3112,7 +3220,7 @@
           ` : ''}
         </div>
 
-        <!-- PARŤÁCI NA ZAKÁZCE - TEĎ S KOMPLETNÍM PŘÍKLADEM I TUČNÝM VÝSLEDKEM! -->
+        <!-- PARŤÁCI NA ZAKÁZCE - SE VŠEMI VÝSLEDKY TUČNĚ -->
         ${r.partners && r.partners.length > 0 ? `
           <div class="space-y-1.5 pt-0.5">
             <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
@@ -3258,6 +3366,7 @@
     }
 
     renderAll();
+    renderProjectManagerBreakdown();
     updateLiveCalculations();
   }
 
