@@ -178,7 +178,7 @@
         <div class="w-full sm:w-1/2 space-y-1">
           <div class="flex justify-between items-center">
             <label class="text-[11px] font-bold text-slate-500">DATUM SMĚNY</label>
-            <button type="button" onclick="openMapModal()" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">📍 Vybrat GPS na mapě</button>
+            <button type="button" onclick="openMapModal('general')" class="text-[10px] bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold transition">📍 Vybrat GPS na mapě</button>
           </div>
           <input type="date" id="workDate" class="w-full border border-slate-300 rounded-xl p-2 bg-slate-50 text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-sky-500">
           <input type="hidden" id="gpsLocation">
@@ -223,8 +223,8 @@
         </div>
 
         <div id="stopsKmBox" class="space-y-2 hidden">
-          <div class="text-[10px] text-slate-500 font-medium">Zadej jednotlivé přejezdy (šipka je pevně daná):</div>
-          <div id="stopsContainer" class="space-y-1.5"></div>
+          <div class="text-[10px] text-slate-500 font-medium">Zadej jednotlivé přejezdy (přidáním se „Odkud“ automaticky propíše z předchozího „Kam“):</div>
+          <div id="stopsContainer" class="space-y-2"></div>
           <div class="flex justify-between items-center pt-1 border-t border-slate-200">
             <button type="button" onclick="addStopRow()" class="text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg transition">
               + Další přejezd
@@ -234,8 +234,14 @@
         </div>
 
         <div id="odoKmBox" class="grid grid-cols-2 gap-2 hidden">
-          <input type="number" id="kmStart" oninput="updateLiveCalculations()" placeholder="Tachometr před" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
-          <input type="number" id="kmEnd" oninput="updateLiveCalculations()" placeholder="Tachometr po" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Tachometr před (ranní start)</label>
+            <input type="number" id="kmStart" oninput="saveOdoStartPersistent(); updateLiveCalculations();" placeholder="Např. 142350" class="w-full border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none font-semibold">
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Tachometr po</label>
+            <input type="number" id="kmEnd" oninput="updateLiveCalculations()" placeholder="Např. 142410" class="w-full border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none font-semibold">
+          </div>
         </div>
       </div>
 
@@ -316,7 +322,7 @@
 
   </div>
 
-  <!-- INTERAKTIVNÍ MAPA (z-[75]) -->
+  <!-- INTERAKTIVNÍ MAPA PRO VÝBĚR (z-[75]) -->
   <div id="mapModal" class="fixed inset-0 bg-black/80 z-[75] hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
     <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
       <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0">
@@ -342,6 +348,26 @@
           <button type="button" onclick="useCurrentGpsPosition()" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-2.5 rounded-xl text-xs transition">Moje GPS</button>
           <button type="button" onclick="confirmMapLocation()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition">Potvrdit</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODÁLNÍ OKNO PRO ZOBRAZENÍ TRASY NA MAPĚ (z-[80]) -->
+  <div id="routeMapModal" class="fixed inset-0 bg-black/85 z-[80] hidden flex flex-col justify-center p-2 sm:p-6 backdrop-blur-xs">
+    <div class="bg-white w-full max-w-2xl mx-auto rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[85vh]">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center flex-shrink-0">
+        <div>
+          <h3 class="font-black text-sm sm:text-base">🗺️ Kompletní trasa a zastávky</h3>
+          <p id="routeMapSubtitle" class="text-[10px] text-sky-300">Detailní záznam přejezdů</p>
+        </div>
+        <button type="button" onclick="closeRouteMapModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+      </div>
+
+      <div id="routeMapContainer" class="w-full flex-1 relative bg-slate-100"></div>
+
+      <div class="p-3 bg-slate-50 border-t flex justify-between items-center text-xs flex-shrink-0">
+        <span id="routeMapInfoText" class="text-slate-600 font-semibold">Načítám trasu...</span>
+        <button type="button" onclick="closeRouteMapModal()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl transition">Zavřít mapu</button>
       </div>
     </div>
   </div>
@@ -472,7 +498,7 @@
           </div>
         </div>
 
-        <!-- 4. SPRÁVA KŠEFTŮ A KDO KTERÝ KŠEFT VIDÍ V NABÍDCE (PLNÁ KONTROLA) -->
+        <!-- 4. SPRÁVA KŠEFTŮ A KDO KTERÝ KŠEFT VIDÍ V NABÍDCE -->
         <div class="space-y-2 pt-2 border-t">
           <span class="text-xs font-bold text-purple-800 block uppercase">4. 🏢 Správa kšeftů & kdo je uvidí v nabídce:</span>
           <p class="text-[10px] text-slate-500">Zde může administrátor libovolně zakřížkovat/odkřížkovat kohokoliv (včetně šéfa stavby nebo tvůrce):</p>
@@ -648,7 +674,7 @@
           <div>
             <label class="text-[10px] text-slate-500 font-bold block mb-0.5">Kdo další tento kšeft uvidí ve výběru:</label>
             <div id="newProjectWorkerVisibilityCheckboxes" class="flex flex-wrap gap-1.5 pt-0.5"></div>
-            <span class="text-[9px] text-slate-400 block pt-1">* Pozdější změny viditelnosti může dělat admin v rozhraní.</span>
+            <span class="text-[9px] text-slate-400 block pt-1">* Pozdější změny viditelnosti smí dělat jen admin v rozhraní.</span>
           </div>
 
           <button type="button" onclick="createNewProjectWithVisibility()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-2 rounded-lg text-xs font-black transition shadow-xs">
@@ -743,7 +769,7 @@
         </div>
       </div>
 
-      <!-- SPECIÁLNÍ KASA PRO ŠÉFA -->
+      <!-- SPECIÁLNÍ KASA PRO ŠÉFA / PRO PRÁCI NA SEBE -->
       <div id="bossFinancialSummaryBox" class="hidden bg-amber-50 border border-amber-300 p-3 rounded-xl space-y-2 text-xs">
         <span class="font-bold text-amber-950 block uppercase text-[10px] tracking-wider">👑 Vyúčtování zakázek (Investor vs. Kolegové):</span>
         <div class="grid grid-cols-2 gap-2 text-center">
@@ -896,6 +922,10 @@
   let selectedMapLon = 13.2804;
   let selectedMapText = "Zatím nevybráno";
   let isMapReadOnly = false;
+  
+  let activeMapTargetType = 'general';
+  let activeStopRowElement = null;
+  let routeMapObj = null;
 
   let currentGuideStep = 0;
   const guideSteps = [
@@ -954,7 +984,7 @@
       html: `
         <p class="font-bold text-slate-800 mb-1">Kdo jakou stavbu vidí:</p>
         <ul class="list-disc pl-4 space-y-1 text-slate-600">
-          <li>Při založení nového kšeftu v nastavení (⚙️) zvolíš, kterým kolegům se zakázka zobrazí ve výběrech.</li>
+          <li>Při založení nového kšeftu v nastavení (⚙️) přesně zvolíš, kterým kolegům se zakázka zobrazí ve výběrech.</li>
           <li>Administrátor může v zabezpečeném rozhraní (🔒) kdykoliv dodatečně upravit viditelnost pro kohokoliv (např. skrýt kšeft i hlavnímu šéfovi).</li>
         </ul>
       `
@@ -1016,6 +1046,7 @@
                         !document.getElementById('statsMenu').classList.contains('translate-x-full') ||
                         !document.getElementById('photoLightbox').classList.contains('hidden') ||
                         !document.getElementById('mapModal').classList.contains('hidden') ||
+                        !document.getElementById('routeMapModal').classList.contains('hidden') ||
                         !document.getElementById('masterAdminModal').classList.contains('hidden') ||
                         !document.getElementById('guideModal').classList.contains('hidden') ||
                         !document.getElementById('editShiftModal').classList.contains('hidden');
@@ -1064,6 +1095,21 @@
     setTimeout(() => {
       location.reload();
     }, 250);
+  }
+
+  // --- PERSISTENTNÍ PAMĚŤ TACHOMETRU ---
+  function saveOdoStartPersistent() {
+    const val = document.getElementById('kmStart').value;
+    if (val !== "") localStorage.setItem('persistent_odo_start', val);
+    else localStorage.removeItem('persistent_odo_start');
+  }
+
+  function loadOdoStartPersistent() {
+    const saved = localStorage.getItem('persistent_odo_start');
+    const startInput = document.getElementById('kmStart');
+    if (saved && startInput && !startInput.value) {
+      startInput.value = saved;
+    }
   }
 
   // --- PRŮVODCE APLIKACÍ (❓) ---
@@ -1172,11 +1218,11 @@
       name: projName,
       boss: boss,
       created_by: loggedUser,
-      visible_to_users: visibleUsers
+      visible_to_users: JSON.stringify(visibleUsers)
     }]);
 
     if (error) {
-      console.warn("Ukládání přes JSON sloupce selhalo, zkouším alternativu:", error);
+      console.warn("Ukládání JSON selhalo:", error);
       await db.from('team_projects').insert([{ name: projName }]);
     }
 
@@ -1190,12 +1236,16 @@
 
   function isProjectVisibleForUser(projObj, username) {
     if (!projObj) return false;
+    const boss = projObj.boss || 'Jiří';
+    const createdBy = projObj.created_by || '';
     const visibleUsers = Array.isArray(projObj.visible_to_users) ? projObj.visible_to_users : [];
+
+    if (username === createdBy || username === boss || visibleUsers.includes(username)) return true;
     if (visibleUsers.length === 0) return true;
-    return visibleUsers.includes(username);
+    return false;
   }
 
-  // --- PROPLACENÍ ZE STAVBY ---
+  // --- HROMADNÉ I INDIVIDUÁLNÍ PROPLACENÍ ZE STAVBY ---
   async function payWholeProjectForAll(projectName) {
     const projShifts = cloudShifts.filter(s => s.project === projectName && isShiftVisibleForUser(s, loggedUser));
     if (projShifts.length === 0) return;
@@ -1210,7 +1260,7 @@
       await db.from('team_shifts').update({
         is_work_paid: true,
         is_km_paid: true,
-        partners_json: s.partners
+        partners_json: JSON.stringify(s.partners)
       }).eq('id', s.id);
     }
 
@@ -1237,7 +1287,7 @@
 
         await db.from('team_shifts').update({
           is_mat_paid: targetState,
-          mat_desc: s.matPurchases
+          mat_desc: JSON.stringify(s.matPurchases || [])
         }).eq('id', s.id);
       }
     }
@@ -1290,7 +1340,7 @@
         await db.from('team_shifts').update({
           is_work_paid: s.isWorkPaid,
           is_km_paid: s.isKmPaid,
-          partners_json: s.partners
+          partners_json: JSON.stringify(s.partners)
         }).eq('id', s.id);
       }
     }
@@ -1299,7 +1349,7 @@
     renderProjectManagerBreakdown();
   }
 
-  // --- MANAŽER STAVBY / ROZPAD ---
+  // --- MANAŽER STAVBY / ROZPAD PODLE LIDÍ + ROZPIS DNŮ A ÚKONŮ ---
   function populateProjectManagerDropdown() {
     const sel = document.getElementById('projectManagerSelect');
     if (!sel) return;
@@ -1445,6 +1495,7 @@
         </div>
       ` : ''}
 
+      <!-- ROZPAD PODLE JEDNOTLIVÝCH LIDÍ -->
       <div class="space-y-2 pt-2">
         <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">Rozpis podle pracantů na stavbě:</span>
         ${workersArray.map(w => {
@@ -1470,10 +1521,12 @@
                 <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700">
                   <span class="text-slate-400 text-[9px] block">Celková odměna:</span>
                   <b class="text-rose-400 text-xs">${totalPayToWorker.toLocaleString()} Kč</b>
+                  ${w.kmTotal > 0 ? `<span class="text-[9px] text-slate-400 block">(z toho cesťák: ${w.travelWage} Kč)</span>` : ''}
                 </div>
                 <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700">
                   <span class="text-slate-400 text-[9px] block">Účtovat investorovi:</span>
                   <b class="text-emerald-400 text-xs">${w.clientBill.toLocaleString()} Kč</b>
+                  <span class="text-[9px] text-sky-300 block">(zisk: +${(w.clientBill - totalPayToWorker).toLocaleString()} Kč)</span>
                 </div>
               </div>
 
@@ -1483,33 +1536,91 @@
                     <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'work')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isWorkDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
                       ${isWorkDonePaid ? '✓ Práce zaplacena' : '⏱ Zaplatit práci'}
                     </button>
+                    
                     ${w.kmTotal > 0 ? `
                       <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'km')" class="px-2 py-1 rounded-lg text-[10px] font-bold transition ${isKmDonePaid ? 'bg-emerald-600/80 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">
                         ${isKmDonePaid ? '✓ Km zaplaceny' : '🚗 Zaplatit km'}
                       </button>
                     ` : ''}
                   </div>
+
                   <button type="button" onclick="toggleWorkerProjectPayments('${selectedProj.replace(/'/g, "\\'")}', '${w.name.replace(/'/g, "\\'")}', 'all')" class="px-2.5 py-1 rounded-lg text-[10px] font-black transition ${isFullyPaid ? 'bg-emerald-500 text-slate-950 shadow-xs' : 'bg-amber-600 hover:bg-amber-500 text-white'}">
                     ${isFullyPaid ? '✓ Vše vyplaceno' : '💰 Vyplatit celek'}
                   </button>
                 </div>
-              ` : ''}
+              ` : `
+                <div class="pt-0.5 border-t border-slate-700/60 text-[10px] text-slate-400 text-right font-medium">
+                  ${isFullyPaid ? '✓ Vyplaceno' : '○ Čeká na výplatu od šéfa'}
+                </div>
+              `}
             </div>
           `;
         }).join('')}
       </div>
 
-      <div class="bg-sky-950/90 p-2.5 rounded-xl border border-sky-600/50 flex justify-between items-center text-[11px] mt-2">
-        <span class="text-amber-300 font-bold">Čistá marže šéfa: <b>+${bossTotalProfit.toLocaleString()} Kč</b></span>
-        ${isCurrentUserBossOfProject ? `
-          <button type="button" onclick="toggleProjectMaterialPaid('${selectedProj.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-black transition ${allMaterialsPaid ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-slate-950'}">
-            ${allMaterialsPaid ? '✓ Materiál proplacen' : '🛒 Zaplatit materiál'}
-          </button>
-        ` : ''}
+      <!-- MATERIÁL -->
+      ${totalMaterialCost > 0 ? `
+        <div class="bg-sky-950/90 p-2.5 rounded-xl border border-sky-600/50 flex flex-wrap justify-between items-center gap-2 text-[11px] mt-2">
+          <div>
+            <span>🛒 <b>Materiál celkem:</b> ${totalMaterialCost.toLocaleString()} Kč</span>
+            <span class="text-[10px] text-amber-300 block font-semibold">Čistá marže šéfa: +${bossTotalProfit.toLocaleString()} Kč</span>
+          </div>
+          ${isCurrentUserBossOfProject ? `
+            <button type="button" onclick="toggleProjectMaterialPaid('${selectedProj.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded-lg text-[10px] font-black transition shadow-xs ${allMaterialsPaid ? 'bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}">
+              ${allMaterialsPaid ? '✓ Materiál proplacen' : '🛒 Zaplatit materiál'}
+            </button>
+          ` : ''}
+        </div>
+      ` : `
+        <div class="bg-sky-950/90 p-2 rounded-xl border border-sky-600/50 text-right text-[11px] mt-2">
+          <span class="text-amber-300 font-bold">Čistá marže šéfa: <b>+${bossTotalProfit.toLocaleString()} Kč</b></span>
+        </div>
+      `}
+
+      <!-- ROZPAD PRACOVNÍCH DNŮ A ÚKONŮ -->
+      <div class="pt-3 border-t border-sky-700/60 space-y-1.5">
+        <span class="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">📅 Pracovní dny a úkony na této stavbě:</span>
+        <div class="space-y-1.5">
+          ${projShifts.map((s, sIdx) => {
+            const shortId = getShortId(s.id);
+            const partnersNames = (s.partners || []).map(p => p.name).join(', ');
+            return `
+              <div class="bg-slate-800/90 border border-slate-700 rounded-xl overflow-hidden">
+                <button type="button" onclick="toggleCollapsible('projDayDetail_${sIdx}')" class="w-full p-2 text-left flex justify-between items-center text-xs hover:bg-slate-700/60 transition">
+                  <div>
+                    <span class="font-mono bg-slate-900 text-amber-300 font-bold px-1.5 py-0.2 rounded text-[10px]">#${shortId}</span>
+                    <b class="text-white ml-1">${formatCzechDate(s.date)}</b>
+                    <span class="text-slate-300 text-[10px] ml-1">(${s.worker}${partnersNames ? ` + ${partnersNames}` : ''})</span>
+                  </div>
+                  <span class="text-sky-300 text-[10px] font-bold">⏱ ${s.hours} h | 🚗 ${s.kmTotal} km ▼</span>
+                </button>
+                <div id="projDayDetail_${sIdx}" class="hidden p-2.5 bg-slate-900/70 border-t border-slate-700/80 text-[11px] space-y-1.5">
+                  <div class="flex justify-between text-slate-300">
+                    <span>Čas: <b>${s.t1 || '--'} - ${s.t2 || '--'}</b> (${s.hours} h)</span>
+                    <span>Režim: <b>${s.boss || 'Jiří'}</b></span>
+                  </div>
+                  ${s.desc ? `<div class="bg-slate-800 p-2 rounded-lg text-slate-200 border border-slate-700"><b>Popis práce:</b> ${s.desc}</div>` : '<div class="text-slate-400 italic">Bez textového popisu práce.</div>'}
+                  ${s.matCost > 0 ? `<div class="text-amber-300">🛒 Nákup materiálu: <b>${s.matCost} Kč</b></div>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
       </div>
     `;
   }
 
+  function toggleCollapsible(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.classList.toggle('hidden');
+    const arrow = document.getElementById(elementId + '_arrow');
+    if (arrow) {
+      arrow.innerText = el.classList.contains('hidden') ? '▼' : '▲';
+    }
+  }
+
+  // --- NASTAVENÍ PROVIZE ZA HODINU PRO ZAMĚSTNANCE ---
   function renderBossMarkupSettings() {
     const section = document.getElementById('bossMarkupSettingsSection');
     const container = document.getElementById('bossMarkupInputsList');
@@ -1564,7 +1675,7 @@
     return 50;
   }
 
-  // --- ADMIN MENU: SPRÁVA KŠEFTŮ (ZDE MŮŽEŠ MĚNIT ÚPLNĚ KOHOKOLIV) ---
+  // --- ADMIN MENU: SPRÁVA KŠEFTŮ A KDO KTERÝ KŠEFT VIDÍ V NABÍDCE ---
   function renderAdminProjectAccessList() {
     const container = document.getElementById('masterAdminProjectAccessList');
     if (!container) return;
@@ -1585,17 +1696,19 @@
         <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs space-y-1.5">
           <div class="flex justify-between items-start">
             <span class="font-black text-slate-800 text-xs">🏗️ ${proj.name}</span>
-            <span class="text-[10px] font-bold text-sky-800 bg-sky-100 px-1.5 py-0.5 rounded">Šéf: ${boss}</span>
+            <span class="text-[10px] font-bold text-sky-800 bg-sky-100 px-1.5 py-0.5 rounded">Vytvořil: ${createdBy}</span>
           </div>
+          <div class="text-[10px] text-slate-500">Šéf zakázky: <b>${boss}</b></div>
+
           <div class="pt-1 border-t border-slate-200">
-            <span class="text-[9px] font-bold text-slate-600 block uppercase">Kdo tento kšeft uvidí (plná kontrola):</span>
+            <span class="text-[9px] font-bold text-slate-600 block uppercase">Kdo tento kšeft uvidí v nabídce:</span>
             <div class="flex flex-wrap gap-1.5 pt-1">
               ${allUsers.map(u => {
                 const isChecked = visibleUsers.length === 0 || visibleUsers.includes(u);
                 return `
                   <label class="flex items-center gap-1 bg-white border border-slate-300 px-1.5 py-0.5 rounded text-[10px] cursor-pointer">
                     <input type="checkbox" onchange="toggleAdminProjectUserAccess(${pIdx}, '${u}', this.checked)" ${isChecked ? 'checked' : ''} class="w-3 h-3 text-purple-600">
-                    <span class="text-slate-700">${u}</span>
+                    <span class="text-slate-600">${u}</span>
                   </label>
                 `;
               }).join('')}
@@ -1617,7 +1730,7 @@
     proj.visible_to_users = list;
 
     try {
-      await db.from('team_projects').update({ visible_to_users: list }).eq('name', proj.name);
+      await db.from('team_projects').update({ visible_to_users: JSON.stringify(list) }).eq('name', proj.name);
     } catch(e) {}
 
     populateProjects();
@@ -1705,7 +1818,9 @@
         password: cloudUsers[user] ? cloudUsers[user].pass : '1234',
         is_boss: newStatus
       }, { onConflict: 'username' });
-    } catch(e) {}
+    } catch(e) {
+      console.error("Chyba při aktualizaci role šéfa:", e);
+    }
 
     alert(newStatus ? `Uživatel ${user} je nyní 👑 ŠÉF!` : `Uživateli ${user} byla role šéfa odebrána.`);
     refreshMasterAdminUI();
@@ -1714,6 +1829,7 @@
     updateAppHeaderRole();
     renderTeamStatusList();
     renderAll();
+    renderProjectManagerBreakdown();
   }
 
   function loadPermissionsUIForSelectedUser() {
@@ -1739,12 +1855,16 @@
 
     const workersCont = document.getElementById('permWorkersCheckboxes');
     const otherUsers = allUsers.filter(u => u !== targetUser);
-    workersCont.innerHTML = otherUsers.map(u => `
-      <label class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs font-semibold cursor-pointer">
-        <input type="checkbox" name="permWorkerCheck" value="${u}" ${perms.allowedWorkers.includes(u) ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600">
-        <span>${u}${isUserBoss(u) ? ' 👑' : ''}</span>
-      </label>
-    `).join('');
+    if (otherUsers.length === 0) {
+      workersCont.innerHTML = '<span class="text-[10px] text-slate-400">Žádní další uživatelé.</span>';
+    } else {
+      workersCont.innerHTML = otherUsers.map(u => `
+        <label class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs font-semibold cursor-pointer">
+          <input type="checkbox" name="permWorkerCheck" value="${u}" ${perms.allowedWorkers.includes(u) ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600">
+          <span>${u}${isUserBoss(u) ? ' 👑' : ''}</span>
+        </label>
+      `).join('');
+    }
   }
 
   async function saveSelectedUserPermissions() {
@@ -1753,14 +1873,22 @@
 
     const checkedBosses = Array.from(document.querySelectorAll('input[name="permBossCheck"]:checked')).map(cb => cb.value);
     const checkedWorkers = Array.from(document.querySelectorAll('input[name="permWorkerCheck"]:checked')).map(cb => cb.value);
+
     if (!checkedWorkers.includes(targetUser)) checkedWorkers.push(targetUser);
 
-    const permObj = { allowedBosses: checkedBosses, allowedWorkers: checkedWorkers };
-    if (cloudUsers[targetUser]) cloudUsers[targetUser].perms = permObj;
+    const permObj = {
+      allowedBosses: checkedBosses,
+      allowedWorkers: checkedWorkers
+    };
+
+    if (cloudUsers[targetUser]) {
+      cloudUsers[targetUser].perms = permObj;
+    }
 
     try {
       const uData = cloudUsers[targetUser] || {};
-      await db.from('team_users').update({ permissions_json: JSON.stringify({ perms: permObj, markups: uData.bossMarkups }) }).eq('username', targetUser);
+      const markups = uData.bossMarkups || {};
+      await db.from('team_users').update({ permissions_json: JSON.stringify({ perms: permObj, markups }) }).eq('username', targetUser);
     } catch(e) {}
 
     alert(`Pravidla viditelnosti pro "${targetUser}" byla uložena!`);
@@ -1773,68 +1901,131 @@
 
     const matched = cloudShifts.filter(s => {
       if (!query) return true;
-      return getShortId(s.id).toLowerCase().includes(query) || String(s.id).includes(query) || (s.worker || '').toLowerCase().includes(query) || (s.project || '').toLowerCase().includes(query);
+      const shortId = getShortId(s.id).toLowerCase();
+      const fullId = String(s.id);
+      const worker = (s.worker || '').toLowerCase();
+      const proj = (s.project || '').toLowerCase();
+      const date = (s.date || '').toLowerCase();
+      const boss = (s.boss || '').toLowerCase();
+      return shortId.includes(query) || fullId.includes(query) || worker.includes(query) || proj.includes(query) || date.includes(query) || boss.includes(query);
     });
 
     if (matched.length === 0) {
       shiftSel.innerHTML = '<option value="">Žádná směna neodpovídá hledání</option>';
-      document.getElementById('adminShiftMatchCard').innerHTML = '<div class="text-rose-600 font-bold text-center py-2">Záznam nenalezen.</div>';
+      document.getElementById('adminShiftMatchCard').innerHTML = '<div class="text-rose-600 font-bold text-center py-2">Hledanému ID ani heslu neodpovídá žádný záznam.</div>';
       return;
     }
 
-    shiftSel.innerHTML = matched.map(s => `<option value="${s.id}">[#${getShortId(s.id)}] ${formatCzechDate(s.date)} | ${s.worker} | ${s.project} (${s.workAndTravelTotal} Kč)</option>`).join('');
+    shiftSel.innerHTML = matched.map(s => {
+      const shortId = getShortId(s.id);
+      return `<option value="${s.id}">[#${shortId}] ${formatCzechDate(s.date)} | ${s.worker} | ${s.project} (${s.hours}h | ${s.workAndTravelTotal} Kč)</option>`;
+    }).join('');
+
     showSelectedAdminShiftDetails();
   }
 
   function showSelectedAdminShiftDetails() {
     const shiftId = Number(document.getElementById('masterAdminShiftSelect').value);
     const card = document.getElementById('adminShiftMatchCard');
-    if (!shiftId) return;
+    if (!shiftId) {
+      card.innerHTML = '<div class="text-slate-400 text-center py-2">Vyber záznam.</div>';
+      return;
+    }
 
     const item = cloudShifts.find(s => s.id === shiftId);
-    if (!item) return;
+    if (!item) {
+      card.innerHTML = '<div class="text-slate-400 text-center py-2">Záznam nenalezen.</div>';
+      return;
+    }
+
+    const shortId = getShortId(item.id);
+    const partnersStr = (item.partners || []).map(p => `${p.name} (${p.hours}h)`).join(', ') || 'žádní';
 
     card.innerHTML = `
       <div class="flex justify-between items-start border-b border-rose-200 pb-1.5">
-        <span class="font-mono bg-slate-900 text-amber-300 font-black px-2 py-0.5 rounded text-xs">ID: #${getShortId(item.id)}</span>
-        <span class="font-bold text-slate-800 text-xs">${item.project}</span>
+        <div>
+          <span class="font-mono bg-slate-900 text-amber-300 font-black px-2 py-0.5 rounded text-xs">ID: #${shortId}</span>
+          <span class="font-bold text-slate-800 text-xs ml-1.5">${item.project}</span>
+        </div>
+        <span class="font-bold text-rose-800 text-[11px]">${formatCzechDate(item.date)}</span>
       </div>
-      <div class="text-[11px] text-slate-700">Zadal: <b>${item.worker}</b> | Částka: <b>${item.workAndTravelTotal} Kč</b></div>
-      <button type="button" onclick="confirmDeleteAdminShift(${item.id})" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-2 rounded-xl text-xs shadow transition">🗑️ Smazat záznam</button>
+      <div class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-700">
+        <div><b>Zadal/Řidič:</b> ${item.worker}</div>
+        <div><b>Šéf:</b> ${item.boss || 'Jiří'}</div>
+        <div><b>Čas:</b> ${item.t1 || '--'} - ${item.t2 || '--'} (${item.hours} h)</div>
+        <div><b>Ujeto:</b> ${item.kmTotal} km</div>
+        <div class="col-span-2"><b>Kolegové:</b> ${partnersStr}</div>
+        <div class="col-span-2 bg-white p-1.5 rounded-lg border border-rose-200 flex justify-between font-black text-slate-900">
+          <span>Celkem (práce+cesta):</span>
+          <span class="text-emerald-700">${item.workAndTravelTotal} Kč</span>
+        </div>
+      </div>
+      <button type="button" onclick="confirmDeleteAdminShift(${item.id})" class="w-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-1.5">
+        <span>🗑️</span> Smazat záznam #${shortId}
+      </button>
     `;
   }
 
   async function confirmDeleteAdminShift(shiftId) {
-    if (!confirm("Opravdu trvale smazat tuto směnu?")) return;
+    const item = cloudShifts.find(s => s.id === shiftId);
+    if (!item) return;
+    const shortId = getShortId(item.id);
+
+    if (!confirm(`OPRAVDU SMAZAT TUTO SMĚNU?\n\nID: #${shortId}\nPracovník: ${item.worker}\nStavba: ${item.project}\nDatum: ${formatCzechDate(item.date)}\nČástka: ${item.workAndTravelTotal} Kč\n\nTuto akci nelze vrátit zpět!`)) return;
+
     await db.from('team_shifts').delete().eq('id', shiftId);
     cloudShifts = cloudShifts.filter(s => s.id !== shiftId);
-    alert("Směna byla smazána.");
+    alert(`Směna #${shortId} byla trvale smazána ze systému.`);
     filterAdminShifts();
     renderAll();
     renderProjectManagerBreakdown();
   }
 
+  // SPOLEHLIVÁ ZMĚNA HESLA
   async function masterAdminChangePass() {
     const target = document.getElementById('masterAdminResetUser').value;
     const newPass = document.getElementById('masterAdminNewPass').value.trim();
     if (!newPass) return alert("Zadej nové heslo.");
-    await db.from('team_users').update({ password: newPass }).eq('username', target);
-    if (cloudUsers[target]) cloudUsers[target].pass = newPass;
-    document.getElementById('masterAdminNewPass').value = '';
-    alert(`Heslo pro ${target} změněno.`);
-    refreshMasterAdminUI();
+
+    try {
+      const isBossFlag = isUserBoss(target);
+      const { error } = await db.from('team_users').upsert({
+        username: target,
+        password: newPass,
+        is_boss: isBossFlag
+      }, { onConflict: 'username' });
+
+      if (error) throw error;
+
+      if (cloudUsers[target]) {
+        cloudUsers[target].pass = newPass;
+      }
+      document.getElementById('masterAdminNewPass').value = '';
+      alert(`Heslo pro ${target} bylo úspěšně změněno na: ${newPass}`);
+      refreshMasterAdminUI();
+    } catch(err) {
+      alert("Chyba při změně hesla: " + err.message);
+    }
   }
 
   async function masterAdminDeleteAccount() {
     const target = document.getElementById('masterAdminDeleteUser').value;
-    if (!confirm(`Smazat účet "${target}"?`)) return;
+    if (!confirm(`POZOR: Opravdu smazat účet "${target}" z cloudu?\n(Dříve zapsané směny zůstanou zachované).`)) return;
+
     await db.from('team_users').delete().eq('username', target);
+    await db.from('active_shifts').delete().eq('worker', target);
+
     delete cloudUsers[target];
     if (loggedUser === target) handleLogout();
+    alert(`Účet "${target}" byl smazán.`);
     refreshMasterAdminUI();
     renderQuickBadges();
+    populateUserFilter();
+    renderPartnerCheckboxes();
+    renderBossButtons();
   }
 
+  // --- POPULACE PROJEKTŮ A FILTRU ---
   function populateProjects() {
     const workSelect = document.getElementById('workProject');
     const filterSelect = document.getElementById('filterProject');
@@ -1855,8 +2046,8 @@
       <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
         <span class="font-medium text-slate-800 truncate mr-2">🏗️ ${p}</span>
         <div class="flex items-center gap-1">
-          <button type="button" onclick="editProject('${p}')" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded">✏️</button>
-          <button type="button" onclick="deleteProject('${p}')" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded">✕</button>
+          <button type="button" onclick="editProject('${p}')" title="Přejmenovat" class="text-sky-600 hover:text-sky-800 font-bold px-1.5 py-0.5 rounded hover:bg-sky-50">✏️</button>
+          <button type="button" onclick="deleteProject('${p}')" title="Smazat" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 border border-rose-200">✕</button>
         </div>
       </div>
     `).join('');
@@ -1867,16 +2058,22 @@
   function populateUserFilter() {
     const filterSelect = document.getElementById('filterUser');
     const savedVal = filterSelect.value || 'ALL';
+    
     const users = Object.keys(cloudUsers);
     filterSelect.innerHTML = `<option value="ALL">Všichni pracovníci</option>` +
       users.map(u => `<option value="${u}">${u}${isUserBoss(u) ? ' (👑 Šéf)' : ''}</option>`).join('');
+      
     filterSelect.value = savedVal;
   }
 
-  // --- ÚPRAVA CELÉHO ZÁZNAMU SMĚNY ---
+  // --- KOMPLETNÍ ÚPRAVA CELÉHO ZÁZNAMU SMĚNY ---
   function openEditShiftModal(shiftId) {
     const item = cloudShifts.find(s => s.id === shiftId);
     if (!item) return;
+
+    if (!canManageShift(item)) {
+      return alert("Upravovat směnu může pouze ten, kdo ji založil, nebo příslušný šéf.");
+    }
 
     setScrollLock(true);
     document.getElementById('editShiftId').value = item.id;
@@ -1971,11 +2168,12 @@
       work_and_travel_total: workAndTravelTotal,
       photos_link: newPhotosLink,
       desc_text: newDesc,
-      partners_json: updatedPartners,
+      partners_json: JSON.stringify(updatedPartners),
       boss: newBoss
     };
 
     const { error } = await db.from('team_shifts').update(updatePayload).eq('id', shiftId);
+
     if (error) return alert("Chyba při ukládání: " + error.message);
 
     item.boss = newBoss;
@@ -1995,7 +2193,7 @@
     closeEditShiftModal();
     renderAll();
     renderProjectManagerBreakdown();
-    alert(`Směna #${getShortId(item.id)} byla upravena!`);
+    alert(`Směna #${getShortId(item.id)} byla upravena a přepočítána!`);
   }
 
   // --- SWIPE GESTA ---
@@ -2014,15 +2212,22 @@
     const isSettingsOpen = !document.getElementById('settingsMenu').classList.contains('-translate-x-full');
     const isStatsOpen = !document.getElementById('statsMenu').classList.contains('translate-x-full');
     const isMapOpen = !document.getElementById('mapModal').classList.contains('hidden');
+    const isRouteMapOpen = !document.getElementById('routeMapModal').classList.contains('hidden');
     const isLightboxOpen = !document.getElementById('photoLightbox').classList.contains('hidden');
     const isAdminOpen = !document.getElementById('masterAdminModal').classList.contains('hidden');
     const isGuideOpen = !document.getElementById('guideModal').classList.contains('hidden');
     const isEditOpen = !document.getElementById('editShiftModal').classList.contains('hidden');
 
-    if (isMapOpen || isLightboxOpen || isAdminOpen || isEditOpen || isGuideOpen) return;
+    if (isMapOpen || isRouteMapOpen || isLightboxOpen || isAdminOpen || isEditOpen || isGuideOpen) return;
 
-    if (isSettingsOpen && diffX < -60 && diffY < 120) { toggleSettingsMenu(false); return; }
-    if (isStatsOpen && diffX > 60 && diffY < 120) { toggleStatsMenu(false); return; }
+    if (isSettingsOpen && diffX < -60 && diffY < 120) {
+      toggleSettingsMenu(false);
+      return;
+    }
+    if (isStatsOpen && diffX > 60 && diffY < 120) {
+      toggleStatsMenu(false);
+      return;
+    }
 
     if (!isSettingsOpen && !isStatsOpen && diffY < 100 && Math.abs(diffX) > 80) {
       if (diffX > 0) toggleSettingsMenu(true);
@@ -2039,7 +2244,7 @@
     let html = bosses.map(b => {
       const active = (currentBoss === b);
       return `
-        <button type="button" onclick="setBoss('${b}')" class="py-2.5 rounded-xl border text-xs font-bold transition ${active ? 'bg-slate-900 text-white shadow-xs border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-300'}">
+        <button type="button" id="bossBtn_${b}" onclick="setBoss('${b}')" class="py-2.5 rounded-xl border text-xs font-bold transition ${active ? 'bg-slate-900 text-white shadow-xs border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-300'}">
           👨‍💼 ${b}
         </button>
       `;
@@ -2047,7 +2252,7 @@
 
     const selfActive = (currentBoss === 'Sám na sebe');
     html += `
-      <button type="button" onclick="setBoss('Sám na sebe')" class="py-2.5 rounded-xl border text-xs font-bold transition ${selfActive ? 'bg-slate-900 text-white shadow-xs border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-300'}">
+      <button type="button" id="bossBtn_Sam" onclick="setBoss('Sám na sebe')" class="py-2.5 rounded-xl border text-xs font-bold transition ${selfActive ? 'bg-slate-900 text-white shadow-xs border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-300'}">
         👤 Sám na sebe
       </button>
     `;
@@ -2061,189 +2266,6 @@
     renderBossButtons();
     renderAll();
   }
-
-  // MAPA
-  function openMapModal(readOnly = false, lat = null, lon = null, label = null) {
-    isMapReadOnly = readOnly;
-    setScrollLock(true);
-
-    const titleEl = document.getElementById('mapModalHeaderTitle');
-    const subEl = document.getElementById('mapModalHeaderSubtitle');
-    const searchSec = document.getElementById('mapSearchSection');
-    const actionBtns = document.getElementById('mapActionButtons');
-
-    if (readOnly) {
-      titleEl.innerText = "📍 Zobrazení místa zakázky";
-      subEl.innerText = label || "Uložená poloha stavby";
-      searchSec.classList.add('hidden');
-      actionBtns.classList.add('hidden');
-      if (lat && lon) {
-        selectedMapLat = lat;
-        selectedMapLon = lon;
-        selectedMapText = label || `${lat}, ${lon}`;
-      }
-    } else {
-      titleEl.innerText = "🗺️ Výběr polohy na mapě";
-      subEl.innerText = "Klepni na mapu nebo vyhledej adresu";
-      searchSec.classList.remove('hidden');
-      actionBtns.classList.remove('hidden');
-    }
-
-    document.getElementById('mapSelectedText').innerText = selectedMapText;
-    document.getElementById('mapModal').classList.remove('hidden');
-
-    setTimeout(() => {
-      if (!mapObj) {
-        mapObj = L.map('mapContainer').setView([selectedMapLat, selectedMapLon], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapObj);
-        mapMarker = L.marker([selectedMapLat, selectedMapLon], {draggable: !readOnly}).addTo(mapObj);
-        mapMarker.on('dragend', function() {
-          if (isMapReadOnly) return;
-          const pos = mapMarker.getLatLng(); selectedMapLat = pos.lat; selectedMapLon = pos.lng; fetchAddressFromCoords(selectedMapLat, selectedMapLon);
-        });
-        mapObj.on('click', function(e) {
-          if (isMapReadOnly) return;
-          selectedMapLat = e.latlng.lat; selectedMapLon = e.latlng.lng; mapMarker.setLatLng([selectedMapLat, selectedMapLon]); fetchAddressFromCoords(selectedMapLat, selectedMapLon);
-        });
-      } else {
-        mapObj.invalidateSize();
-        mapObj.setView([selectedMapLat, selectedMapLon], 14);
-        mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
-      }
-    }, 200);
-  }
-
-  function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); setScrollLock(false); }
-
-  function showSavedLocationOnMap(gpsString, projectTitle) {
-    if (!gpsString) return;
-    const match = gpsString.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-    if (match) {
-      openMapModal(true, parseFloat(match[1]), parseFloat(match[2]), `${projectTitle} (${gpsString})`);
-    } else {
-      selectedMapText = gpsString;
-      openMapModal(true, 49.7477, 13.2804, gpsString);
-    }
-  }
-
-  async function searchLocationOnMap() {
-    const query = document.getElementById('mapSearchInput').value.trim(); if (!query) return;
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        selectedMapLat = parseFloat(data[0].lat); selectedMapLon = parseFloat(data[0].lon); selectedMapText = data[0].display_name;
-        mapObj.setView([selectedMapLat, selectedMapLon], 15); mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
-        document.getElementById('mapSelectedText').innerText = selectedMapText;
-      }
-    } catch(err) {}
-  }
-
-  async function fetchAddressFromCoords(lat, lon) {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-      const data = await res.json();
-      selectedMapText = (data && data.display_name) ? data.display_name : `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    } catch(err) { selectedMapText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`; }
-    document.getElementById('mapSelectedText').innerText = selectedMapText;
-  }
-
-  function useCurrentGpsPosition() {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition((p) => {
-      selectedMapLat = p.coords.latitude; selectedMapLon = p.coords.longitude;
-      mapObj.setView([selectedMapLat, selectedMapLon], 16); mapMarker.setLatLng([selectedMapLat, selectedMapLon]);
-      fetchAddressFromCoords(selectedMapLat, selectedMapLon);
-    });
-  }
-
-  function confirmMapLocation() {
-    document.getElementById('gpsLocation').value = `${selectedMapLat.toFixed(5)}, ${selectedMapLon.toFixed(5)}`;
-    document.getElementById('gpsAddressManual').value = selectedMapText;
-    const status = document.getElementById('gpsStatus');
-    if (status) status.innerText = `📍 ${selectedMapText.substring(0, 30)}...`;
-    closeMapModal();
-  }
-
-  // GALERIE LIGHTBOX
-  function openGalleryLightbox(imagesArray, startIndex = 0, title = "Fotografie") {
-    if (!imagesArray || imagesArray.length === 0) return;
-    currentGalleryImages = imagesArray; currentGalleryIndex = startIndex; resetImageTransform();
-    setScrollLock(true); document.getElementById('lightboxTitle').innerText = title;
-    document.getElementById('photoLightbox').classList.remove('hidden'); renderGalleryView();
-  }
-
-  function resetImageTransform() { currentZoom = 1; panX = 0; panY = 0; applyTransform(); }
-  function applyTransform(animated = false) {
-    const img = document.getElementById('lightboxImage');
-    img.style.transition = animated ? 'transform 0.25s ease-out' : 'none';
-    img.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  }
-
-  function renderGalleryView() {
-    const total = currentGalleryImages.length, currentSrc = currentGalleryImages[currentGalleryIndex];
-    const img = document.getElementById('lightboxImage'), dlBtn = document.getElementById('lightboxDownloadBtn'), counter = document.getElementById('lightboxCounter');
-    const prevBtn = document.getElementById('lightboxPrevBtn'), nextBtn = document.getElementById('lightboxNextBtn'), thumbsContainer = document.getElementById('lightboxThumbnails');
-
-    img.src = currentSrc; resetImageTransform(); dlBtn.href = currentSrc; counter.innerText = `Fotka ${currentGalleryIndex + 1} z ${total}`;
-    if (total <= 1) { prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); thumbsContainer.classList.add('hidden'); }
-    else { prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); thumbsContainer.classList.remove('hidden'); }
-
-    thumbsContainer.innerHTML = currentGalleryImages.map((src, idx) => `
-      <img src="${src}" onclick="jumpToGalleryPhoto(${idx})" class="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border-2 cursor-pointer transition flex-shrink-0 ${idx === currentGalleryIndex ? 'border-sky-400 scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'}">
-    `).join('');
-  }
-
-  function navigateGallery(direction) {
-    const total = currentGalleryImages.length; if (total <= 1) return;
-    currentGalleryIndex = (currentGalleryIndex + direction + total) % total; renderGalleryView();
-  }
-
-  function jumpToGalleryPhoto(index) { currentGalleryIndex = index; renderGalleryView(); }
-  function closeLightbox() { document.getElementById('photoLightbox').classList.add('hidden'); resetImageTransform(); setScrollLock(false); }
-  function zoomPhotoStep(step) {
-    currentZoom = Math.max(1, Math.min(3.5, currentZoom + step));
-    if (currentZoom === 1) { panX = 0; panY = 0; } applyTransform(true);
-  }
-
-  const touchArea = document.getElementById('lightboxTouchArea');
-  const lightboxImg = document.getElementById('lightboxImage');
-
-  lightboxImg.addEventListener('dblclick', (e) => {
-    e.preventDefault();
-    if (currentZoom > 1.2) { resetImageTransform(); applyTransform(true); }
-    else { currentZoom = 2.5; panX = 0; panY = 0; applyTransform(true); }
-  });
-
-  touchArea.addEventListener('touchstart', e => {
-    if (e.touches.length === 1) {
-      const now = Date.now(), touch = e.touches[0];
-      if (now - lastTapTime < 300) {
-        e.preventDefault();
-        if (currentZoom > 1.2) { resetImageTransform(); applyTransform(true); }
-        else { currentZoom = 2.5; panX = 0; panY = 0; applyTransform(true); }
-        lastTapTime = 0; return;
-      }
-      lastTapTime = now; isDragging = true; startX = touch.clientX - panX; startY = touch.clientY - panY;
-    }
-  }, { passive: false });
-
-  touchArea.addEventListener('touchmove', e => {
-    if (!isDragging || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    if (currentZoom > 1) {
-      e.preventDefault(); panX = touch.clientX - startX; panY = touch.clientY - startY; applyTransform(false);
-    }
-  }, { passive: false });
-
-  touchArea.addEventListener('touchend', e => {
-    if (!isDragging) return; isDragging = false;
-    if (currentZoom <= 1.05) {
-      const touch = e.changedTouches[0], diffX = touch.clientX - startX;
-      if (diffX < -45) navigateGallery(1); if (diffX > 45) navigateGallery(-1);
-      resetImageTransform();
-    }
-  }, { passive: true });
 
   function toggleAutoGps() {
     const check = document.getElementById('prefAutoGps').checked; localStorage.setItem('pref_auto_gps', check ? '1' : '0');
@@ -2269,911 +2291,18 @@
     updateLiveCalculations();
   }
 
-  // --- NAČTENÍ ZE SUPABASE ---
-  async function fetchAllFromCloud() {
-    try {
-      const { data: uData } = await db.from('team_users').select('*');
-      cloudUsers = {};
-      if (uData) {
-        uData.forEach(u => {
-          let cleanName = (u.username || '').trim();
-          let userPerms = null;
-          let userMarkups = null;
-          if (u.permissions_json) {
-            try {
-              const parsed = JSON.parse(u.permissions_json);
-              if (parsed.perms) { userPerms = parsed.perms; userMarkups = parsed.markups; }
-              else { userPerms = parsed; }
-            } catch(e) {}
-          }
-
-          cloudUsers[cleanName] = {
-            pass: u.password,
-            rateH: u.rate_h || 300,
-            rateK: u.rate_k || 7,
-            rateD: u.rate_d || 150,
-            rateT: u.rate_t || 100,
-            isBoss: (u.is_boss === true),
-            perms: userPerms,
-            bossMarkups: userMarkups
-          };
-        });
-      }
-
-      ['Jan', 'Matěj', 'Martin', 'Jiří', 'Petr'].forEach(dName => {
-        if (!cloudUsers[dName]) {
-          cloudUsers[dName] = { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
-        }
-      });
-
-      const { data: pData } = await db.from('team_projects').select('*');
-      cloudProjectsData = [];
-      if (pData && pData.length > 0) {
-        cloudProjectsData = pData.map(p => {
-          let visibleUsers = [];
-          if (p.visible_to_users) {
-            try {
-              visibleUsers = typeof p.visible_to_users === 'string' ? JSON.parse(p.visible_to_users) : p.visible_to_users;
-            } catch(e){}
-          }
-          return {
-            name: p.name,
-            boss: p.boss || 'Jiří',
-            created_by: p.created_by || 'Admin',
-            visible_to_users: Array.isArray(visibleUsers) ? visibleUsers : []
-          };
-        });
-      } else {
-        cloudProjectsData = [
-          { name: 'Dílna', boss: 'Jiří', created_by: 'Jiří', visible_to_users: [] },
-          { name: 'Bytový dům Plzeň', boss: 'Jiří', created_by: 'Jiří', visible_to_users: [] },
-          { name: 'Rodinný dům Stříbro', boss: 'Petr', created_by: 'Petr', visible_to_users: [] }
-        ];
-      }
-
-      const { data: aData } = await db.from('active_shifts').select('*');
-      cloudActiveShifts = {};
-      if (aData) {
-        aData.forEach(a => { cloudActiveShifts[a.worker] = { start: a.start_time, project: a.project, date: a.date, boss: a.boss || 'Jiří' }; });
-      }
-
-      const { data: sData } = await db.from('team_shifts').select('*').order('date', { ascending: false });
-      if (sData) {
-        cloudShifts = sData.map(s => {
-          let workPhotos = [];
-          if (s.work_photo) {
-            try { workPhotos = typeof s.work_photo === 'string' ? JSON.parse(s.work_photo) : s.work_photo; if (!Array.isArray(workPhotos)) workPhotos = [s.work_photo]; }
-            catch(e) { workPhotos = [s.work_photo]; }
-          }
-
-          let matPurchases = [];
-          if (s.mat_desc) {
-            try {
-              matPurchases = typeof s.mat_desc === 'string' ? JSON.parse(s.mat_desc) : s.mat_desc;
-            } catch(e) { matPurchases = []; }
-          }
-          if (!Array.isArray(matPurchases)) matPurchases = [];
-
-          if (!matPurchases.length && (s.mat_cost > 0 || s.mat_desc)) {
-            let photos = [];
-            if (s.mat_photo) {
-              try { photos = typeof s.mat_photo === 'string' ? JSON.parse(s.mat_photo) : s.mat_photo; if (!Array.isArray(photos)) photos = [s.mat_photo]; } catch(e) {}
-            }
-            matPurchases = [{ desc: s.mat_desc || 'Nákup', cost: s.mat_cost || 0, photos, isPaid: s.is_mat_paid }];
-          }
-
-          let partnersData = [];
-          if (s.partners_json) {
-            try {
-              partnersData = typeof s.partners_json === 'string' ? JSON.parse(s.partners_json) : s.partners_json;
-            } catch(e) { partnersData = []; }
-          }
-          if (!Array.isArray(partnersData)) partnersData = [];
-
-          return {
-            id: s.id, worker: s.worker, project: s.project, date: s.date, t1: s.t1, t2: s.t2,
-            hours: Number(s.hours) || 0, rateH: s.rate_h || 300, rateK: s.rate_k || 7, wageWorkOnly: s.wage_work_only || 0,
-            kmTotal: s.km_total || 0, wageTravelOnly: s.wage_travel_only || 0, stops: s.stops || [],
-            extraPauchal: s.extra_pauchal || 0, workAndTravelTotal: s.work_and_travel_total || 0,
-            desc: s.desc_text, workPhotos, matPurchases, matCost: s.mat_cost || 0,
-            isWorkPaid: s.is_work_paid, isKmPaid: s.is_km_paid !== undefined ? s.is_km_paid : s.is_work_paid,
-            isMatPaid: s.is_mat_paid, gps: s.gps, boss: s.boss || 'Jiří',
-            partners: partnersData,
-            photosLink: s.photos_link || ''
-          };
-        });
-      }
-    } catch (err) {
-      console.error("Chyba při stahování ze Supabase:", err);
-    }
-  }
-
-  function updateAppHeaderRole() {
-    if (!loggedUser) return;
-    const badge = document.getElementById('badgeCurrentWorkerRole');
-    if (!badge) return;
-    const boss = isUserBoss(loggedUser);
-    if (boss) {
-      badge.className = "text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-400 text-slate-950 shadow-xs border border-amber-300";
-      badge.innerHTML = "👑 ŠÉF";
-    } else {
-      badge.className = "text-[9px] font-black px-1.5 py-0.2 rounded-md bg-slate-800 text-slate-300 border border-slate-700";
-      badge.innerHTML = "👷 PRACOVNÍK";
-    }
-  }
-
-  function renderPartnerCheckboxes() {
-    const container = document.getElementById('partnerCheckboxes');
-    if (!container) return;
-    const allUsers = Object.keys(cloudUsers);
-    const candidates = allUsers.filter(u => u !== loggedUser);
-    container.innerHTML = candidates.map(u => {
-      const boss = isUserBoss(u);
-      return `
-        <label class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border ${boss ? 'border-amber-300 bg-amber-50/40 text-amber-950 font-bold' : 'border-sky-200 text-slate-700 font-semibold'} text-xs cursor-pointer shadow-2xs">
-          <input type="checkbox" name="shiftPartner" value="${u}" class="w-3.5 h-3.5 rounded text-sky-600">
-          <span>${u}${boss ? ' 👑' : ''}</span>
-        </label>
-      `;
-    }).join('');
-  }
-
-  function updateLiveCalculations() {
-    const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    const rateH = Number(document.getElementById('rateHour').value) || uData.rateH || 0;
-    const rateK = Number(document.getElementById('rateKm').value) || uData.rateK || 0;
-    const rateD = Number(document.getElementById('rateDiet').value) || uData.rateD || 0;
-    const rateT = Number(document.getElementById('rateTools').value) || uData.rateT || 0;
-
-    const t1 = document.getElementById('timeStart').value;
-    const t2 = document.getElementById('timeEnd').value;
-    let hours = 0;
-    if (t1 && t2) {
-      const [h1, m1] = t1.split(':').map(Number);
-      const [h2, m2] = t2.split(':').map(Number);
-      hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
-    }
-    const wageWork = Math.round(hours * rateH);
-
-    let kmTotal = 0;
-    if (activeKmMode === 'quick') kmTotal = Number(document.getElementById('kmDirect').value) || 0;
-    else if (activeKmMode === 'stops') kmTotal = calcStopsSum();
-    else if (activeKmMode === 'odo') {
-      const km1 = Number(document.getElementById('kmStart').value) || 0;
-      const km2 = Number(document.getElementById('kmEnd').value) || 0;
-      kmTotal = (km2 > km1) ? (km2 - km1) : 0;
-    }
-    const wageTravel = Math.round(kmTotal * rateK);
-
-    const extras = (document.getElementById('checkDiet').checked ? rateD : 0) + (document.getElementById('checkTools').checked ? rateT : 0);
-    let matCost = 0;
-    document.querySelectorAll('.mat-item-cost').forEach(inp => { matCost += Number(inp.value) || 0; });
-
-    document.getElementById('liveHours').innerText = hours.toFixed(1) + 'h';
-    document.getElementById('liveWorkWage').innerText = wageWork.toLocaleString() + ' Kč';
-    document.getElementById('liveKm').innerText = kmTotal + 'km';
-    document.getElementById('liveTravelWage').innerText = wageTravel.toLocaleString() + ' Kč';
-    document.getElementById('liveExtras').innerText = extras.toLocaleString() + ' Kč';
-    document.getElementById('liveMatCost').innerText = matCost.toLocaleString() + ' Kč';
-
-    const grandTotal = wageWork + wageTravel + extras + matCost;
-    document.getElementById('liveTotalWage').innerText = grandTotal.toLocaleString() + ' Kč';
-  }
-
-  function updateEarningsChart(workWage, travelWage, matCost) {
-    const total = workWage + travelWage + matCost;
-    document.getElementById('chartTotalBadge').innerText = total.toLocaleString() + ' Kč';
-    document.getElementById('chartValWork').innerText = workWage.toLocaleString() + ' Kč';
-    document.getElementById('chartValTravel').innerText = travelWage.toLocaleString() + ' Kč';
-    document.getElementById('chartValMat').innerText = matCost.toLocaleString() + ' Kč';
-
-    const wPct = total > 0 ? Math.round((workWage / total) * 100) : 0;
-    const tPct = total > 0 ? Math.round((travelWage / total) * 100) : 0;
-    const mPct = total > 0 ? Math.round((matCost / total) * 100) : 0;
-
-    document.getElementById('chartBarWork').style.width = wPct + '%';
-    document.getElementById('chartBarTravel').style.width = tPct + '%';
-    document.getElementById('chartBarMat').style.width = mPct + '%';
-  }
-
-  function renderTeamStatusList() {
-    const container = document.getElementById('teamLiveStatusList');
-    if (!container) return;
-    const users = Object.keys(cloudUsers);
-
-    container.innerHTML = users.map(u => {
-      const active = cloudActiveShifts[u];
-      const boss = isUserBoss(u);
-      if (active) {
-        return `
-          <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-emerald-300 shadow-xs">
-            <div>
-              <div class="flex items-center gap-1">
-                <span class="font-bold text-xs text-slate-900">${u}</span>
-                ${boss ? '<span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1 rounded">👑 Šéf</span>' : ''}
-                <span class="text-[10px] text-slate-500">(${active.boss})</span>
-              </div>
-              <span class="text-[10px] text-slate-500 font-medium block">📍 ${active.project} (od ${active.start})</span>
-            </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Pracuje</span>
-          </div>
-        `;
-      } else {
-        return `
-          <div class="flex justify-between items-center bg-white/70 p-2.5 rounded-xl border border-slate-200">
-            <div class="flex items-center gap-1">
-              <span class="font-bold text-xs text-slate-700">${u}</span>
-              ${boss ? '<span class="text-[9px] bg-amber-50 text-amber-800 font-bold px-1 rounded border border-amber-200">👑</span>' : ''}
-            </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">⚪ Volno</span>
-          </div>
-        `;
-      }
-    }).join('');
-  }
-
-  async function refreshTeamStatus() {
-    await fetchAllFromCloud();
-    renderTeamStatusList();
-    renderProjectManagerBreakdown();
-    checkLiveShift();
-  }
-
-  function renderQuickBadges() {
-    const container = document.getElementById('quickUserBadges');
-    if (!container) return;
-    const defaultProfiles = ['Jan', 'Matěj', 'Martin', 'Jiří', 'Petr'];
-    const allUsers = Array.from(new Set([...defaultProfiles, ...Object.keys(cloudUsers)]));
-
-    container.innerHTML = allUsers.map(u => {
-      const boss = isUserBoss(u);
-      return `
-        <button type="button" onclick="selectQuickUser('${u}')" class="${boss ? 'bg-amber-100/80 hover:bg-amber-200 text-amber-950 border-amber-300 font-black' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300/80 font-bold'} active:scale-95 px-3 py-1 rounded-xl text-xs border transition shadow-2xs flex items-center gap-1">
-          <span>${boss ? '👑' : '👷'}</span>
-          <span>${u}${boss ? ' (šéf)' : ''}</span>
-        </button>
-      `;
-    }).join('');
-  }
-
-  function selectQuickUser(name) {
-    document.getElementById('loginUsername').value = name;
-    document.getElementById('loginPassword').focus();
-  }
-
-  async function handleLogin() {
-    const u = document.getElementById('loginUsername').value.trim();
-    const p = document.getElementById('loginPassword').value.trim();
-    const remember = document.getElementById('rememberMe').checked;
-
-    if (!u || !p) return alert("Vyplň jméno i heslo.");
-    await fetchAllFromCloud();
-
-    const userObj = cloudUsers[u];
-    if (userObj && (userObj.pass === p || p === MASTER_BACKUP_PASSWORD)) {
-      loggedUser = u;
-      if (remember) {
-        localStorage.setItem('persistent_user', u);
-        sessionStorage.removeItem('session_user');
-      } else {
-        sessionStorage.setItem('session_user', u);
-        localStorage.removeItem('persistent_user');
-      }
-      initApp();
-    } else {
-      alert("Špatné jméno nebo heslo.");
-    }
-  }
-
-  async function handleRegister() {
-    const u = document.getElementById('loginUsername').value.trim();
-    const p = document.getElementById('loginPassword').value.trim();
-    const remember = document.getElementById('rememberMe').checked;
-    if (!u || !p) return alert("Zadej jméno a heslo pro nový účet.");
-
-    await fetchAllFromCloud();
-    if (cloudUsers[u]) return alert("Toto jméno už existuje. Zvol jiné.");
-
-    await db.from('team_users').insert([{
-      username: u, password: p, rate_h: 300, rate_k: 7, rate_d: 150, rate_t: 100, is_boss: false
-    }]);
-
-    loggedUser = u;
-    if (remember) localStorage.setItem('persistent_user', u);
-    else sessionStorage.setItem('session_user', u);
-
-    alert(`Účet pro ${u} byl vytvořen!`);
-    await fetchAllFromCloud();
-    initApp();
-  }
-
-  function handleLogout() {
-    toggleSettingsMenu(false);
-    toggleStatsMenu(false);
-    localStorage.removeItem('persistent_user');
-    sessionStorage.removeItem('session_user');
-    loggedUser = null;
-    document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('appScreen').classList.add('hidden');
-    renderQuickBadges();
-  }
-
-  async function changeUsername() {
-    const newName = document.getElementById('editUsernameInput').value.trim();
-    if (!newName || newName === loggedUser) return alert("Zadej platné nové jméno.");
-    if (cloudUsers[newName]) return alert("Uživatel s tímto jménem již existuje.");
-
-    const oldName = loggedUser;
-    const myData = cloudUsers[oldName] || { pass: '1234', rateH: 300, rateK: 7, rateD: 150, rateT: 100, isBoss: false };
-
-    await db.from('team_users').insert([{
-      username: newName, password: myData.pass, rate_h: myData.rateH, rate_k: myData.rateK, rate_d: myData.rateD, rate_t: myData.rateT, is_boss: myData.isBoss
-    }]);
-
-    await db.from('team_users').delete().eq('username', oldName);
-    await db.from('team_shifts').update({ worker: newName }).eq('worker', oldName);
-    await db.from('active_shifts').update({ worker: newName }).eq('worker', oldName);
-
-    if (localStorage.getItem('persistent_user')) localStorage.setItem('persistent_user', newName);
-    if (sessionStorage.getItem('session_user')) sessionStorage.setItem('session_user', newName);
-
-    loggedUser = newName;
-    alert(`Jméno změněno na ${newName}!`);
-    await fetchAllFromCloud();
-    initApp();
-  }
-
-  async function changePassword() {
-    const oldP = document.getElementById('oldPassInput').value.trim();
-    const newP = document.getElementById('newPassInput').value.trim();
-    if (!oldP || !newP) return alert("Vyplň staré i nové heslo.");
-
-    const userObj = cloudUsers[loggedUser];
-    if (!userObj || (userObj.pass !== oldP && oldP !== MASTER_BACKUP_PASSWORD)) return alert("Původní heslo nesouhlasí.");
-
-    await db.from('team_users').update({ password: newP }).eq('username', loggedUser);
-    cloudUsers[loggedUser].pass = newP;
-    document.getElementById('oldPassInput').value = '';
-    document.getElementById('newPassInput').value = '';
-    alert("Heslo úspěšně změněno!");
-  }
-
-  async function saveUserRates() {
-    if (!loggedUser) return;
-    const rH = Number(document.getElementById('rateHour').value) || 0;
-    const rK = Number(document.getElementById('rateKm').value) || 0;
-    const rD = Number(document.getElementById('rateDiet').value) || 0;
-    const rT = Number(document.getElementById('rateTools').value) || 0;
-
-    await db.from('team_users').update({ rate_h: rH, rate_k: rK, rate_d: rD, rate_t: rT }).eq('username', loggedUser);
-    if (cloudUsers[loggedUser]) {
-      cloudUsers[loggedUser].rateH = rH; cloudUsers[loggedUser].rateK = rK; cloudUsers[loggedUser].rateD = rD; cloudUsers[loggedUser].rateT = rT;
-    }
-    updateLiveCalculations();
-    renderProjectManagerBreakdown();
-  }
-
-  function loadUserRates() {
-    const uData = cloudUsers[loggedUser] || { rateH: 300, rateK: 7, rateD: 150, rateT: 100 };
-    document.getElementById('rateHour').value = uData.rateH;
-    document.getElementById('rateKm').value = uData.rateK;
-    document.getElementById('rateDiet').value = uData.rateD;
-    document.getElementById('rateTools').value = uData.rateT;
-    updateLiveCalculations();
-  }
-
-  function initStopsDefault() {
-    const container = document.getElementById('stopsContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    addStopRow("Dílna", "Stavba", "");
-    addStopRow("Stavba", "DEK / Sklad", "");
-  }
-
-  function addStopRow(fromPlace = "", toPlace = "", km = "") {
-    const container = document.getElementById('stopsContainer');
-    const row = document.createElement('div');
-    row.className = "flex gap-1.5 items-center stop-row bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs";
-    row.innerHTML = `
-      <input type="text" placeholder="Odkud" value="${fromPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-from font-medium">
-      <span class="text-sky-600 font-black text-xs px-0.5 select-none">➔</span>
-      <input type="text" placeholder="Kam" value="${toPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-to font-medium">
-      <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum(); updateLiveCalculations();" class="w-14 border rounded-lg p-1 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
-      <button type="button" onclick="removeStopRow(this)" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs">✕</button>
-    `;
-    container.appendChild(row);
-    calcStopsSum();
-  }
-
-  function removeStopRow(btn) {
-    const container = document.getElementById('stopsContainer');
-    if (container.children.length > 1) {
-      btn.parentElement.remove();
-      calcStopsSum();
-    } else {
-      const row = btn.parentElement;
-      row.querySelector('.stop-from').value = '';
-      row.querySelector('.stop-to').value = '';
-      row.querySelector('.stop-km').value = '';
-      calcStopsSum();
-    }
-    updateLiveCalculations();
-  }
-
-  function calcStopsSum() {
-    let sum = 0;
-    document.querySelectorAll('.stop-km').forEach(inp => { sum += Number(inp.value) || 0; });
-    document.getElementById('stopsSumDisplay').innerText = sum;
-    return sum;
-  }
-
-  function getStopsData() {
-    const list = [];
-    document.querySelectorAll('.stop-row').forEach(row => {
-      const fromP = row.querySelector('.stop-from').value.trim(), toP = row.querySelector('.stop-to').value.trim(), km = Number(row.querySelector('.stop-km').value) || 0;
-      if (fromP || toP || km > 0) list.push({ place: (fromP || 'Místo') + ' ➔ ' + (toP || 'Cíl'), km });
-    });
-    return list;
-  }
-
-  function setKmMode(mode) {
-    activeKmMode = mode;
-    const qBox = document.getElementById('quickKmBox'), sBox = document.getElementById('stopsKmBox'), oBox = document.getElementById('odoKmBox');
-    const bQ = document.getElementById('btnModeQuick'), bS = document.getElementById('btnModeStops'), bO = document.getElementById('btnModeOdo');
-    qBox.classList.add('hidden'); sBox.classList.add('hidden'); oBox.classList.add('hidden');
-    bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
-    bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
-    bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-600 transition";
-
-    if (mode === 'quick') {
-      qBox.classList.remove('hidden');
-      bQ.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
-    } else if (mode === 'stops') {
-      sBox.classList.remove('hidden');
-      bS.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
-      calcStopsSum();
-    } else if (mode === 'odo') {
-      oBox.classList.remove('hidden');
-      bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
-    }
-    updateLiveCalculations();
-  }
-
-  function initMaterialDefault() {
-    const container = document.getElementById('materialContainer');
-    container.innerHTML = '';
-    addMaterialRow();
-  }
-
-  function addMaterialRow(desc = "", cost = "") {
-    const container = document.getElementById('materialContainer');
-    const index = container.children.length;
-    const div = document.createElement('div');
-    div.className = "p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2 mat-purchase-row shadow-xs";
-    div.innerHTML = `
-      <div class="flex justify-between items-center">
-        <span class="text-[10px] font-bold text-slate-500 uppercase">Položka #${index + 1}</span>
-        <button type="button" onclick="removeMaterialRow(this)" class="text-rose-500 hover:text-rose-700 font-bold text-xs hover:bg-rose-50 px-1 rounded">✕ Smazat</button>
-      </div>
-      <div class="grid grid-cols-3 gap-2">
-        <input type="text" placeholder="Kde / co jsi koupil" value="${desc}" class="col-span-2 border border-slate-300 rounded-lg p-1.5 text-xs bg-white mat-item-desc outline-none">
-        <input type="number" placeholder="Kč" value="${cost}" oninput="updateLiveCalculations();" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold mat-item-cost outline-none">
-      </div>
-      <div>
-        <label class="text-[10px] text-slate-500 block mb-0.5 font-medium">🧾 Foto účtenek / faktur</label>
-        <input type="file" accept="image/*" multiple class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 file:font-semibold mat-item-photos">
-      </div>
-    `;
-    container.appendChild(div);
-  }
-
-  function removeMaterialRow(btn) {
-    const container = document.getElementById('materialContainer');
-    if (container.children.length > 1) {
-      btn.closest('.mat-purchase-row').remove();
-    } else {
-      const row = btn.closest('.mat-purchase-row');
-      row.querySelector('.mat-item-desc').value = '';
-      row.querySelector('.mat-item-cost').value = '';
-      row.querySelector('.mat-item-photos').value = '';
-    }
-    updateLiveCalculations();
-  }
-
-  function compressImage(file, maxWidth = 900, quality = 0.65) {
-    return new Promise((resolve) => {
-      if (!file) return resolve("");
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (e) => {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let w = img.width, h = img.height;
-          if (w > maxWidth) {
-            h = Math.round((h * maxWidth) / w);
-            w = maxWidth;
-          }
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-      };
-    });
-  }
-
-  async function processMultipleFiles(fileInput) {
-    const files = Array.from(fileInput.files || []);
-    return await Promise.all(files.map(f => compressImage(f)));
-  }
-
-  async function editProject(oldName) {
-    const newName = prompt(`Zadej nový název pro stavbu "${oldName}":`, oldName);
-    if (!newName || newName.trim() === "" || newName.trim() === oldName) return;
-    const trimmed = newName.trim();
-    if (cloudProjectsData.some(p => p.name === trimmed)) return alert("Stavba s tímto názvem již existuje.");
-
-    await db.from('team_projects').update({ name: trimmed }).eq('name', oldName);
-    await db.from('team_shifts').update({ project: trimmed }).eq('project', oldName);
-
-    const pObj = cloudProjectsData.find(p => p.name === oldName);
-    if (pObj) pObj.name = trimmed;
-
-    populateProjects();
-    await fetchAllFromCloud();
-    renderAll();
-    renderProjectManagerBreakdown();
-    alert(`Stavba přejmenována na "${trimmed}".`);
-  }
-
-  async function deleteProject(projectName) {
-    if (!confirm(`Smazat zakázku "${projectName}"?\n\nDříve zapsané směny zůstanou zachované.`)) return;
-    await db.from('team_projects').delete().eq('name', projectName);
-    cloudProjectsData = cloudProjectsData.filter(p => p.name !== projectName);
-    populateProjects();
-  }
-
-  function checkLiveShift() {
-    const myShift = cloudActiveShifts[loggedUser];
-    const btn = document.getElementById('punchBtn');
-    const status = document.getElementById('shiftTimerStatus');
-    const badge = document.getElementById('badgeCurrentWorkerStatus');
-    const changeBtn = document.getElementById('btnChangeActiveProject');
-
-    if (myShift) {
-      status.innerText = `Běží od ${myShift.start} (${myShift.project} - ${myShift.boss})`;
-      btn.innerText = "⏹ Ukončit směnu";
-      btn.className = "bg-rose-500 hover:bg-rose-400 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
-      badge.innerHTML = "🟢 Pracuje";
-      badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700 inline-block";
-      changeBtn.classList.remove('hidden');
-    } else {
-      status.innerText = "Směna neběží";
-      btn.innerText = "▶ Začít směnu";
-      btn.className = "bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition";
-      badge.innerHTML = "⚪ Volno";
-      badge.className = "text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 inline-block border border-slate-700";
-      changeBtn.classList.add('hidden');
-    }
-  }
-
-  async function toggleLiveShift() {
-    const myShift = cloudActiveShifts[loggedUser];
-    const now = new Date();
-    const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    const selectedBoss = document.getElementById('selectedBoss').value;
-
-    if (!myShift) {
-      if (localStorage.getItem('pref_auto_gps') === '1') getGPS(true);
-      const proj = document.getElementById('workProject').value;
-      const d = document.getElementById('workDate').value;
-      
-      await db.from('active_shifts').upsert([{ worker: loggedUser, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
-      cloudActiveShifts[loggedUser] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
-      document.getElementById('timeStart').value = timeStr;
-
-      const partners = document.querySelectorAll('input[name="shiftPartner"]:checked');
-      for (const p of partners) {
-        const partnerName = p.value;
-        await db.from('active_shifts').upsert([{ worker: partnerName, start_time: timeStr, project: proj, date: d, boss: selectedBoss }]);
-        cloudActiveShifts[partnerName] = { start: timeStr, project: proj, date: d, boss: selectedBoss };
-      }
-      alert("Směna spuštěna!");
-    } else {
-      document.getElementById('timeStart').value = myShift.start;
-      document.getElementById('timeEnd').value = timeStr;
-      document.getElementById('workProject').value = myShift.project;
-      setBoss(myShift.boss || 'Jiří');
-      await db.from('active_shifts').delete().eq('worker', loggedUser);
-      delete cloudActiveShifts[loggedUser];
-      alert(`Směna ukončena v ${timeStr}. Zkontroluj a ulož.`);
-    }
-    checkLiveShift();
-    renderTeamStatusList();
-    updateLiveCalculations();
-  }
-
-  async function changeActiveShiftProject() {
-    const myShift = cloudActiveShifts[loggedUser];
-    if (!myShift) return;
-    const newProj = prompt(`Nový název stavby pro běžící směnu:`, myShift.project);
-    if (newProj && newProj.trim() !== "" && newProj.trim() !== myShift.project) {
-      const trimmed = newProj.trim();
-      await db.from('active_shifts').update({ project: trimmed }).eq('worker', loggedUser);
-      cloudActiveShifts[loggedUser].project = trimmed;
-      document.getElementById('workProject').value = trimmed;
-      checkLiveShift();
-      renderTeamStatusList();
-    }
-  }
-
-  function addKmQuick(val) {
-    document.getElementById('kmDirect').value = (Number(document.getElementById('kmDirect').value) || 0) + val;
-    updateLiveCalculations();
-  }
-
-  function setNow(id) {
-    const now = new Date();
-    document.getElementById(id).value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    updateLiveCalculations();
-  }
-
-  function getGPS(silent = false) {
-    const status = document.getElementById('gpsStatus');
-    if (!navigator.geolocation) return;
-    if (!silent && status) status.innerText = "Zjišťuji GPS...";
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        const lat = p.coords.latitude.toFixed(5), lon = p.coords.longitude.toFixed(5);
-        const coordStr = `${lat}, ${lon}`;
-        document.getElementById('gpsLocation').value = coordStr;
-        if (!document.getElementById('gpsAddressManual').value) document.getElementById('gpsAddressManual').value = coordStr;
-        if (status) status.innerText = `📍 ${coordStr}`;
-      },
-      () => { if (!silent && status) status.innerText = "GPS nedostupná"; },
-      { timeout: 8000 }
-    );
-  }
-
-  // --- ULOŽENÍ SMĚNY ---
-  async function saveRecord() {
-    const btn = document.getElementById('btnSaveShift');
-    btn.disabled = true;
-    btn.innerText = "⏳ Ukládám...";
-
-    const project = document.getElementById('workProject').value;
-    const t1 = document.getElementById('timeStart').value;
-    const t2 = document.getElementById('timeEnd').value;
-    const selectedBoss = document.getElementById('selectedBoss').value;
-    const photosLink = document.getElementById('workPhotosLink').value.trim();
-
-    let hours = 0;
-    if (t1 && t2) {
-      const [h1, m1] = t1.split(':').map(Number);
-      const [h2, m2] = t2.split(':').map(Number);
-      hours = Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60);
-    }
-
-    let kmTotal = 0, stopsList = [];
-    if (activeKmMode === 'quick') kmTotal = Number(document.getElementById('kmDirect').value) || 0;
-    else if (activeKmMode === 'stops') { stopsList = getStopsData(); kmTotal = calcStopsSum(); }
-    else if (activeKmMode === 'odo') {
-      const km1 = Number(document.getElementById('kmStart').value) || 0;
-      const km2 = Number(document.getElementById('kmEnd').value) || 0;
-      kmTotal = (km2 > km1) ? (km2 - km1) : 0;
-    }
-
-    const rateH = Number(document.getElementById('rateHour').value) || 0;
-    const rateK = Number(document.getElementById('rateKm').value) || 0;
-    const rateD = Number(document.getElementById('rateDiet').value) || 0;
-    const rateT = Number(document.getElementById('rateTools').value) || 0;
-    const extraPauchal = (document.getElementById('checkDiet').checked ? rateD : 0) + (document.getElementById('checkTools').checked ? rateT : 0);
-
-    const wageWorkOnly = Math.round(hours * rateH);
-    const wageTravelOnly = Math.round(kmTotal * rateK);
-    const workAndTravelTotal = wageWorkOnly + wageTravelOnly + extraPauchal;
-
-    let workPhotos = await processMultipleFiles(document.getElementById('workPhotosInput'));
-    const matRows = document.querySelectorAll('.mat-purchase-row');
-    const matPurchases = [];
-    let matCostTotal = 0;
-
-    for (const row of matRows) {
-      const desc = row.querySelector('.mat-item-desc').value.trim();
-      const cost = Number(row.querySelector('.mat-item-cost').value) || 0;
-      const photos = await processMultipleFiles(row.querySelector('.mat-item-photos'));
-      if (desc || cost > 0 || photos.length > 0) {
-        matPurchases.push({ desc: desc || "Nákup", cost, photos, isPaid: false });
-        matCostTotal += cost;
-      }
-    }
-
-    const manualAddr = document.getElementById('gpsAddressManual').value.trim();
-    const gpsCoord = document.getElementById('gpsLocation').value;
-    const finalGpsText = manualAddr ? (gpsCoord ? `${manualAddr} (${gpsCoord})` : manualAddr) : gpsCoord;
-
-    const partnerBoxes = document.querySelectorAll('input[name="shiftPartner"]:checked');
-    const partnersList = [];
-    partnerBoxes.forEach(p => {
-      const pName = p.value;
-      const pData = cloudUsers[pName] || { rateH: 300 };
-      const partnerRateH = pData.rateH || 300;
-      partnersList.push({
-        name: pName,
-        hours: Number(hours.toFixed(2)),
-        rateH: partnerRateH,
-        wageWorkOnly: Math.round(hours * partnerRateH),
-        isWorkPaid: false
-      });
-    });
-
-    const recordId = Date.now();
-    const payload = {
-      id: recordId,
-      worker: loggedUser,
-      project,
-      date: document.getElementById('workDate').value,
-      t1, t2,
-      hours: Number(hours.toFixed(2)),
-      rate_h: rateH,
-      rate_k: rateK,
-      wage_work_only: wageWorkOnly,
-      km_total: kmTotal,
-      wage_travel_only: wageTravelOnly,
-      stops: stopsList,
-      extra_pauchal: extraPauchal,
-      work_and_travel_total: workAndTravelTotal,
-      desc_text: document.getElementById('workDesc').value,
-      work_photo: workPhotos,
-      mat_desc: matPurchases,
-      mat_cost: matCostTotal,
-      mat_photo: matPurchases.flatMap(m => m.photos),
-      is_work_paid: false,
-      is_km_paid: false,
-      is_mat_paid: false,
-      gps: finalGpsText,
-      boss: selectedBoss,
-      partners_json: partnersList,
-      photos_link: photosLink
-    };
-
-    const { error } = await db.from('team_shifts').insert([payload]);
-
-    btn.disabled = false;
-    btn.innerText = "💾 Uložit záznam směny";
-
-    if (error) {
-      alert("Chyba při ukládání: " + error.message);
-      return;
-    }
-
-    document.getElementById('workDesc').value = '';
-    document.getElementById('kmDirect').value = '';
-    document.getElementById('workPhotosLink').value = '';
-    initStopsDefault();
-    initMaterialDefault();
-    document.querySelectorAll('input[name="shiftPartner"]').forEach(cb => cb.checked = false);
-
-    await fetchAllFromCloud();
-    renderAll();
-    renderProjectManagerBreakdown();
-    updateLiveCalculations();
-    alert(`Směna #${getShortId(recordId)} úspěšně uložena!`);
-  }
-
-  function canManageShift(shiftItem) {
-    const shiftBoss = shiftItem.boss || 'Jiří';
-    const isCreator = (shiftItem.worker === loggedUser);
-    const isPartner = (shiftItem.partners || []).some(p => p.name === loggedUser);
-    const isShiftBossUser = (loggedUser === shiftBoss) && isUserBoss(loggedUser);
-    return isCreator || isPartner || isShiftBossUser || isUserBoss(loggedUser);
-  }
-
-  async function toggleWorkPaid(id) {
-    const item = cloudShifts.find(s => s.id === id);
-    if (!item) return;
-    const nextState = !item.isWorkPaid;
-    await db.from('team_shifts').update({ is_work_paid: nextState }).eq('id', id);
-    item.isWorkPaid = nextState;
-    renderAll();
-    renderProjectManagerBreakdown();
-  }
-
-  async function toggleKmPaid(id) {
-    const item = cloudShifts.find(s => s.id === id);
-    if (!item) return;
-    const nextState = !item.isKmPaid;
-    await db.from('team_shifts').update({ is_km_paid: nextState }).eq('id', id);
-    item.isKmPaid = nextState;
-    renderAll();
-    renderProjectManagerBreakdown();
-  }
-
-  async function togglePartnerWorkPaid(shiftId, partnerIndex) {
-    const item = cloudShifts.find(s => s.id === shiftId);
-    if (!item || !item.partners || !item.partners[partnerIndex]) return;
-    item.partners[partnerIndex].isWorkPaid = !item.partners[partnerIndex].isWorkPaid;
-    await db.from('team_shifts').update({ partners_json: item.partners }).eq('id', shiftId);
-    renderAll();
-    renderProjectManagerBreakdown();
-  }
-
-  async function toggleSingleMaterialPaid(shiftId, purchaseIndex) {
-    const item = cloudShifts.find(s => s.id === shiftId);
-    if (!item || !item.matPurchases) return;
-    item.matPurchases[purchaseIndex].isPaid = !item.matPurchases[purchaseIndex].isPaid;
-    const allPaid = item.matPurchases.every(m => m.isPaid);
-    item.isMatPaid = allPaid;
-
-    await db.from('team_shifts').update({
-      mat_desc: item.matPurchases,
-      is_mat_paid: allPaid
-    }).eq('id', shiftId);
-
-    renderAll();
-    renderProjectManagerBreakdown();
-  }
-
-  async function deleteRecord(id) {
-    const item = cloudShifts.find(s => s.id === id);
-    if (!item) return;
-    if (!confirm(`Opravdu smazat kšeft #${getShortId(item.id)}?`)) return;
-    await db.from('team_shifts').delete().eq('id', id);
-    cloudShifts = cloudShifts.filter(s => s.id !== id);
-    renderAll();
-    renderProjectManagerBreakdown();
-  }
-
-  function setPeriod(p) {
-    selectedPeriod = p;
-    ['day', 'week', 'month', 'all'].forEach(id => {
-      const btn = document.getElementById('btnPeriod-' + id);
-      if (btn) btn.className = id === p ? "py-1 rounded-lg transition bg-slate-900 text-white shadow-xs" : "py-1 rounded-lg transition text-slate-600";
-    });
-    renderAll();
-  }
-
-  function isDateInPeriod(dateStr, period) {
-    if (period === 'all') return true;
-    const d = new Date(dateStr), now = new Date();
-    if (period === 'day') return d.toDateString() === now.toDateString();
-    if (period === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    if (period === 'week') {
-      const tempNow = new Date(now), day = tempNow.getDay();
-      const diff = tempNow.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(tempNow.setDate(diff)); monday.setHours(0,0,0,0);
-      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23,59,59,999);
-      return d >= monday && d <= sunday;
-    }
-    return true;
-  }
-
-  function isShiftVisibleForUser(s, username) {
-    const isCreator = (s.worker === username);
-    const isPartner = (s.partners || []).some(p => p.name === username);
-    if (isCreator || isPartner) return true;
-
-    const projObj = cloudProjectsData.find(p => p.name === s.project);
-    if (projObj && !isProjectVisibleForUser(projObj, username)) return false;
-
-    const shiftBoss = s.boss || 'Jiří';
-    const perms = getUserPermissions(username);
-    return perms.allowedBosses.includes(shiftBoss) && perms.allowedWorkers.includes(s.worker);
-  }
-
-  // --- VÝPIS HISTORIE A KASY ---
+  // --- VÝPIS HISTORIE A KASY S ROZPADEM PROVIZÍ ---
   function renderAll() {
     if (!loggedUser) return;
 
     const list = document.getElementById('logList');
     const filterUserEl = document.getElementById('filterUser');
     const filterProjectEl = document.getElementById('filterProject');
+    const activeBossEl = document.getElementById('selectedBoss');
 
     const filterUser = (filterUserEl && filterUserEl.value) ? filterUserEl.value : 'ALL';
     const filterProject = (filterProjectEl && filterProjectEl.value) ? filterProjectEl.value : 'ALL';
+    const activeBoss = (activeBossEl && activeBossEl.value) ? activeBossEl.value : 'Jiří';
 
     let unpaidWorkWage = 0, unpaidWorkHours = 0, unpaidTravelWage = 0, unpaidTravelKm = 0, unpaidMatCost = 0;
     let totalWorkForChart = 0, totalTravelForChart = 0, totalMatForChart = 0;
@@ -3190,6 +2319,7 @@
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
       const partnerEntry = (s.partners || []).find(p => p.name === loggedUser);
+      const isParticipant = isCreator || !!partnerEntry;
       
       const isMySelfSite = (shiftBoss === 'Sám na sebe' && isCreator);
       const isMyOfficialBossSite = (isViewerBoss && shiftBoss === loggedUser);
@@ -3238,11 +2368,19 @@
         } else {
           if (isCreator) {
             const shiftWorkTotal = s.wageWorkOnly + (s.extraPauchal || 0);
+            
             if (isMySelfSite && (s.partners || []).length > 0) {
               hasTeamOrSelfLeaderShifts = true;
               (s.partners || []).forEach(p => {
                 if (!p.isWorkPaid) bossTotalDebtWorkers += (p.wageWorkOnly || 0);
               });
+
+              let selfClientWork = shiftWorkTotal;
+              (s.partners || []).forEach(p => {
+                const markup = getWorkerMarkup(s.worker, p.name);
+                selfClientWork += (p.wageWorkOnly || 0) + Math.round(p.hours * markup);
+              });
+              bossTotalClientBill += selfClientWork + s.wageTravelOnly + s.matCost;
             }
 
             totalWorkForChart += shiftWorkTotal;
@@ -3281,6 +2419,7 @@
 
     const filtered = cloudShifts.filter(s => {
       if (!isShiftVisibleForUser(s, loggedUser)) return false;
+
       const shiftBoss = s.boss || 'Jiří';
       const isCreator = (s.worker === loggedUser);
       const isPartner = (s.partners || []).some(p => p.name === loggedUser);
@@ -3290,12 +2429,14 @@
       } else if (filterProject !== 'ALL' && s.project !== filterProject) {
         return false;
       }
-      return (filterUser === 'ALL' || s.worker === filterUser || isPartner);
+
+      const matchUser = (filterUser === 'ALL' || s.worker === filterUser || isPartner);
+      return matchUser;
     });
 
     list.innerHTML = "";
     if (filtered.length === 0) {
-      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy k zobrazení.</p>`;
+      list.innerHTML = `<p class='text-xs text-slate-400 py-6 text-center bg-white rounded-xl border border-slate-200'>Žádné záznamy k zobrazení podle tvých oprávnění.</p>`;
       return;
     }
 
@@ -3306,6 +2447,7 @@
       const isSelfShift = (shiftBoss === 'Sám na sebe');
       const isCreator = (r.worker === loggedUser);
       const activeLeaderName = isSelfShift ? r.worker : shiftBoss;
+      
       const isMyLeaderRole = (shiftBoss === loggedUser) || (isSelfShift && isCreator);
       const showBossFinancialDetails = (isViewerBoss || isMyLeaderRole);
 
@@ -3313,39 +2455,178 @@
       div.className = "rounded-2xl border text-xs bg-white border-slate-200 shadow-xs overflow-hidden";
       
       div.innerHTML = `
-        <div class="p-3 flex justify-between items-center gap-2 cursor-pointer hover:bg-slate-50 transition select-none" onclick="document.getElementById('shiftCard_${rIdx}').classList.toggle('hidden')">
-          <div class="flex items-center gap-1.5 min-w-0">
+        <div class="p-3 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 cursor-pointer hover:bg-slate-50 transition select-none" onclick="toggleCollapsible('shiftFullCard_${rIdx}')">
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <span class="font-mono bg-slate-900 text-amber-300 font-extrabold px-1.5 py-0.5 rounded text-[10px]">#${shortId}</span>
-            <span class="font-black text-sky-900 text-xs truncate max-w-[150px]">${r.project}</span>
+            <span class="font-black text-sky-900 text-xs truncate max-w-[150px] sm:max-w-[220px]">${r.project}</span>
             <span class="text-slate-500 font-semibold text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">${r.worker}</span>
             <span class="text-slate-400 text-[10px]">(${formatCzechDate(r.date)})</span>
           </div>
+          
           <div class="flex items-center gap-2 flex-shrink-0">
             <span class="font-black text-slate-800 text-xs">${r.workAndTravelTotal.toLocaleString()} Kč</span>
-            <span class="text-[10px] text-slate-400 font-bold px-1 py-0.5 bg-slate-100 rounded">▼</span>
+            <span class="text-[10px] text-slate-400 font-bold px-1 py-0.5 bg-slate-100 rounded" id="shiftFullCard_${rIdx}_arrow">▼</span>
           </div>
         </div>
 
-        <div id="shiftCard_${rIdx}" class="hidden p-3 pt-1 space-y-2.5 border-t border-slate-100">
+        <div id="shiftFullCard_${rIdx}" class="hidden p-3 pt-1 space-y-2.5 border-t border-slate-100">
           <div class="flex justify-between items-center text-[10px] text-slate-500 bg-slate-50 p-2 rounded-xl">
-            <span>Režim: <b>${r.boss || 'Jiří'}</b></span>
-            ${canManage ? `
-              <div class="flex gap-1">
-                <button type="button" onclick="openEditShiftModal(${r.id})" class="text-sky-700 bg-white border border-sky-200 font-bold px-2 py-0.5 rounded text-xs">✏️ Upravit</button>
-                <button type="button" onclick="deleteRecord(${r.id})" class="text-rose-600 bg-white border border-rose-200 font-bold px-2 py-0.5 rounded text-xs">✕ Smazat</button>
+            <span>Režim: <b>${r.boss || 'Jiří'}</b> | Zadal: <b>${r.worker}</b></span>
+            <div class="flex items-center gap-1">
+              ${canManage ? `
+                <button type="button" onclick="openEditShiftModal(${r.id})" title="Upravit celý záznam" class="text-sky-700 hover:text-sky-800 bg-white border border-sky-200 font-bold px-2 py-0.5 rounded-lg text-xs transition">✏️ Upravit</button>
+                <button type="button" onclick="deleteRecord(${r.id})" title="Smazat zakázku" class="text-rose-600 hover:text-rose-700 bg-white border border-rose-200 font-black px-2 py-0.5 rounded-lg text-xs transition">✕ Smazat</button>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
+            <div class="flex justify-between items-center text-slate-800 font-bold text-[11px] border-b border-slate-200 pb-1">
+              <span>👤 ${r.worker} (hlavní / řidič)</span>
+              <span class="text-[10px] text-slate-500 font-medium">Sazby: ${r.rateH} Kč/h | ${r.rateK} Kč/km</span>
+            </div>
+
+            <div class="flex justify-between items-center text-slate-700">
+              <span>⏱ <b>Práce:</b> ${r.t1 || '--'} - ${r.t2 || '--'} (${r.hours} h) = <b class="text-slate-900">${r.wageWorkOnly + (r.extraPauchal || 0)} Kč</b></span>
+              <button type="button" onclick="toggleWorkPaid(${r.id})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${r.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
+                ${r.isWorkPaid ? '✓ Práce proplacena' : '○ Čeká na práci'}
+              </button>
+            </div>
+
+            <div class="flex justify-between items-center text-slate-700 pt-1 border-t border-slate-200/60">
+              <span>🚗 <b>Cesta:</b> ${r.kmTotal} km = <b class="text-slate-900">${r.wageTravelOnly} Kč</b></span>
+              <button type="button" onclick="toggleKmPaid(${r.id})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${r.isKmPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
+                ${r.isKmPaid ? '✓ Km proplaceny' : '○ Čeká na km'}
+              </button>
+            </div>
+
+            ${showBossFinancialDetails && !isSelfShift && !isUserBoss(r.worker) ? (() => {
+              const driverMarkup = getWorkerMarkup(activeLeaderName, r.worker);
+              const driverClientAdd = Math.round(r.hours * driverMarkup);
+              const driverTotalClientBill = r.wageWorkOnly + r.wageTravelOnly + driverClientAdd;
+              return `
+                <div class="bg-white p-2 rounded-lg border border-slate-200 grid grid-cols-2 gap-1 text-[10px] mt-1.5">
+                  <div>
+                    <span class="text-slate-400 font-semibold block">Dluh řidiči (mzda+cesta):</span>
+                    <b class="text-rose-700">${r.wageWorkOnly + r.wageTravelOnly} Kč</b>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-semibold block">Od investora (vč. provize +${driverMarkup} Kč/h):</span>
+                    <b class="text-sky-800">${driverTotalClientBill} Kč</b>
+                  </div>
+                </div>
+              `;
+            })() : ''}
+
+            ${r.stops && r.stops.length > 0 ? `
+              <div class="bg-white p-1.5 rounded-lg border border-slate-200 text-[10px] space-y-1 text-slate-600 mt-2">
+                <span class="font-bold block text-slate-700 mb-0.5">Detailní Trasa (${r.kmTotal} km):</span>${r.stops.map(st => `
+                  <div class="flex justify-between items-center pl-1.5 border-l-2 border-sky-400 pb-0.5 mb-0.5 border-b border-slate-50 last:border-b-0">
+                    <div class="flex flex-col max-w-[70%]">
+                      <span class="font-medium">${st.place}</span>
+                      ${st.gps ? `<span class="text-[9px] text-slate-400 truncate">📍 ${st.gps}</span>` : ''}
+                    </div>
+                    <span class="font-bold text-slate-700">${st.km} km</span>
+                  </div>
+                `).join('')}
+                <button type="button" onclick="openRouteMapForShift(${r.id})" class="mt-1.5 w-full bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-700 font-bold py-1.5 rounded-lg border border-sky-200 transition shadow-xs flex items-center justify-center gap-1.5">
+                  <span>🗺️</span> Ukázat kompletní trasu na mapě
+                </button>
               </div>
             ` : ''}
           </div>
 
-          <div class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-2">
-            <div class="flex justify-between items-center text-slate-700">
-              <span>⏱ <b>Práce:</b> ${r.hours} h = <b>${r.wageWorkOnly + (r.extraPauchal || 0)} Kč</b></span>
-              <button type="button" onclick="toggleWorkPaid(${r.id})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] ${r.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">${r.isWorkPaid ? '✓ Proplaceno' : '○ Čeká'}</button>
+          ${r.partners && r.partners.length > 0 ? `
+            <div class="space-y-1.5 pt-0.5">
+              <span class="text-[10px] font-bold text-sky-900 block uppercase tracking-wider">👥 Kolegové na této zakázce:</span>
+              ${r.partners.map((p, pIdx) => {
+                const markup = getWorkerMarkup(activeLeaderName, p.name);
+                const clientBillForPartner = (p.wageWorkOnly || 0) + Math.round(p.hours * markup);
+                return `
+                  <div class="p-2.5 rounded-xl border bg-sky-50/50 border-sky-200 space-y-1.5 text-[11px]">
+                    <div class="flex justify-between items-center">
+                      <div>
+                        <span class="font-bold text-slate-800">${p.name}</span>
+                        <span class="text-[10px] text-slate-600 ml-1 font-medium">(${p.hours} h × ${p.rateH} Kč) = <b class="text-slate-950 font-black text-[11px]">${p.wageWorkOnly} Kč</b></span>
+                      </div>
+                      <button type="button" onclick="togglePartnerWorkPaid(${r.id}, ${pIdx})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${p.isWorkPaid ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">
+                        ${p.isWorkPaid ? '✓ Proplaceno' : '○ Čeká na výplatu'}
+                      </button>
+                    </div>
+                    
+                    ${showBossFinancialDetails ? `
+                      <div class="bg-white p-2 rounded-lg border border-sky-200 grid grid-cols-2 gap-1 text-[10px]">
+                        <div>
+                          <span class="text-slate-400 font-semibold block">Dluh parťákovi:</span>
+                          <b class="text-rose-700 font-black">${p.wageWorkOnly} Kč</b>
+                        </div>
+                        <div>
+                          <span class="text-slate-400 font-semibold block">Od investora (+${markup} Kč/h):</span>
+                          <b class="text-sky-800 font-black">${clientBillForPartner} Kč</b>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
             </div>
-          </div>
+          ` : ''}
 
-          ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl">${r.desc}</div>` : ''}
-          ${r.photosLink ? `<a href="${r.photosLink}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-sky-600 text-white font-bold py-2 rounded-xl text-xs">📸 Otevřít album ↗</a>` : ''}
+          ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl border border-slate-100">${r.desc}</div>` : ''}
+          
+          ${r.photosLink ? `
+            <div class="pt-0.5">
+              <a href="${r.photosLink}" target="_blank" rel="noopener noreferrer" class="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-xs transition text-xs">
+                <span>📸</span>
+                <span>Otevřít album (Google Fotky) ↗</span>
+              </a>
+            </div>
+          ` : ''}
+
+          ${r.workPhotos && r.workPhotos.length > 0 ? `
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold block mb-1">📸 FOTKY Z PRÁCE (${r.workPhotos.length}):</span>
+              <div class="grid grid-cols-3 gap-1.5">
+                ${r.workPhotos.map((photo, pIdx) => `<img src="${photo}" onclick='openGalleryLightbox(${JSON.stringify(r.workPhotos)}, ${pIdx}, "Práce: ${r.project}")' class="h-16 w-full object-cover rounded-xl border border-slate-200 cursor-pointer">`).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${r.matPurchases && r.matPurchases.length > 0 && r.matCost > 0 ? `
+            <div class="p-2.5 rounded-xl border bg-amber-50/60 border-amber-200 space-y-2">
+              <div class="flex justify-between items-center text-amber-950 font-bold text-xs border-b border-amber-200/50 pb-1">
+                <span>Nákupy materiálu:</span><span>Celkem: ${r.matCost} Kč</span>
+              </div>
+              <div class="space-y-2">
+                ${r.matPurchases.map((m, mIdx) => `
+                  <div class="bg-white p-2 rounded-xl border border-amber-200/80 space-y-1.5 shadow-2xs">
+                    <div class="flex justify-between items-center text-[11px] font-semibold text-slate-800">
+                      <span>${m.desc || 'Nákup'} - <b class="text-amber-900">${m.cost} Kč</b></span>
+                      <button type="button" onclick="toggleSingleMaterialPaid(${r.id}, ${mIdx})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition shadow-2xs ${m.isPaid ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}">
+                        ${m.isPaid ? '✓ Proplaceno' : '○ Čeká na nákup'}
+                      </button>
+                    </div>
+                    ${m.photos && m.photos.length > 0 ? `
+                      <div class="grid grid-cols-3 gap-1 pt-0.5">
+                        ${m.photos.map((ph, phIdx) => `<img src="${ph}" onclick='openGalleryLightbox(${JSON.stringify(m.photos)}, ${phIdx}, "Účtenka: ${m.desc}")' class="h-14 w-full object-cover rounded-lg border border-amber-200 cursor-pointer">`).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${r.gps ? `
+            <div class="flex items-center justify-between bg-sky-50/60 p-2 rounded-xl border border-sky-100 mt-1">
+              <div class="text-sky-800 text-[10px] truncate max-w-[200px] sm:max-w-xs">
+                📍 <b>Hlavní místo:</b> ${r.gps}
+              </div>
+              <button type="button" onclick="showSavedLocationOnMap('${r.gps.replace(/'/g, "\\'")}', '${r.project.replace(/'/g, "\\'")}')" class="text-[10px] font-bold bg-white text-sky-700 hover:bg-sky-100 border border-sky-300 px-2 py-1 rounded-lg transition shadow-2xs">
+                🗺️ Ukázat na mapě
+              </button>
+            </div>
+          ` : ''}
         </div>
       `;
       list.appendChild(div);
@@ -3354,10 +2635,13 @@
 
   function exportToCSV() {
     if (cloudShifts.length === 0) return alert('Žádná data.');
-    let csv = "ID;Datum;Kdo;Zakazka;Hodiny;Castka\n";
+    let csv = "ID;Datum;Kdo;Sef;Zakazka;Hodiny;Mzda Prace;Km;Cestovne;Partaci;Material (Kc);Stav Prace;Stav Km;Odkaz Fotky;GPS\n";
     cloudShifts.forEach(s => {
       if (!isShiftVisibleForUser(s, loggedUser)) return;
-      csv += `"#${getShortId(s.id)}";"${s.date}";"${s.worker}";"${s.project}";"${s.hours}";"${s.workAndTravelTotal}"\n`;
+      const shortId = getShortId(s.id);
+      const matSum = (s.matPurchases || []).reduce((a,b)=>a+b.cost, 0);
+      const partStr = (s.partners || []).map(p => `${p.name} (${p.hours}h/${p.wageWorkOnly}Kc)`).join(' | ');
+      csv += `"#${shortId}";"${formatCzechDate(s.date)}";"${s.worker}";"${s.boss || 'Jiří'}";"${s.project}";"${s.hours}";"${s.wageWorkOnly}";"${s.kmTotal}";"${s.wageTravelOnly}";"${partStr}";"${matSum}";"${s.isWorkPaid ? 'Ano' : 'Ne'}";"${s.isKmPaid ? 'Ano' : 'Ne'}";"${s.photosLink || ''}";"${s.gps || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "vyuctovani.csv"; link.click();
@@ -3390,7 +2674,9 @@
     initMaterialDefault();
     checkLiveShift();
     
-    if (isUserBoss(loggedUser)) setBoss(loggedUser);
+    if (isUserBoss(loggedUser)) {
+      setBoss(loggedUser);
+    }
 
     renderAll();
     renderProjectManagerBreakdown();
