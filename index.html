@@ -234,7 +234,7 @@
         </div>
 
         <div id="odoKmBox" class="grid grid-cols-2 gap-2 hidden">
-          <input type="number" id="kmStart" oninput="updateLiveCalculations(); savePersistentOdometerStart(this.value)" placeholder="Tachometr před" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
+          <input type="number" id="kmStart" oninput="updateLiveCalculations()" placeholder="Tachometr před" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
           <input type="number" id="kmEnd" oninput="updateLiveCalculations()" placeholder="Tachometr po" class="border border-slate-300 rounded-xl p-2 bg-white text-sm outline-none">
         </div>
       </div>
@@ -314,20 +314,6 @@
       </button>
     </div>
 
-  </div>
-
-  <!-- MAPA CELÉ TRASY ZÁZNAMU -->
-  <div id="shiftTravelMapModal" class="fixed inset-0 bg-black/85 z-[90] hidden flex flex-col justify-center p-2 sm:p-6">
-    <div class="bg-white w-full max-w-3xl mx-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh]">
-      <div class="bg-slate-900 text-white p-3.5 flex justify-between items-center">
-        <div>
-          <h3 class="font-black text-sm">🗺️ Celá trasa směny</h3>
-          <p class="text-[10px] text-slate-400">Body jsou očíslované a jednotlivé přejezdy jsou propojené šipkami.</p>
-        </div>
-        <button type="button" onclick="closeShiftTravelMap()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
-      </div>
-      <div id="shiftTravelMap" class="flex-1 min-h-0"></div>
-    </div>
   </div>
 
   <!-- INTERAKTIVNÍ MAPA (z-[75]) -->
@@ -2309,8 +2295,7 @@
             rateT: u.rate_t || 100,
             isBoss: (u.is_boss === true),
             perms: userPerms,
-            bossMarkups: userMarkups,
-            odometerStart: (userMarkups && userMarkups.__odometerStart !== undefined) ? Number(userMarkups.__odometerStart) : null
+            bossMarkups: userMarkups
           };
         });
       }
@@ -2431,145 +2416,6 @@
         </label>
       `;
     }).join('');
-  }
-
-  async function savePersistentOdometerStart(value) {
-    const n = Number(value);
-    if (!loggedUser || !Number.isFinite(n)) return;
-
-    // Immediate local persistence keeps the value available even during a
-    // temporary network outage. Supabase is the authoritative sync layer.
-    localStorage.setItem(`pickacka_odo_${loggedUser}`, String(n));
-
-    try {
-      const uData = cloudUsers[loggedUser] || {};
-      const markups = { ...(uData.bossMarkups || {}), __odometerStart: n };
-      uData.bossMarkups = markups;
-      uData.odometerStart = n;
-      const permissions = getUserPermissions(loggedUser);
-      await db.from('team_users')
-        .update({ permissions_json: JSON.stringify({ perms: permissions, markups }) })
-        .eq('username', loggedUser);
-    } catch (e) {
-      console.warn('Odometr se nepodařilo synchronizovat do Supabase:', e);
-    }
-  }
-
-  function loadPersistentOdometerStart() {
-    const input = document.getElementById('kmStart');
-    if (!input || !loggedUser) return;
-
-    const local = Number(localStorage.getItem(`pickacka_odo_${loggedUser}`));
-    const cloud = Number((cloudUsers[loggedUser] || {}).odometerStart);
-    const value = Number.isFinite(cloud) && cloud > 0 ? cloud : local;
-    if (Number.isFinite(value) && value > 0) input.value = value;
-  }
-
-  function formatStopForDisplay(stop, index) {
-    const from = stop.from || (stop.place || '').split(' ➔ ')[0] || 'Místo';
-    const to = stop.to || (stop.place || '').split(' ➔ ')[1] || 'Cíl';
-    const km = Number(stop.km) || 0;
-    return `
-      <div class="bg-white border border-slate-200 rounded-xl p-2.5 space-y-1.5">
-        <div class="flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-black">${index + 1}</span>
-          <div class="font-bold text-slate-800 text-xs truncate">${escapeHtmlSafe(from)} <span class="text-sky-600">➜</span> ${escapeHtmlSafe(to)}</div>
-          <span class="ml-auto text-[10px] font-black text-slate-600">${km} km</span>
-        </div>
-        <div class="text-[9px] text-slate-400 pl-8">
-          ${stop.startLat != null ? `📍 ${Number(stop.startLat).toFixed(5)}, ${Number(stop.startLng).toFixed(5)}` : '📍 start bez souřadnic'}
-          &nbsp; • &nbsp;
-          ${stop.endLat != null ? `📍 ${Number(stop.endLat).toFixed(5)}, ${Number(stop.endLng).toFixed(5)}` : '📍 cíl bez souřadnic'}
-        </div>
-      </div>`;
-  }
-
-  let detailMap = null;
-
-  function openShiftTravelMap(stops, title = 'Trasa směny') {
-    const modal = document.getElementById('shiftTravelMapModal');
-    const mapEl = document.getElementById('shiftTravelMap');
-    if (!modal || !mapEl) return;
-
-    modal.classList.remove('hidden');
-    setScrollLock(true);
-
-    setTimeout(() => {
-      if (detailMap) {
-        detailMap.remove();
-        detailMap = null;
-      }
-
-      detailMap = L.map(mapEl).setView([49.7477, 13.3775], 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(detailMap);
-
-      const bounds = [];
-      const valid = (n) => Number.isFinite(Number(n));
-
-      (stops || []).forEach((s, i) => {
-        if (valid(s.startLat) && valid(s.startLng)) {
-          const p = [Number(s.startLat), Number(s.startLng)];
-          bounds.push(p);
-          L.marker(p, {
-            icon: L.divIcon({
-              className: '',
-              html: `<div style="width:26px;height:26px;border-radius:50%;background:#0284c7;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;border:2px solid white;box-shadow:0 1px 4px #0006">${i + 1}</div>`,
-              iconSize: [26,26], iconAnchor: [13,13]
-            })
-          }).addTo(detailMap).bindPopup(`<b>${i + 1}. Start</b><br>${escapeHtmlSafe(s.from || 'Místo')}`);
-        }
-
-        if (valid(s.endLat) && valid(s.endLng)) {
-          const p = [Number(s.endLat), Number(s.endLng)];
-          bounds.push(p);
-          L.marker(p, {
-            icon: L.divIcon({
-              className: '',
-              html: `<div style="width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#0f172a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;border:2px solid white;box-shadow:0 1px 4px #0006">${i + 1}</div>`,
-              iconSize: [26,26], iconAnchor: [13,13]
-            })
-          }).addTo(detailMap).bindPopup(`<b>${i + 1}. Cíl</b><br>${escapeHtmlSafe(s.to || 'Cíl')}`);
-        }
-
-        if (valid(s.startLat) && valid(s.startLng) && valid(s.endLat) && valid(s.endLng)) {
-          const a = [Number(s.startLat), Number(s.startLng)];
-          const b = [Number(s.endLat), Number(s.endLng)];
-          L.polyline([a,b], {weight:4, opacity:.85}).addTo(detailMap);
-
-          const mid = [(a[0]+b[0])/2, (a[1]+b[1])/2];
-          const angle = Math.atan2(b[1]-a[1], b[0]-a[0]) * 180 / Math.PI;
-          L.marker(mid, {
-            icon: L.divIcon({
-              className: '',
-              html: `<div style="font-size:22px;font-weight:900;color:#0284c7;transform:rotate(${angle}deg);text-shadow:0 1px 2px white">➜</div>`,
-              iconSize:[24,24], iconAnchor:[12,12]
-            })
-          }).addTo(detailMap);
-        }
-      });
-
-      // Also connect the end of one segment to the start of the next segment.
-      for (let i = 0; i < (stops || []).length - 1; i++) {
-        const a = stops[i], b = stops[i+1];
-        if (valid(a.endLat) && valid(a.endLng) && valid(b.startLat) && valid(b.startLng)) {
-          L.polyline([[Number(a.endLat),Number(a.endLng)],[Number(b.startLat),Number(b.startLng)]],
-            {weight:3, opacity:.55, dashArray:'6 6'}).addTo(detailMap);
-        }
-      }
-
-      if (bounds.length) detailMap.fitBounds(bounds, {padding:[30,30]});
-      detailMap.invalidateSize();
-    }, 150);
-  }
-
-  function closeShiftTravelMap() {
-    const modal = document.getElementById('shiftTravelMapModal');
-    if (modal) modal.classList.add('hidden');
-    if (detailMap) { detailMap.remove(); detailMap = null; }
-    setScrollLock(false);
   }
 
   function updateLiveCalculations() {
@@ -2824,167 +2670,19 @@
     addStopRow("Stavba", "DEK / Sklad", "");
   }
 
-  function escapeHtmlSafe(value) {
-    return String(value ?? '').replace(/[&<>"']/g, ch => ({
-      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
-    }[ch]));
-  }
-
-  function addStopRow(fromPlace = "", toPlace = "", km = "", locationData = null) {
+  function addStopRow(fromPlace = "", toPlace = "", km = "") {
     const container = document.getElementById('stopsContainer');
-    if (!container) return;
-
-    // New row automatically starts where the previous row ended.
-    if (!fromPlace && container.lastElementChild) {
-      const prevTo = container.lastElementChild.querySelector('.stop-to');
-      if (prevTo && prevTo.value.trim()) fromPlace = prevTo.value.trim();
-    }
-
     const row = document.createElement('div');
-    row.className = "stop-row bg-white p-2 rounded-xl border border-slate-200 shadow-xs space-y-1.5";
-    row.dataset.startManual = fromPlace ? "1" : "0";
-
-    const loc = locationData || {};
-    const slat = loc.startLat ?? '';
-    const slng = loc.startLng ?? '';
-    const elat = loc.endLat ?? '';
-    const elng = loc.endLng ?? '';
-
+    row.className = "flex gap-1.5 items-center stop-row bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs";
     row.innerHTML = `
-      <div class="flex gap-1.5 items-center">
-        <input type="text" placeholder="Odkud" value="${escapeHtmlSafe(fromPlace)}"
-          class="flex-1 min-w-0 border border-slate-200 rounded-lg p-1.5 text-xs outline-none stop-from font-medium"
-          oninput="this.closest('.stop-row').dataset.startManual='1'; syncFollowingStopStarts(this.closest('.stop-row'))">
-        <span class="text-sky-600 font-black text-xs px-0.5 select-none">➜</span>
-        <input type="text" placeholder="Kam" value="${escapeHtmlSafe(toPlace)}"
-          class="flex-1 min-w-0 border border-slate-200 rounded-lg p-1.5 text-xs outline-none stop-to font-medium"
-          oninput="syncFollowingStopStarts(this.closest('.stop-row'))">
-        <input type="number" placeholder="km" value="${escapeHtmlSafe(km)}"
-          oninput="calcStopsSum(); updateLiveCalculations();" class="w-16 border rounded-lg p-1.5 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
-      </div>
-      <div class="grid grid-cols-2 gap-1.5">
-        <button type="button" onclick="selectStopLocation(this.closest('.stop-row'),'start')"
-          class="text-[10px] bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-lg py-1.5 font-bold">
-          📍 Odkud na mapě
-        </button>
-        <button type="button" onclick="selectStopLocation(this.closest('.stop-row'),'end')"
-          class="text-[10px] bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-lg py-1.5 font-bold">
-          📍 Kam na mapě
-        </button>
-      </div>
-      <div class="flex justify-between items-center">
-        <span class="text-[9px] text-slate-400 stop-coords">
-          ${slat !== '' ? `📍 ${Number(slat).toFixed(5)}, ${Number(slng).toFixed(5)}` : '📍 Souřadnice lze vybrat na mapě'}
-        </span>
-        <button type="button" onclick="removeStopRow(this)" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs">✕ Smazat</button>
-      </div>
+      <input type="text" placeholder="Odkud" value="${fromPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-from font-medium">
+      <span class="text-sky-600 font-black text-xs px-0.5 select-none">➔</span>
+      <input type="text" placeholder="Kam" value="${toPlace}" class="flex-1 min-w-0 border-0 p-1 text-xs outline-none stop-to font-medium">
+      <input type="number" placeholder="km" value="${km}" oninput="calcStopsSum(); updateLiveCalculations();" class="w-14 border rounded-lg p-1 text-xs font-bold text-center bg-slate-50 stop-km outline-none">
+      <button type="button" onclick="removeStopRow(this)" class="text-rose-500 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs">✕</button>
     `;
-    row.dataset.startLat = slat;
-    row.dataset.startLng = slng;
-    row.dataset.endLat = elat;
-    row.dataset.endLng = elng;
     container.appendChild(row);
     calcStopsSum();
-  }
-
-  function syncFollowingStopStarts(row) {
-    const container = document.getElementById('stopsContainer');
-    if (!container || !row) return;
-    const rows = [...container.querySelectorAll('.stop-row')];
-    const idx = rows.indexOf(row);
-    if (idx < 0 || idx >= rows.length - 1) return;
-
-    const destination = row.querySelector('.stop-to')?.value.trim() || '';
-    const next = rows[idx + 1];
-    const nextStart = next.querySelector('.stop-from');
-    if (nextStart && next.dataset.startManual !== "1") {
-      nextStart.value = destination;
-    }
-  }
-
-  function selectStopLocation(row, side) {
-    if (!row) return;
-    window._stopMapTarget = { row, side };
-    const input = row.querySelector(side === 'start' ? '.stop-from' : '.stop-to');
-    const lat = Number(row.dataset[side === 'start' ? 'startLat' : 'endLat']);
-    const lng = Number(row.dataset[side === 'start' ? 'startLng' : 'endLng']);
-    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
-
-    selectedMapLat = hasCoords ? lat : 49.7477;
-    selectedMapLon = hasCoords ? lng : 13.2804;
-    selectedMapText = input?.value?.trim() || 'Vyber místo';
-    openMapModal(false, selectedMapLat, selectedMapLon, selectedMapText);
-  }
-
-  async function geocodeStopPlace(place) {
-    if (!place) return null;
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(place)}`);
-      const data = await res.json();
-      if (data && data[0]) return {
-        lat: Number(data[0].lat),
-        lng: Number(data[0].lon),
-        address: data[0].display_name || place
-      };
-    } catch (_) {}
-    return null;
-  }
-
-  async function getStopsDataAsync() {
-    const list = [];
-    const rows = [...document.querySelectorAll('.stop-row')];
-
-    for (const row of rows) {
-      const fromP = row.querySelector('.stop-from')?.value.trim() || '';
-      const toP = row.querySelector('.stop-to')?.value.trim() || '';
-      const km = Number(row.querySelector('.stop-km')?.value) || 0;
-
-      let startLat = Number(row.dataset.startLat), startLng = Number(row.dataset.startLng);
-      let endLat = Number(row.dataset.endLat), endLng = Number(row.dataset.endLng);
-
-      if ((!Number.isFinite(startLat) || !Number.isFinite(startLng)) && fromP) {
-        const g = await geocodeStopPlace(fromP);
-        if (g) { startLat = g.lat; startLng = g.lng; row.dataset.startLat = g.lat; row.dataset.startLng = g.lng; }
-      }
-      if ((!Number.isFinite(endLat) || !Number.isFinite(endLng)) && toP) {
-        const g = await geocodeStopPlace(toP);
-        if (g) { endLat = g.lat; endLng = g.lng; row.dataset.endLat = g.lat; row.dataset.endLng = g.lng; }
-      }
-
-      if (fromP || toP || km > 0) {
-        list.push({
-          from: fromP || 'Místo',
-          to: toP || 'Cíl',
-          place: (fromP || 'Místo') + ' ➔ ' + (toP || 'Cíl'),
-          km,
-          startLat: Number.isFinite(startLat) ? startLat : null,
-          startLng: Number.isFinite(startLng) ? startLng : null,
-          endLat: Number.isFinite(endLat) ? endLat : null,
-          endLng: Number.isFinite(endLng) ? endLng : null
-        });
-      }
-    }
-    return list;
-  }
-
-  function getStopsData() {
-    const list = [];
-    document.querySelectorAll('.stop-row').forEach(row => {
-      const fromP = row.querySelector('.stop-from')?.value.trim() || '';
-      const toP = row.querySelector('.stop-to')?.value.trim() || '';
-      const km = Number(row.querySelector('.stop-km')?.value) || 0;
-      if (fromP || toP || km > 0) list.push({
-        from: fromP || 'Místo',
-        to: toP || 'Cíl',
-        place: (fromP || 'Místo') + ' ➔ ' + (toP || 'Cíl'),
-        km,
-        startLat: Number(row.dataset.startLat) || null,
-        startLng: Number(row.dataset.startLng) || null,
-        endLat: Number(row.dataset.endLat) || null,
-        endLng: Number(row.dataset.endLng) || null
-      });
-    });
-    return list;
   }
 
   function removeStopRow(btn) {
@@ -3037,7 +2735,6 @@
     } else if (mode === 'odo') {
       oBox.classList.remove('hidden');
       bO.className = "text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-white shadow-sm transition";
-      loadPersistentOdometerStart();
     }
     updateLiveCalculations();
   }
@@ -3262,7 +2959,7 @@
 
     let kmTotal = 0, stopsList = [];
     if (activeKmMode === 'quick') kmTotal = Number(document.getElementById('kmDirect').value) || 0;
-    else if (activeKmMode === 'stops') { stopsList = await getStopsDataAsync(); kmTotal = calcStopsSum(); }
+    else if (activeKmMode === 'stops') { stopsList = getStopsData(); kmTotal = calcStopsSum(); }
     else if (activeKmMode === 'odo') {
       const km1 = Number(document.getElementById('kmStart').value) || 0;
       const km2 = Number(document.getElementById('kmEnd').value) || 0;
@@ -3647,25 +3344,6 @@
             </div>
           </div>
 
-          <div class="p-2.5 rounded-xl border border-sky-200 bg-sky-50/60 space-y-2">
-            <div class="flex justify-between items-center">
-              <span class="font-black text-sky-900 text-[11px] uppercase">🚗 Doprava a trasa</span>
-              <span class="font-black text-slate-800 text-xs">${Number(r.kmTotal || 0).toLocaleString()} km</span>
-            </div>
-            ${r.stops && r.stops.length ? `
-              <div class="space-y-1.5">${r.stops.map((s,i) => formatStopForDisplay(s,i)).join('')}</div>
-              <button type="button" onclick="openShiftTravelMap(${JSON.stringify(r.stops).replace(/</g,'\\u003c')}, 'Trasa #${shortId}')"
-                class="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-2 rounded-xl text-xs">
-                🗺️ Zobrazit celou trasu na mapě
-              </button>
-            ` : `
-              <div class="text-[10px] text-slate-500">Přejezdy nebyly rozepsány.</div>
-            `}
-          </div>
-          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[10px] space-y-1">
-            <div><b>📍 Místo zakázky:</b> ${escapeHtmlSafe(r.gps || 'neuvedeno')}</div>
-            <div><b>🧭 Doprava:</b> ${r.stops && r.stops.length ? 'Rozepsané přejezdy' : 'Celkem / budíky'}</div>
-          </div>
           ${r.desc ? `<div class="text-slate-800 bg-slate-50 p-2 rounded-xl">${r.desc}</div>` : ''}
           ${r.photosLink ? `<a href="${r.photosLink}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-sky-600 text-white font-bold py-2 rounded-xl text-xs">📸 Otevřít album ↗</a>` : ''}
         </div>
