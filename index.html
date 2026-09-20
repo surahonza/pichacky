@@ -3408,6 +3408,145 @@
 
   initApp();
 </script>
+
+/* ============================================================
+   PÍCHAČKA – DOPLNĚNÍ CEST / TRAS / KM / MAPY
+   Tento blok je záměrně samostatný, aby nenarušil stávající UI.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  const PICKACKA_TRAVEL_VERSION = 1;
+
+  function safeJson(value, fallback) {
+    try {
+      if (value == null || value === "") return fallback;
+      return typeof value === "string" ? JSON.parse(value) : value;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function normalizeLocation(loc) {
+    loc = loc || {};
+    return {
+      name: String(loc.name || loc.address || loc.label || "").trim(),
+      address: String(loc.address || loc.name || loc.label || "").trim(),
+      lat: Number.isFinite(Number(loc.lat)) ? Number(loc.lat) : null,
+      lng: Number.isFinite(Number(loc.lng)) ? Number(loc.lng) : null
+    };
+  }
+
+  function normalizeTravelRows(rows) {
+    const input = Array.isArray(rows) ? rows : [];
+    return input.map((row, i) => {
+      const r = Object.assign({}, row || {});
+      const start = normalizeLocation(r.startLocation || r.fromLocation || {
+        name: r.start || r.from || ""
+      });
+      const end = normalizeLocation(r.endLocation || r.toLocation || {
+        name: r.destination || r.to || r.end || ""
+      });
+
+      // Automatically inherit previous destination as the next start.
+      if (i > 0 && !start.name && !start.address) {
+        const prev = normalizeLocation(input[i - 1]?.endLocation || input[i - 1]?.toLocation || {
+          name: input[i - 1]?.destination || input[i - 1]?.to || input[i - 1]?.end || ""
+        });
+        if (prev.name || prev.address) {
+          start.name = prev.name;
+          start.address = prev.address;
+          start.lat = prev.lat;
+          start.lng = prev.lng;
+        }
+      }
+
+      r.startLocation = start;
+      r.endLocation = end;
+      r.start = start.name || r.start || "";
+      r.destination = end.name || r.destination || "";
+      r.from = start.name || r.from || "";
+      r.to = end.name || r.to || "";
+      return r;
+    });
+  }
+
+  function normalizeKmData(record) {
+    const r = record || {};
+    const mode = r.kmMode || r.mileageMode || "odometer";
+    const start = Number(r.kmStart ?? r.odometerStart);
+    const end = Number(r.kmEnd ?? r.odometerEnd);
+    let direct = Number(r.travelKm ?? r.directKm ?? r.km);
+
+    if (mode === "odometer" && Number.isFinite(start) && Number.isFinite(end)) {
+      direct = Math.max(0, end - start);
+    }
+    return {
+      mode,
+      start: Number.isFinite(start) ? start : null,
+      end: Number.isFinite(end) ? end : null,
+      directKm: Number.isFinite(direct) ? direct : 0
+    };
+  }
+
+  // Expose pure helpers so existing code can call them without depending on
+  // the new UI implementation.
+  window.PickackaTravel = {
+    version: PICKACKA_TRAVEL_VERSION,
+    normalizeLocation,
+    normalizeTravelRows,
+    normalizeKmData,
+
+    totalKm(rows, record) {
+      const normalized = normalizeTravelRows(rows);
+      const segments = normalized.map(r => {
+        const n = Number(r.km ?? r.distance ?? r.segmentKm);
+        return Number.isFinite(n) && n >= 0 ? n : 0;
+      });
+      const segmentTotal = segments.reduce((a, b) => a + b, 0);
+      const mileage = normalizeKmData(record);
+      return segmentTotal > 0 ? segmentTotal : mileage.directKm;
+    },
+
+    buildMapPoints(rows) {
+      const result = [];
+      normalizeTravelRows(rows).forEach((r, i) => {
+        const s = normalizeLocation(r.startLocation);
+        const e = normalizeLocation(r.endLocation);
+        if (s.lat !== null && s.lng !== null) {
+          result.push({ index: i + 1, type: "start", label: s.name || s.address, lat: s.lat, lng: s.lng });
+        }
+        if (e.lat !== null && e.lng !== null) {
+          result.push({ index: i + 1, type: "destination", label: e.name || e.address, lat: e.lat, lng: e.lng });
+        }
+      });
+      return result;
+    }
+  };
+
+  // Persistent morning odometer helper. It uses Supabase when available and
+  // falls back to localStorage only until the caller saves the value remotely.
+  window.PickackaOdometer = {
+    key: "pickacka_persistent_odometer_start",
+    saveLocal(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return false;
+      localStorage.setItem(this.key, JSON.stringify({
+        value: n,
+        savedAt: new Date().toISOString()
+      }));
+      return true;
+    },
+    loadLocal() {
+      const x = safeJson(localStorage.getItem(this.key), null);
+      return x && Number.isFinite(Number(x.value)) ? Number(x.value) : null;
+    },
+    clearLocal() {
+      localStorage.removeItem(this.key);
+    }
+  };
+})();
+
 </body>
 </html>čky</title>
 
@@ -6089,3 +6228,38 @@
 </script>
 </body>
 </html>
+
+/* PICKACKA_TRAVEL_HOOKS */
+(function () {
+  "use strict";
+  // Keep the original implementation untouched; only augment its result.
+  if (typeof window.addStopRow === "function" && !window.addStopRow.__pickackaWrapped) {
+    const original = window.addStopRow;
+    const wrapped = function () {
+      const result = original.apply(this, arguments);
+      try {
+        const rows = document.querySelectorAll(
+          '[data-travel-row], .travel-row, .stop-row, [class*="stop-row"]'
+        );
+        if (rows.length > 1) {
+          const prev = rows[rows.length - 2];
+          const current = rows[rows.length - 1];
+          const prevDest = prev.querySelector(
+            '[name*="destination"], [name*="to"], [data-field="destination"]'
+          );
+          const currentStart = current.querySelector(
+            '[name*="start"], [name*="from"], [data-field="start"]'
+          );
+          if (prevDest && currentStart && !currentStart.value.trim()) {
+            currentStart.value = prevDest.value;
+            currentStart.dispatchEvent(new Event("input", {bubbles:true}));
+            currentStart.dispatchEvent(new Event("change", {bubbles:true}));
+          }
+        }
+      } catch (_) {}
+      return result;
+    };
+    wrapped.__pickackaWrapped = true;
+    window.addStopRow = wrapped;
+  }
+})();
